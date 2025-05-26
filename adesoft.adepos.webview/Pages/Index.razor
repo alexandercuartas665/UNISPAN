@@ -1,0 +1,11 @@
+﻿@page "/"
+@inject CompanyService companyService
+@using adesoft.adepos.webview.Data
+@code{
+    public Company companyCurrent { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+    }
+}
+ 

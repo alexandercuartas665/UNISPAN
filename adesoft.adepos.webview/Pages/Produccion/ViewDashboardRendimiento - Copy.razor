@@ -1,0 +1,176 @@
+﻿@page "/ViewDashboardRendimiento2/"
+@using  adesoft.adepos.webview.Controller
+@using System.Linq
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using Radzen.Blazor.Rendering
+@inject DialogService dialogService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject ProduccionService produccionService
+@code {
+    List<Rendimiento> rendimientoOrigin = new List<Rendimiento>();
+    protected override async Task OnInitializedAsync()
+    {
+        //DateTime daterecords = DateTime.Now.Date.AddDays(-1);
+        //rendimientoOrigin = await produccionService.GenerarRendimiento(new Rendimiento() { DateActivity = daterecords });
+
+        rendimientoOrigin = await produccionService.GenerarRendimiento(new Rendimiento() { YearId = DateTime.Now.Year, MonthId = DateTime.Now.AddMonths(-1).Month });
+        if (rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == 3).Count() > 0)
+        {
+            //encofrados
+            List<Rendimiento> encofradosTercer = rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == 3).GroupBy(x => new { x.TerceroId }).Select(x => x.FirstOrDefault()).ToList();
+            foreach (Rendimiento terRend in encofradosTercer)
+            {
+                DataTercerosMedicion dt = new DataTercerosMedicion();
+                dt.Categoria = terRend.Tercero.FullNameAbrevCode;
+                decimal valueren = rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == 3 && x.TerceroId == terRend.TerceroId).Sum(x => x.Cant);
+                if (valueren > 0)
+                {
+                    dt.ValueMedicion = valueren;
+                    tercerosMedM2.Add(dt);
+                }
+            }
+        }
+        tercerosMedM2 = tercerosMedM2.OrderByDescending(x => x.ValueMedicion).Take(5).ToList();
+        if (rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == 4).Count() > 0)
+        {
+            //accesorios
+            List<Rendimiento> encofradosTercer = rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == 4).GroupBy(x => new { x.TerceroId }).Select(x => x.FirstOrDefault()).ToList();
+            foreach (Rendimiento terRend in encofradosTercer)
+            {
+                DataTercerosMedicion dt = new DataTercerosMedicion();
+                dt.Categoria = terRend.Tercero.FullNameAbrevCode;
+                decimal valueren = rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == 4 && x.TerceroId == terRend.TerceroId).Sum(x => x.Cant);
+                if (valueren > 0)
+                {
+                    dt.ValueMedicion = valueren;
+                    tercerosMedKG.Add(dt);
+                }
+            }
+        }
+        tercerosMedKG = tercerosMedKG.OrderByDescending(x => x.ValueMedicion).Take(5).ToList();
+
+        if (rendimientoOrigin.Where(x => x.TypeActivity.TypeActivityId == 5).Count() > 0)
+        {
+            //accesorios
+            List<Rendimiento> PinturaRendimientos = rendimientoOrigin.Where(x => x.TypeActivity.TypeActivityId == 5).ToList();
+            foreach (Rendimiento pintrend in PinturaRendimientos)
+            {
+                DataTercerosMedicion dt = new DataTercerosMedicion();
+                dt.Categoria = pintrend.IdDay.ToString();
+                if (ActividadPintura.Where(x => x.CategoriaDate == pintrend.DateActivity).Count() == 0)
+                {
+                    decimal valueren = rendimientoOrigin.Where(x => x.TypeActivity.TypeActivityId == pintrend.TypeActivityId && x.IdDay == pintrend.IdDay).Sum(x => x.Cant);
+                    if (valueren > 0)
+                    {
+                        dt.CategoriaDate = pintrend.DateActivity;
+                        dt.ValueMedicion = valueren;
+                        ActividadPintura.Add(dt);
+                    }
+                }
+            }
+            ActividadPintura = ActividadPintura.OrderByDescending(x => x.CategoriaDate).Take(5).ToList();
+        }
+
+
+        //filter = new DTOFiltersCompras();
+        //ListMonths = DTOViewRptCompra.GetMonths();
+        //ListYears = await GetYearsFilter();
+        //DayInitMonth = 1;
+        //DayEndMonth = DateTime.DaysInMonth((int)DateTime.Now.Year, (int)DateTime.Now.Month);
+    }
+
+    class DataTercerosMedicion
+    {
+        public string Categoria { get; set; }
+
+        public DateTime CategoriaDate { get; set; }
+
+        public decimal ValueMedicion { get; set; }
+    }
+    List<DataTercerosMedicion> tercerosMedM2 = new List<DataTercerosMedicion>();
+    List<DataTercerosMedicion> tercerosMedKG = new List<DataTercerosMedicion>();
+    List<DataTercerosMedicion> ActividadPintura = new List<DataTercerosMedicion>();
+    //DataItem[] revenue = new DataItem[] {
+    //new DataItem
+    //{
+    //Quarter = "Q1",
+    //Revenue = 30000
+    //},
+    //new DataItem
+    //{
+    //Quarter = "Q2",
+    //Revenue = 40000
+    //},
+    //new DataItem
+    //{
+    //Quarter = "Q3",
+    //Revenue = 50000
+    //},
+    //new DataItem
+    //{
+    //Quarter = "Q4",
+    //Revenue = 80000
+    //},
+    //};
+}
+
+
+<h1>DASHBOARD RENDIMIENTO</h1>
+<div class="row">
+    @if (tercerosMedM2.Count() > 0)
+    {
+        <div class="col-xl-3 col-lg-6 py-2">
+            <RadzenCard>
+                <h4>TOP 5 RENDIMIENTO ENCOFRADOS</h4>
+                <RadzenChart style="width: 100%; height: 200px">
+                    <RadzenPieSeries Data=@tercerosMedM2 CategoryProperty="Categoria" ValueProperty="ValueMedicion">
+                        <TooltipTemplate Context="data">
+                            <div>
+                                <span>@data.Categoria</span>
+                                <strong>@(data.ValueMedicion + "M2")</strong>
+                            </div>
+                        </TooltipTemplate>
+                    </RadzenPieSeries>
+                </RadzenChart>
+            </RadzenCard>
+        </div>
+    }
+    @if (tercerosMedKG.Count() > 0)
+    {
+        <div class="col-xl-3 col-lg-6 py-2">
+            <RadzenCard>
+                <h4>TOP 5 RENDIMIENTO ACCESORIOS</h4>
+                <RadzenChart style="width: 100%; height: 200px">
+                    <RadzenPieSeries Data=@tercerosMedKG CategoryProperty="Categoria" ValueProperty="ValueMedicion">
+                        <TooltipTemplate Context="data">
+                            <div>
+                                <span>@data.Categoria</span>
+                                <strong>@(data.ValueMedicion + "KG")</strong>
+                            </div>
+                        </TooltipTemplate>
+                    </RadzenPieSeries>
+                </RadzenChart>
+            </RadzenCard>
+        </div>
+    }
+    @if (tercerosMedKG.Count() > 0)
+    {
+        <div class="col-xl-3 col-lg-6 py-2">
+            <RadzenCard>
+                <h4>ULTIMOS 5 DIAS PINTURA</h4>
+                <RadzenChart style="width: 100%; height: 200px">
+                    <RadzenColumnSeries Data=@ActividadPintura ValueProperty="ValueMedicion" CategoryProperty="CategoriaDate" Title="M2" Fill="#0479cc" />
+                    <RadzenCategoryAxis FormatString="{0:dd}" Padding="50" />
+                    <RadzenColumnOptions Margin="10" />
+                    <RadzenLegend Visible="false" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Cantidades en M2" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </div>
+    }
+</div>

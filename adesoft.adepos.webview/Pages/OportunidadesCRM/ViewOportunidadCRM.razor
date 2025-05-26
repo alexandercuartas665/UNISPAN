@@ -1,0 +1,185 @@
+﻿@page "/ViewOportunidadCRM/{OportunidadId}"
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject OportunidadesCRMService oportunidadService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@code {
+    [Parameter]
+    public string OportunidadId { get; set; }
+    [Parameter]
+    public ViewListOportunidades viewList { get; set; }
+    [Parameter]
+    public OportunidadesCRM OportunidadObj { get; set; }
+
+    OportunidadesCRM model = new OportunidadesCRM();
+    OportunidadesCRM clone;
+    protected override async Task OnInitializedAsync()
+    {
+
+        model = await oportunidadService.SelectById(new OportunidadesCRM() { TransOption = 1, OportunidadID = long.Parse(OportunidadId) });
+        clone = model.GetCloneWithNativePropertys<OportunidadesCRM>();
+        //lists = await oportunidadService.selectAll(new OportunidadesCRM() { TransOption = 1 });
+        // lists= lists.Where(x => x.TypeTerceroId != 4).ToList();
+
+
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+    async Task SaveOportunidades()
+    {
+        model.ToUpper(); clone.ToUpper();
+        if (model.IsDiferent<OportunidadesCRM>(clone))
+        {
+            model.IsEdited = true;
+            await oportunidadService.Update(model);
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se actualizo la información correctamente.", Duration = 4000 });
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Sin cambios!", Detail = "No ha realizado ningun cambio para guardar.", Duration = 3000 });
+        }
+
+        this.StateHasChanged();
+    }
+}
+
+
+
+<div class="card">
+    <div class="card-header">
+        Operario Producción
+    </div>
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formcliente" id="formcliente" Method="post" class="col-md-12" @onsubmit="SaveOportunidades" TItem="OportunidadesCRM" Data="@model">
+
+            <div class="form-row">
+                <div class="form-group col-md-1">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-1">
+                    @*<a class="btn btn-success btn-sm" href="/ViewListOportunidades">Buscar</a>*@
+                    <a class="btn btn-success btn-sm" href="javascript:void(0);" @onclick="(args)=>{ viewList.SetCustomRenderNull(model);  }">Buscar</a>
+                </div>
+
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label for="input1">N° OPORTUNIDAD</label>
+                    <RadzenTextBox Name="input1" @bind-Value="model.OPRT_NUMERO" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="input2" class="d-block">FECHA OPORTUNIDAD</label>
+                    <RadzenDatePicker TValue="DateTime" Name="input2" @bind-Value="model.FECHA_APERTURA_" Disabled="true" DateFormat="MM/dd/yyyy" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input3" class="d-block">FECHA DESPACHO</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.FECHA_DESPACHO" Name="input3" DateFormat="MM/dd/yyyy" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input3" class="d-block">N° COT. APROBADA</label>
+                    <RadzenTextBox Name="input3" @bind-Value="model.CONSECUTIVO" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input4" class="d-block">TIPO OPORTUNIDAD</label>
+                    <RadzenTextBox Name="input4" @bind-Value="model.TIPO_OPRT" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="input5" class="d-block">CLIENTE</label>
+                    <RadzenTextBox Name="input5" @bind-Value="model.CLIENTE" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="input6" class="d-block">NIT</label>
+                    <RadzenTextBox Name="input6" @bind-Value="model.NIT" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="input6" class="d-block">OBRA</label>
+                    <RadzenTextBox Name="input6" @bind-Value="model.OBRA" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="input7" class="d-block"># OP</label>
+                    <RadzenTextBox Name="input7" @bind-Value="model.NUM_OP" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">COMERCIAL</label>
+                    <RadzenTextBox Name="input8" @bind-Value="model.COMERCIAL" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="input5" class="d-block">VR. ALQUILER MENSUAL</label>
+                    <RadzenTextBox Name="input5" Value="@(model.VR_RENTA_MENSUAL!=null?model.VR_RENTA_MENSUAL.Value.ToString("N0"):"")" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input6" class="d-block">DURACION</label>
+                    <RadzenNumeric Name="input6" @bind-Value="model.DURACION" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input7" class="d-block">TONELADA</label>
+                    <RadzenNumeric Name="input7" @bind-Value="model.TONELADA" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">CONTACTO CLIENTE</label>
+                    <RadzenTextBox Name="input8" @bind-Value="model.CONTACTO_CLIENTE" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="input3" class="d-block">FECHA SOLIC. DOC</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.FECHA_SOLICI_DOC" Name="input3" DateFormat="MM/dd/yyyy" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input3" class="d-block">FECHA RECEP. DOC</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.FECHA_RECEP_DOC" Name="input3" DateFormat="MM/dd/yyyy" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">OBSERVACION</label>
+                    <RadzenTextBox Name="input8" @bind-Value="model.OBSERVATION" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">APROB.FINAN.</label>
+                    <RadzenTextBox Name="input8" @bind-Value="model.APROBACION" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">FECHA ENVIO CONT. Y CTA.</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.FECHA_ENVIO" Name="input3" DateFormat="MM/dd/yyyy" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">HISTORIAL DE OBRA</label>
+                    <RadzenTextBox Name="input8" @bind-Value="model.HISTORIAL_OBRA" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">N° CUENTA</label>
+                    <RadzenTextBox Name="input8" @bind-Value="model.NUM_CUENTA" class="form-control text-uppercase" AutoComplete="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input3" class="d-block">FECHA RECEP. CONTR</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.FECHA_RECEP" Name="input3" DateFormat="MM/dd/yyyy" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="input8" class="d-block">FECHA ANTICIPO.</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.FECHA_ANTICIPO" Name="input3" DateFormat="MM/dd/yyyy" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="input4" class="d-block">% OPORTUNIDAD</label>
+                    <RadzenTextBox Name="input4" Value="@(model.PorcentajeOport.ToString())" class="form-control text-uppercase" Disabled="true" AutoComplete="false" />
+                </div>
+            </div>
+        </RadzenTemplateForm>
+    </div>
+</div>

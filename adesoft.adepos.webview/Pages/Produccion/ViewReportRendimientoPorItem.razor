@@ -1,0 +1,132 @@
+﻿@page "/ViewReportRendimientoPorItem"
+
+@using  adesoft.adepos.webview.Controller
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject CategoryService categoryService
+@inject NotificationService notificationService
+@inject ProduccionService produccionService
+@inject TerceroService terceroService
+@inject SecurityService securityService
+@inject IHttpContextAccessor httpContextAccessor
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@inject ProduccionService produccionService
+@inject BiableService biableService
+@inject IJSRuntime JSRuntime
+
+@code {
+    List<Rendimiento> rendimientoOrigin = new List<Rendimiento>();
+    List<Rendimiento> rendimientoDest = new List<Rendimiento>();
+    ConnectionDB connectionDB;
+    DTOFiltersCompras filter;
+    [Parameter]
+    public List<TypeActivity> ParamTypeActivitys { get; set; }
+
+    [Parameter]
+    public List<Tercero> ParamTerceros { get; set; }
+
+    [Parameter]
+    public DateTime DateTimeActiviy { get; set; }
+
+    IEnumerable<long> tercSelect = new List<long>();
+    IEnumerable<long> ActivitysSelect = new List<long>();
+    List<TypeActivity> TypeActivitys = new List<TypeActivity>();
+    List<Tercero> Terceros = new List<Tercero>();
+    bool GroupActivity = true;
+    bool GroupTercero = true;
+    protected override async Task OnInitializedAsync()
+    {
+        TypeActivitys = ParamTypeActivitys;
+        Terceros = ParamTerceros;
+        ActivitysSelect = ParamTypeActivitys.Select(x => x.TypeActivityId).ToList();
+        tercSelect = ParamTerceros.Select(x => x.TerceroId).ToList();
+        rendimientoOrigin = await produccionService.GenerarRendimiento(new Rendimiento() { TransOption = 2, DateActivity = DateTimeActiviy });   //rendimientoOrigin =
+        rendimientoDest = rendimientoOrigin.ToList();
+        //return base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+            GenerateReport();
+        }
+        //    return base.OnAfterRenderAsync(firstRender);
+    }
+
+    async void GenerateReport()
+    {
+        filter = new DTOFiltersCompras();
+        filter.Rendimientos = rendimientoDest;
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        filter.TypeReportId = 2;
+        filter.Group1Active = GroupActivity;
+        filter.Group2Active = GroupTercero;
+
+        ProduccionController.filtersreports.Add(filter);
+        //string filterobj = JsonConvert.SerializeObject(filter);
+
+        string paramurl = "RptRendimientoOtros.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + 1;
+        // + "&Bodega=" + bodegas;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+    }
+
+
+    void GenerateRendiWithFilter()
+    {
+        rendimientoDest = rendimientoOrigin.Where(x => tercSelect.Contains(x.TerceroId) && ActivitysSelect.Contains(x.TypeActivityId)).ToList();
+        GenerateReport();
+    }
+
+    void changueFilterActividades()
+    {
+        GenerateRendiWithFilter();
+    }
+
+    void ChangueTercero()
+    {
+        GenerateRendiWithFilter();
+    }
+
+    void ChangueGroupType()
+    {
+        GenerateRendiWithFilter();
+    }
+}
+
+<div class="card">
+    <div class="card-header">
+        REPORTE REFERENCIAS
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="Filter4">Actividades</label>
+                <RadzenDropDown AllowFiltering="true" TValue="IEnumerable<long>" @bind-Value="ActivitysSelect" Change="changueFilterActividades" Multiple="true" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data="@TypeActivitys" TextProperty="Name" ValueProperty="TypeActivityId"></RadzenDropDown>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="selectOperario">Operarios</label>
+                <RadzenDropDown Name="selectOperario" class="form-control" @bind-Value="tercSelect" Change="ChangueTercero" Multiple="true" TValue="IEnumerable<long>" AllowClear="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Terceros" TextProperty="FullName" ValueProperty="TerceroId" />
+            </div>
+            <div class="form-group col-md-2">
+                <label>Agrupado por Actividad</label>
+                <Radzen.Blazor.RadzenCheckBox TValue="bool" @bind-Value="GroupActivity" Change="ChangueGroupType" class="form-control"></Radzen.Blazor.RadzenCheckBox>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Agrupado por Operario</label>
+                <Radzen.Blazor.RadzenCheckBox TValue="bool" @bind-Value="GroupTercero" Change="ChangueGroupType" class="form-control"></Radzen.Blazor.RadzenCheckBox>
+            </div>
+        </div>
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;">
+            </iframe>
+        </div>
+    </div>
+</div>

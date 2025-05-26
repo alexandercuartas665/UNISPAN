@@ -1,0 +1,42 @@
+﻿@page "/ViewHistoryChangues"
+
+@code
+{
+        [Parameter]
+        public DetailProduction objItem { get; set; }
+
+        [Parameter]
+        public object objViewCall { get; set; }
+
+        [Parameter]
+        public string HistoryChangues { get; set; }
+    public string ChanguesSplit { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (HistoryChangues != null && HistoryChangues.Length > 0)
+        {
+            foreach (string hist in HistoryChangues.Split("|"))
+            {
+                if (!string.IsNullOrEmpty(hist))
+                {
+                    string[] dat = hist.ToUpper().Split(";");
+                    ChanguesSplit += "USUARIO: " + dat[0] + " / AJUSTE: " + dat[1] + " / MOTIVO: " + dat[2] + "" + Environment.NewLine;
+                }
+            }
+        }
+    }
+}
+
+<div class="card">
+    @*<div class="card-header">
+
+        </div>*@
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <RadzenTextArea class="form-control" style="font-size: 10px;" Rows="9" Value="@ChanguesSplit"></RadzenTextArea>
+            </div>
+        </div>
+    </div>
+</div>

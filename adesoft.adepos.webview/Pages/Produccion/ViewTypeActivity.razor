@@ -1,0 +1,106 @@
+﻿@page "/ViewTypeActivity/{TypeActivityId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject ProduccionService produccionService
+@inject NotificationService notificationService
+@inject CategoryService categoryService
+<div class="card">
+    <div class="card-header">
+        Tipo de actividad
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formTypeActivity" id="formTypeActivity" class="col-md-6" TItem="TypeActivity" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-2">
+                    <a class="btn btn-success btn-sm" href="/ViewSearchTypeActivity">Buscar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="selectCategoria">Categoria de medición</label>
+                    <RadzenDropDown Name="selectCategoria" class="form-control" AllowClear="false" @bind-Value="model.CategoryId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId" />
+                    <RadzenRequiredValidator Component="selectCategoria" Text="Categoria es requerida" Popup="false" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="inputName">Actividad</label>
+                    <RadzenTextBox Name="inputName" @bind-Value="model.Name" class="form-control text-uppercase" id="inputUsername" placeholder="Actividad Nombre" />
+                    <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="true" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="LblState">Estado</label>
+                    <label Name="LblState">@(model.IsActive?"ACTIVO":"INACTIVO")</label>
+                    <RadzenCheckBox Name="inputState" TValue="bool" @bind-Value="model.IsActive" class="form-control" />
+                </div>
+            </div>
+
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string TypeActivityId { get; set; }
+
+    TypeActivity model = new TypeActivity();
+
+    List<Category> categorys = new List<Category>();
+    List<TypeActivity> listroles = new List<TypeActivity>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        categorys = await categoryService.selectAll(new Category() { TransOption = 2 });
+        if (long.Parse(TypeActivityId) != 0)
+        {
+            model = await produccionService.SelectById(new TypeActivity() { TypeActivityId = long.Parse(TypeActivityId) });
+        }
+    }
+
+    async void OnSubmit(TypeActivity para)
+    {
+        
+        if (model.CategoryId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la categoria.", Duration = 4000 });
+            return;
+        }
+        model.ToUpper();
+        if (model.TypeActivityId != 0)
+        {
+            TypeActivity u = await produccionService.Update(model);
+            model.TypeActivityId = u.TypeActivityId;
+        }
+        else
+        {
+            TypeActivity u = await produccionService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el rol correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+    void Change(object value, string name)
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        //events.Add(DateTime.Now, $"{name} value changed to {str}");
+        //StateHasChanged();
+    }
+
+}

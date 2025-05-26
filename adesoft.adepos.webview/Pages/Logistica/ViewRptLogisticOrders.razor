@@ -1,0 +1,84 @@
+﻿@page "/ViewRptLogisticOrders/{strFromDate}/{strToDate}/{orderType:int}"
+@using adesoft.adepos.webview.Data.DTO
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject NotificationService notificationService
+@inject LogisticsService logisticsService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager;
+
+@code {
+
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    ConnectionDB connectionDB;
+    DTOOrderReportFilter filter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOOrderReportFilter();
+        filter.OrderType = this.orderType;
+        filter.FromDate = DateTime.ParseExact(strFromDate, "dd-MM-yyyy", null);
+        filter.ToDate = DateTime.ParseExact(strToDate, "dd-MM-yyyy", null);
+
+        await this.initComponents();
+    }
+
+    private async Task initComponents()
+    {
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB =  httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await GenerateRpt();
+        }
+    }
+
+    async Task GenerateRpt()
+    {
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await logisticsService.AddOrderReportFilter(filter);
+        string RptOpt = orderType == 1 ? "Dispatchs" : "Returns";
+        string paramurl = "RptLogisticOrders.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + RptOpt;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+
+    public async void Cancel()
+    {
+        navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
+    }
+
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                REPORTE DE ORDENES DE @(this.orderType == 1 ? "DESPACHO" : "DEVOLUCIÓN")
+            </div>
+            <div class="col-4 text-right">
+                <button class="btn btn-light mr-3" @onclick="@(args => { Cancel(); })">Regresar</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0px">
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height: calc(100vh - 80px); width: 100%; padding: 0px;"></iframe>
+        </div>
+    </div>
+</div>

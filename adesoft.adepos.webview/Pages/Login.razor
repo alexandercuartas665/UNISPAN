@@ -1,0 +1,245 @@
+﻿@page "/login"
+@using Radzen
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using  adesoft.adepos.Extensions
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IJSRuntime JSRuntime
+@inject SecurityService securityService
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@*<AuthorizeView>
+        <Authorized>
+            <a href="Identity/Account/Manage">Hello, @context.User.Identity.Name!</a>
+            <form method="post" action="Identity/Account/LogOut">
+                <button type="submit" class="nav-link btn btn-link">Log out</button>
+            </form>
+        </Authorized>
+        <NotAuthorized>
+            <h1>Counter</h1>
+            <button @onclick="LoginValidate">PULSAR</button>
+            <a href="Identity/Account/Manage">Hello, @context.User.Identity.Name!</a>
+        </NotAuthorized>
+    </AuthorizeView>*@
+@*  <input @bind-value="userapp.Password"   />*@
+
+<RadzenTemplateForm name="formlogin" id="formlogin" class="form-signin" TItem="UserApp" Data="@userapp" Submit="@OnSubmit">
+
+    @if (loginFailure)
+    {
+        <p class="alert alert-danger">@messageLogin</p>
+    }
+    <img class="mb-4" src="Images/AdeposLogo.png" alt="" style="display:block;margin:auto;" width="285" height="100">
+    <h1 class="h3 mb-3 font-weight-normal">Iniciar sesión</h1>
+    @*  <RadzenAutoComplete @ref="radzenAutoComplete" @onfocusout="@(args=>OutFocusCompany(args))" Name="inputAccount" Style="margin-bottom:10px;" Change="@(args=>ChangeAutoComplet(args))" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="Compañia" Data="@listComp" TextProperty="Name" @bind-Value="userapp.CompaniaDB" />*@
+    <div class="autocomplete" style="width:300px;">
+        <input id="myCompany" autocomplete="off" class="form-control" @onchange="ChangeCompany" @onfocusout="GetCompanys" type="text" name="myCompany" placeholder="Compañia">
+    </div>
+    @if (userapp.Sede == "-1" && !loginFailure)
+    {
+        <div style="width:300px; margin-top:5px; text-align:center;">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="autocomplete @CssCollapse" style="width:300px;">
+            <input id="SubCompany" autocomplete="off" class="form-control" @bind="@userapp.Sede" type="text" name="SubCompany" placeholder="Sede">
+        </div>
+    }
+
+    @* <RadzenRequiredValidator Component="inputAccount" Text="Cuenta es requerido" Popup="false" />*@
+    <RadzenTextBox class="form-control" ReadOnly="!ShowUserPass" AutoComplete="false" Placeholder="Usuario" Name="inputUsername" @bind-Value="userapp.Username" />
+    <RadzenRequiredValidator Component="inputUsername" Text="Usuario es requerido" Popup="false" />
+    <RadzenPassword class="form-control" ReadOnly="!ShowUserPass" @onkeydown="InputPasswordKeyDown" Placeholder="Password" Name="inputUserPassword" @bind-Value="userapp.Password" />
+    <RadzenRequiredValidator Component="inputUserPassword" Text="Password requerido" Popup="false" />
+    <RadzenButton class="btn btn-lg btn-success btn-block" ButtonType="ButtonType.Submit" Disabled="!ShowUserPass" Text="Ingresar"></RadzenButton>
+
+    <p class="mt-5 mb-3 text-muted">&copy; Leganzy & Adesoft - 2020</p>
+
+</RadzenTemplateForm>
+
+
+
+@code{
+    UserApp userapp = new UserApp();
+    public string CssCollapse { get; set; }
+    private TookenResult tooken;
+    List<ConnectionDB> listComp;
+    List<Company> listsedes;
+    string arrcompanys = string.Empty;
+    public bool ShowUserPass { get; set; }
+    public string messageLogin { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        ShowUserPass = false;
+        CssCollapse = "collapse";
+        listComp = SecurityService.GetConnections();
+        arrcompanys = "[";
+        foreach (ConnectionDB c in listComp)
+        {
+            arrcompanys += "\"" + c.Name + "\"," + "\"" + c.CuentaN + "\",";
+        }
+        arrcompanys += "\"Test\"]";
+
+        //   await JSRuntime.InvokeVoidAsync("$.fn.SetFocus", "SubCompany");
+        //userapp.CompaniaDB = "Foto Impacto";
+        //userapp.Username = "admin";
+        //userapp.Password = "test-password";
+    }
+    //async Task ClickUser()
+    //{
+    //    if (string.IsNullOrEmpty(userapp.Sede))
+    //    {
+    //        GetCompanys();
+    //    }
+    //}
+
+    void ChangeCompany(ChangeEventArgs e)
+    {
+        userapp.CompaniaDB = e.Value.ToString();
+        GetCompanys();
+    }
+
+
+    async Task GetCompanys()
+    {
+        if (!string.IsNullOrEmpty(userapp.CompaniaDB))
+        {
+            userapp.Sede = "-1";
+
+            Task.Run(async () =>
+            {
+                listsedes = null;
+                userapp.ConnectionDB = listComp.Where(x => x.Name.ToUpper() == userapp.CompaniaDB.ToUpper()).FirstOrDefault();
+                if (userapp.ConnectionDB != null)
+                {
+                    loginFailure = false;
+                    AdeposDBContext contex = new AdeposDBContext(userapp.ConnectionDB.Connection);
+                    if (contex.Companys.Count() > 1)
+                    {
+                        listsedes = contex.Companys.ToList();
+                        CssCollapse = "";
+                        string arrsedes = "[";
+                        foreach (Company c in contex.Companys)
+                        {
+                            arrsedes += "\"" + c.Name + "\"," + "\"" + c.Code + "\",";
+                        }
+                        arrsedes += "\"Test\"]";
+                        ShowUserPass = true;
+                        userapp.Sede = "";
+                        await InvokeAsync(() => StateHasChanged());
+                        await JSRuntime.InvokeVoidAsync("SetAutoComplete", "SubCompany", arrsedes);
+
+                        await JSRuntime.InvokeVoidAsync("$.fn.SetFocus", "SubCompany");
+                    }
+                    else if (contex.Companys.Count() == 1)
+                    {
+                        CssCollapse = "collapse";
+                        if (contex.Companys.Count() == 1)
+                        {
+                            listsedes = contex.Companys.ToList();
+                            userapp.Sede = contex.Companys.First().Name;
+                        }
+                        else
+                        {
+                            userapp.Sede = "";
+                        }
+                        ShowUserPass = true;
+                        await InvokeAsync(() => StateHasChanged());
+                        await JSRuntime.InvokeVoidAsync("$.fn.SetFocus", "myCompany");
+                    }
+                    else
+                    {
+                    }
+
+                }
+                else
+                {
+                    //messageLogin = "La cuenta no existe.";
+                    //loginFailure = true;
+                    //userapp.Sede = string.Empty;
+                    //     await InvokeAsync(() => StateHasChanged());
+                }
+            });
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("SetAutoComplete", "myCompany", arrcompanys);
+
+    }
+
+    public void InputPasswordKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == "13")
+        {
+            this.InvokeAsync(() => { JSRuntime.InvokeVoidAsync("$.fn.OnSubmitForm", "#formlogin"); });
+        }
+    }
+
+    bool loginFailure;
+
+    async void OnSubmit(UserApp model)
+    {
+        //"test-password"
+
+        if (userapp.Username == null)
+        {
+            loginFailure = true;
+            return;
+            //Log("Submit", JsonSerializer.Serialize(model, new JsonSerializerOptions() { WriteIndented = true }));
+        }
+        if (string.IsNullOrEmpty(userapp.Sede))
+        {
+            loginFailure = true;
+            return;
+        }
+
+        model.ConnectionDB = listComp.Where(x => x.Name.ToUpper() == model.CompaniaDB.ToUpper()).FirstOrDefault();
+        if (model.ConnectionDB == null)
+        {
+            model.ConnectionDB = listComp.Where(x => x.CuentaN.ToUpper() == model.CompaniaDB.ToUpper()).FirstOrDefault();
+        }
+        if (model.ConnectionDB != null)
+        {
+            Company company = listsedes.Where(x => x.Name.ToUpper() == model.Sede.ToUpper()).FirstOrDefault();
+            if (company != null)
+            {
+                model.ConnectionDB.SedeId = company.CompanyId;
+                model.ConnectionDB.MenuId = company.MenuId;
+                tooken = await securityService.GetTooken(userapp.Password, userapp.Username, model.ConnectionDB);
+                loginFailure = tooken.Tooken == null;
+                if (loginFailure == true)
+                {
+                    messageLogin = "Tus credenciales no son validas. Por favor intente de nuevo.";
+                }
+            }
+            else
+            {
+                messageLogin = "El nombre de la sede no esta registrado.";
+                loginFailure = true;
+            }
+        }
+        else
+        {
+            messageLogin = "La cuenta no existe.";
+            loginFailure = true;
+        }
+        if (!loginFailure)
+        {
+
+            // await JSRuntime.InvokeAsync<object> ("localStorage.setItem", "connectionString", model.ConnectionDB.Connection);
+
+            securityService.SetSessionConnection(model.ConnectionDB);
+            //  await connectprovider.SetInstanceContext();
+
+            await AuthStateProvider.SetTokenAsync(tooken.Tooken, tooken.Expiry);
+            //this.InvokeAsync(() => { JSRuntime.InvokeVoidAsync("OnReload"); });
+        }
+    }
+}

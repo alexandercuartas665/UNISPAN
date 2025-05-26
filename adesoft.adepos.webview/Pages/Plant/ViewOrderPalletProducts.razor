@@ -1,0 +1,116 @@
+﻿@page "/ViewOrderPalletProducts"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+@using Microsoft.JSInterop;
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IPlantService plantService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+
+@code {
+
+    [Parameter]
+    public string orderPalletId { get; set; }
+
+    DTOOrderPallet model;
+    List<DTOOrderPalletProduct> orderPalletProducts;
+    DTOOrderPalletProduct orderPalletProductSelected;
+
+    bool savedChanges = true;
+
+    RadzenGrid<DTOOrderPalletProduct> grid;
+
+    protected override void OnInitialized()
+    {
+        this.GetOrderPallet();
+        this.GetOrderPalletProducts();
+
+        this.dialogService.OnClose += Close;
+    }
+
+    public void GetOrderPallet()
+    {
+        this.model = this.plantService.GetOrderPallet(this.orderPalletId).ToModel();
+    }
+
+    public void GetOrderPalletProducts()
+    {
+        if (!string.IsNullOrEmpty(this.orderPalletId))
+        {
+            this.orderPalletProducts = this.plantService.GetOrderPalletProducts(this.orderPalletId);
+        }
+        else
+        {
+            this.orderPalletProducts = new List<DTOOrderPalletProduct>();
+        }
+    }
+
+    public void AddOrderPalletProduct()
+    {
+        dialogService.Open<EditOrderPalletProduct>($"Productos: Adicionar Producto",
+            new Dictionary<string, object>() { { "orderPalletId", this.orderPalletId } },
+            new DialogOptions() { Width = "700px", Height = "310px", });
+    }
+
+    void selectRow(DTOOrderPalletProduct orderPalletProduct)
+    {
+        orderPalletProductSelected = orderPalletProduct;
+    }
+
+    void Close(dynamic result)
+    {
+        if (result != null)
+        {
+            if(result.GetType() == typeof(DTOOrderPalletProduct))
+            {
+                var orderPalletProduct = result as DTOOrderPalletProduct;
+                if(string.IsNullOrEmpty(orderPalletProduct.OrderPalletProductId))
+                {
+                    this.orderPalletProducts.Add(orderPalletProduct);
+                    this.grid.Reload();
+                    this.StateHasChanged();
+                }
+            }
+        }
+    }
+}
+
+<div class="row mb-1">
+    <div class="col-sm-12">
+        <div class="bg-light d-flex">
+            <div style="display: inline-block">
+                <RadzenButton Text="Adicionar" Icon="add" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@AddOrderPalletProduct />
+                <RadzenButton Text="Guardar" Icon="add" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@AddOrderPalletProduct />
+                <RadzenButton Text="Guardar y Cerrar" Icon="add" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@AddOrderPalletProduct />
+                @*<RadzenButton Text="Cancelar" Icon="cancel" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@NewOrderPalletProduct Disabled=@((this.orderPalletSelected is null) || (!(this.orderPalletSelected is null) && this.orderPalletSelected.Status.Equals(OrderPalletStatus.Canceled))) />
+        <RadzenButton Text="Productos" Icon="widgets" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@NewOrderPalletProduct Disabled=@(this.orderPalletSelected is null) />*@
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <RadzenGrid @ref="grid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50"
+                    AllowSorting="true" Data="@orderPalletProducts" TItem="DTOOrderPalletProduct"
+                    Style="height: calc(100vh - 220px)" RowSelect=@(args => this.selectRow(args))>
+            <Columns>
+                <RadzenGridColumn TItem="DTOOrderPallet" Property="OrderProduct.Reference" Title="Codigo" Width="80px" />
+                <RadzenGridColumn TItem="DTOOrderPallet" Property="OrderProduct.Description" Title="Descripción" Width="150px" />
+                <RadzenGridColumn TItem="DTOOrderPallet" Property="Qty" Title="Descripción" Width="150px" />
+            </Columns>
+        </RadzenGrid>
+    </div>
+</div>
+
+
+
+
+
+
+

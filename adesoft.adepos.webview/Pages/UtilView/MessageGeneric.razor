@@ -1,0 +1,69 @@
+﻿@page "/messagegeneric"
+
+@code {
+    [Parameter]
+    public string MessageResponse { get; set; }
+
+    [Parameter]
+    public string MessageType { get; set; }
+
+    [Parameter]
+    public object ViewCall { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MessageType == "EXITOSO")
+        {
+            //   Title = "Confirmación!";
+            Title = "Transacion Exitosa!";
+            BgColor = "bg-success";
+            TextColor = "text-white";
+            IsCancelVisible = false;
+            MsgBody = MessageResponse;
+        }
+        else if (MessageType == "ERROR")
+        {
+            //   Title = "Confirmación!";
+            Title = "ERROR!";
+            BgColor = "bg-danger";
+            TextColor = "text-white";
+            IsCancelVisible = false;
+            MsgBody = MessageResponse;
+            //CardTitle = msg[1];
+        }
+    }
+
+    public string Title = string.Empty;
+    public string CardTitle = string.Empty;
+    public string MsgBody = string.Empty;
+    public string BgColor { get; set; }
+    public string TextColor { get; set; }
+    public bool IsCancelVisible { get; set; }
+
+
+    public void ClickAcepta()
+    {
+        object[] param = new object[] { this };
+        ViewCall.GetType().GetMethod("ClickAceptaMsgGeneric").Invoke(ViewCall, param);
+    }
+
+    public void ClickCancel()
+    {
+        object[] param = new object[] { this };
+        ViewCall.GetType().GetMethod("ClickCancelMsgGeneric").Invoke(ViewCall, param);
+    }
+
+}
+
+<div class="card @TextColor @BgColor mb-3" >
+    <div class="card-header">@Title</div>
+    <div class="card-body">
+        @*<h5 class="card-title">@CardTitle</h5>*@
+        <p class="card-text">@MsgBody</p>
+        <div class="row mt-10">
+            <a href="javascript:void(0);" @onclick="ClickAcepta" class="btn btn-primary mr-10">Cancelar</a>
+            <a href="javascript:void(0);" @onclick="ClickCancel" class="btn btn-primary">Aceptar</a>
+        </div>
+    </div>
+</div>

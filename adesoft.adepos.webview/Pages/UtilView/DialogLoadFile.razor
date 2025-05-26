@@ -1,0 +1,51 @@
+﻿@page "/DialogLoadFile"
+@inject DialogService dialogService
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject ItemService itemService
+@inject NotificationService notificationService
+
+@code {
+
+    [Parameter]
+    public ViewInventarioXWarehouse ViewObject { get; set; }
+
+    public string FileSyncItems { get; set; }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void OnChange(string value, string name)
+    {
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "OK", Detail = "Archivo adjuntado. De click en sincronizar", Duration = 2000 });
+    }
+
+    void Sincronizar()
+    {
+        if (FileSyncItems != null)
+            ViewObject.Sincronizar85(FileSyncItems);
+        else
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "OK", Detail = "Debe Adjuntar un archivo", Duration = 2000 });
+    }
+}
+
+
+<div class="card">
+    <div class="card-header">Seleccione el documento a cargar</div>
+    <div class="card-body">
+        @*<h5 class="card-title">@CardTitle</h5>*@
+        @*<p class="card-text">@MsgBody</p>*@
+        <div class="row">
+            <div class="form-group col-md-2">
+                <div class="row " id="radzensearc" style="display:inline;">
+                    <RadzenFileInput @bind-Value="@FileSyncItems" Accept="*" Change=@(args => OnChange(args, "FileInput")) ChooseText="Documento" TValue="string" />
+                </div>
+            </div>
+        </div>
+        <div class="row mt-20">
+            <input type="button" class="btn btn-success btn-sm" value="Sincronizar" @onclick="Sincronizar" />
+        </div>
+    </div>
+</div>

@@ -1,0 +1,190 @@
+﻿@page "/ViewListCertificated"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject NominaService nominaService
+@inject NotificationService notificationService
+@inject RequestCertificateService RequestCertificateService
+@inject IJSRuntime JSRuntime
+<div class="card">
+    <div class="card-header">
+        LISTADO SOLICITUD DE CERTIFICADOS
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-primary btn-sm" value="Nuevo Certificado" type="button" style="float:left;margin-right:5px;" @onclick="@(args => { BtnRegisterCertificado(); })" />
+            </div>
+            <div class="form-group col-md-2">
+                <label for="inputState">Listar solo Pendientes.</label>
+                <RadzenCheckBox Name="inputState" TValue="bool" @bind-Value="CheckPendientes" @onclick="CheckChangue" class="form-control" />
+            </div>
+        </div>
+        <div class="form-row">
+            <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="25" AllowSorting="true" Data="@listsRequest" TItem="RequestCertificate">
+                <Columns>
+                    <RadzenGridColumn TItem="RequestCertificate" Property="Tercero.FullName" Sortable="false" Title="Empleado" />
+                    <RadzenGridColumn TItem="RequestCertificate" Property="Tercero.NumDocument" Sortable="false" Title="Identificación" />
+                    <RadzenGridColumn TItem="RequestCertificate" Filterable="false" Property="Tercero.Salary" Sortable="false" Title="Salario">
+                        <Template Context="data">
+                           @data.Tercero.Salary.ToString("N0")
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="RequestCertificate" Property="TypeCertificate" Sortable="false" Title="Certificado" />
+                    <RadzenGridColumn TItem="RequestCertificate" Property="FechaSolicitud" Sortable="false" Title="Fecha Solicitud" />
+                    <RadzenGridColumn TItem="RequestCertificate" Property="StateLabel" Sortable="false" Title="Estado Solicitud">
+                        <Template Context="data">
+                            <label style="color:white;background:@data.ColorStateNovedad;">@data.StateLabel</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="RequestCertificate" Sortable="false" Property="NominaProgramationId" Title="">
+                        <Template Context="data">
+                            @if (data.StateRequestCertificateId == 1)
+                            {
+                                <button class="btn btn-success btn-sm" data-toggle="tooltip" data-placement="top" title="Aprobar" @onclick="@(args => { ChangueState(2, data.RequestCertificateId); })">
+                                    <i class="fat fa-check-double"></i>
+                                </button>
+                                @*<button class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Desaprobar" @onclick="@(args => { ChangueState(1, data.RequestCertificateId); })">
+                                        <i class="fat fa-ban"></i>
+                                    </button>*@
+                                <button class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="No aprobar" @onclick="@(args => { ChangueState(3, data.RequestCertificateId); })">
+                                    <i class="fat fa-times"></i>
+                                </button>
+                            }
+                            @*<NavLink href="javascript:void(0)" class="btn btn-primary btn-sm" @onclick="@(args=> { BtnRegisterNovedad(data.NominaNovedadId); })">
+                                    <i class="fat fa-external-link-alt"></i>
+                                </NavLink>*@
+                            @if (data.UrlPathDocumentoAdjunto != null)
+                            {
+                                <NavLink href="@data.UrlPathDocumentoAdjunto" data-toggle="tooltip" data-placement="top" title="Descargar certificado" class="btn btn-success btn-sm" target="_blank" download>
+                                    <span class="fat fa-paperclip" aria-hidden="true"></span>
+                                </NavLink>
+
+                                <button class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Enviar Correo" @onclick="@(args => { SenEmail(data); })">
+                                    <i class="fat fa-envelope"></i>
+                                </button>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string NominaProgramationId { get; set; }
+    List<RequestCertificate> listsRequest = new List<RequestCertificate>();
+    bool CheckPendientes { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CheckPendientes = false;
+        listsRequest = await RequestCertificateService.selectAll(new RequestCertificate() { TransOption = 1 });
+        listsRequest = listsRequest.OrderByDescending(x => x.DateRecord).ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+    }
+
+    async void CheckChangue()
+    {
+        if (CheckPendientes)
+            listsRequest = await RequestCertificateService.selectAll(new RequestCertificate() { StateRequestCertificateId = 1, TransOption = 2 });
+        else
+            listsRequest = await RequestCertificateService.selectAll(new RequestCertificate() { TransOption = 1 });
+        listsRequest = listsRequest.OrderByDescending(x => x.DateRecord).ToList();
+        StateHasChanged();
+    }
+
+    async void GeneratePlano()
+    {
+        //ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Generacion Ok!", Detail = "Se genero correctamente los archivos planos.", Duration = 4000 });
+    }
+
+    async void SenEmail(RequestCertificate request)
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Enviando Correo.." } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            RequestCertificate resp = await RequestCertificateService.SendEmailToWorker(request);
+            if (resp.TransactionIsOk)
+            {
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Enviado Ok!", Detail = resp.MessageResponse, Duration = 4000 });
+                });
+            }
+            else
+            {
+                dialogService.Close();
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = resp.MessageResponse, Duration = 4000 });
+                return;
+            }
+        });
+    }
+
+    async void ChangueState(long stateid, long requestid)
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando.." } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            RequestCertificate request = listsRequest.Where(x => x.RequestCertificateId == requestid).FirstOrDefault();
+            request.StateRequestCertificateId = stateid;
+            request.TransOption = 2;
+            RequestCertificate resp = await RequestCertificateService.Update(request);
+            if (resp.TransactionIsOk)
+            {
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = resp.MessageResponse, Duration = 4000 });
+                });
+
+
+            }
+            else
+            {
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    CheckChangue();
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = resp.MessageResponse, Duration = 4000 });
+                });
+
+                return;
+            }
+        });
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    public void RegisterCertificadoOk()
+    {
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok!", Detail = "Registrado con exito.", Duration = 6000 });
+        dialogService.Close();
+        CheckChangue();
+    }
+
+    async void BtnRegisterCertificado()
+    {
+        dialogService.Open<ViewRequestInternCertificated>("Nuevo certificado", new Dictionary<string, object>() { { "objectView", this } }, new DialogOptions() { Width = "600px", Height = "380px", Left = "calc(50% - 300px)", Top = "80px" });
+    }
+
+}

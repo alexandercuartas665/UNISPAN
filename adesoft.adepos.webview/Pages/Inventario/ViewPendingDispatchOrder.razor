@@ -1,0 +1,118 @@
+﻿@page "/ViewPendingDispatchOrder"
+@inject TransactionGenericService transactionService
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject SecurityService securityService
+@inject NotificationService notificationService
+@inject TokenAuthenticationStateProvider AuthStateProvider
+
+@code {
+
+    [Parameter]
+    public long WarehouseId { get; set; }
+    [Parameter]
+    public List<TransactionGeneric> TransOrders { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // string tooken = await AuthStateProvider.GetTokenAsync();
+            //  userapp = await securityService.GetUserAppByTooken(tooken);
+            //TransOrders = await transactionService.selectAll(new TransactionGeneric() { WarehouseOriginId = WarehouseId, TransOption = 9 });
+
+        }
+        catch
+        {
+
+        }
+    }
+
+    void GenerateConsolidate()
+    {
+        if (TransOrders.Where(x => x.selectedToGenerateOrden).Count() > 0)
+        {
+            dialogService.Open<ViewRptOrderRequisition>("Requisición", new Dictionary<string, object>() { { "transactionGenerics", TransOrders.Where(x => x.selectedToGenerateOrden).ToList() } }, new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "40px" });
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe seleccionar las ordenes de la requisición.", Duration = 3000 });
+            return;
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void CancelateGenerate()
+    {
+        TransOrders.ForEach(x => x.selectedToGenerateOrden = false);
+    }
+    void Cerrar()
+    {
+        dialogService.Close();
+    }
+
+}
+
+
+
+<div class="card">
+    <div class="card-header">
+        <label>Seleccione las ordenes para generar la requisición.</label>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="row">
+                <div class="col-8">
+                    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="6" AllowSorting="true" Data="@TransOrders" TItem="TransactionGeneric">
+                        <Columns>
+                            @*<RadzenGridColumn TItem="TransactionGeneric" Property="Barcode" Width="100px" Title="Codigo" />
+                                <RadzenGridColumn TItem="TransactionGeneric" Property="ItemName" Width="300px" Title="Descripcion" />*@
+                            <RadzenGridColumn TItem="TransactionGeneric" Property="selectedToGenerateOrden" Title="Seleccionar" Width="100px">
+                                <Template Context="data">
+                                    <RadzenCheckBox @bind-Value="data.selectedToGenerateOrden"></RadzenCheckBox>
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="TransactionGeneric" Title="Orden" Property="TextShowOrder" Width="250px">
+                                <Template Context="data">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small style="font-size:11px;">@("T-" + data.TurnId.ToString())</small>
+                                        <label style="margin-bottom:0px;font-size:10px;">@("" + data.DocumentExtern.ToString())</label>
+                                    </div>
+                                    <label class="text-wrap" style="margin-bottom:0px;font-size:9px;">@("" + data.NameWork)</label>
+                                </Template>
+                            </RadzenGridColumn>
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+                <div class="col-4" style="overflow-y:auto;max-height: 420px;">
+                    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="false" AllowSorting="true" Data="@TransOrders.Where(x=>x.selectedToGenerateOrden).Reverse().ToList()" TItem="TransactionGeneric">
+                        <Columns>
+                            @*<RadzenGridColumn TItem="TransactionGeneric" Property="Barcode" Width="100px" Title="Codigo" />
+                                <RadzenGridColumn TItem="TransactionGeneric" Property="ItemName" Width="300px" Title="Descripcion" />*@
+                            <RadzenGridColumn TItem="TransactionGeneric" Property="TextShowOrder" Title="Seleccionadas">
+                                <Template Context="data">
+                                    <label style="font-size:10px;">@(data.TextShowOrder)</label>
+                                </Template>
+                            </RadzenGridColumn>
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <input class="btn btn-success btn-sm" value="Emitir requisición" @onclick="GenerateConsolidate" type="button" style="margin-right:5px;" />
+                <input class="btn btn-primary btn-sm" value="Limpiar Selección" @onclick="CancelateGenerate" type="button" style="margin-right:5px;" />
+                <input class="btn btn-success btn-sm" value="Cerrar" @onclick="Cerrar" type="button" style="margin-right:5px;" />
+            </div>
+        </div>
+    </div>
+</div>

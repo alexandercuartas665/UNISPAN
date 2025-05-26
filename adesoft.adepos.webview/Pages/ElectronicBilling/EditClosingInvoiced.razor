@@ -1,0 +1,384 @@
+﻿@page "/EditClosingInvoiced"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+@using Microsoft.JSInterop;
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IElectronicBillingService electronicBillingService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+@inject CompanyService companyService
+
+@code {
+    [Parameter]
+    public ViewClosingsInvoiced callView { get; set; }
+
+    [Parameter]
+    public DTOClosingInvoiced model { get; set; }
+
+    List<DTOClosingInvoicedNote> closingInvoicedNotes = new List<DTOClosingInvoicedNote>();
+
+    List<CommonData> customers = new List<CommonData>();
+
+    List<CommonData> works = new List<CommonData>();
+
+    List<CommonData> administrators = new List<CommonData>();
+
+    bool confirmed = false;
+    DateTime confirmedDate = DateTime.MinValue;
+
+    private bool btnConfirm = false;
+    private bool btnCUClosings = false;
+    private bool tabRNotes = false;
+    private bool btnCNotes = false;
+
+    protected override void OnInitialized()
+    {
+        this.customers = electronicBillingService.GetCustomers();
+        if (this.model is null)
+            this.model = new DTOClosingInvoiced() { ClosingInvoicedNotes = new List<DTOClosingInvoicedNote>() };
+        else
+        {
+            this.onChangeCustomer();
+            this.onChangeWork();
+        }
+
+        this.confirmed = this.model.Confirmed;
+        this.confirmedDate = this.model.ConfirmedDate;
+
+        this.closingInvoicedNotes = this.model.ClosingInvoicedNotes.ToList();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await this.GetSecurity();
+    }
+
+    void onChangeCustomer()
+    {
+        if (string.IsNullOrEmpty(this.model.CustomerNum))
+            works = new List<CommonData>();
+        else
+            works = electronicBillingService.GetWorks(this.model.CustomerNum);
+    }
+
+    void onChangeWork()
+    {
+        if (string.IsNullOrEmpty(this.model.WorkNo))
+            administrators = new List<CommonData>();
+        else
+            administrators = electronicBillingService.GetAdministrators(this.model.CustomerNum, this.model.WorkNo);
+    }
+
+    void CreateOrUpdate(DTOClosingInvoiced model)
+    {
+        try
+        {
+            this.model = this.electronicBillingService.CreateOrUpdate(model);
+            dialogService.Close(this.model);
+
+            callView.onGetClosingsInvoiced();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public void onRefreshForm(DTOClosingInvoiced closingInvoiced)
+    {
+        this.model = closingInvoiced;
+        this.closingInvoicedNotes = this.model.ClosingInvoicedNotes.ToList();
+        this.confirmed = this.model.Confirmed;
+        this.confirmedDate = this.model.ConfirmedDate;
+
+        StateHasChanged();
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+
+    async Task openConfirm()
+    {
+        var closingInvoiced = electronicBillingService.GetClosingInvoiced(model.Id);
+        dialogService.Open<ConfirmClosingInvoiced>($"Confirmación - {model.WorkName}",
+            new Dictionary<string, object>() { { "callView", this }, { "closingInvoiced", closingInvoiced } },
+            new DialogOptions() { });
+    }
+
+    async Task openCreateClosingInvoicedNote()
+    {
+        var closingInvoiced = electronicBillingService.GetClosingInvoiced(model.Id);
+        dialogService.Open<CreateClosingInvoicedNote>($"Nueva Observación",
+            new Dictionary<string, object>() { { "callView", this }, { "closingInvoiced", closingInvoiced } },
+            new DialogOptions() { });
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var userApp = await securityService.GetUserAppByTooken(tooken);
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("EBConfirmPendingInvoice")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.btnConfirm = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("EBCUClosings")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.btnCUClosings = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("EBCNotes")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.btnCNotes = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("EBRNotes")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.tabRNotes = opt.IsActive;
+        }
+    }
+}
+
+<RadzenTabs>
+    <Tabs>
+        <RadzenTabsItem Text="Cierre">
+            <RadzenTemplateForm TItem="DTOClosingInvoiced" Data=@model Submit=@CreateOrUpdate InvalidSubmit=@OnInvalidSubmit>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <h4>Información de Cierre</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <label for="Date">Fecha <b class="text-danger">*</b></label>
+                                <RadzenDatePicker TValue="DateTime" Name="Date" @bind-Value="model.Date" DateFormat="dd/MM/yyyy" id="InvoiceDate" class="d-block" Disabled=@(!this.btnCUClosings || this.model.Confirmed) />
+                                <RadzenRequiredValidator Component="Date" Text="La fecha es requerida" Popup="true" />
+                            </div>
+                            @*<div class="form-group col-sm-6">
+                                <label for="OPNum">Numero OP <b class="text-danger">*</b></label>
+                                <RadzenTextBox Name="OPNum" @bind-Value="model.OPNum" class="form-control w-100" Disabled=@this.model.Confirmed></RadzenTextBox>
+                                <RadzenRequiredValidator Component="OPNum" Text="El numero OP es requerido" Popup="true" />
+                            </div>*@
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <label for="CustomerAccount">No. Cliente <b class="text-danger">*</b></label>
+                                <RadzenTextBox Name="CustomerAccount" @bind-Value="model.CustomerNum" class="form-control w-100" Change="@onChangeCustomer" Disabled=@(!this.btnCUClosings || this.model.Confirmed)></RadzenTextBox>
+                                <RadzenRequiredValidator Component="CustomerAccount" Text="El no. cliente es requerido" Popup="true" />
+                            </div>
+                            <div class="form-group col-sm-6">
+                                <label for="CustomerName">Cliente <b class="text-danger">*</b></label>
+                                <RadzenDropDown AllowFiltering="true" Name="CustomerName"
+                                                class="form-control" @bind-Value="model.CustomerNum" Multiple="false"
+                                                Data="@customers" TextProperty="Description" ValueProperty="IdStr" Change="@onChangeCustomer"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!this.btnCUClosings || this.model.Confirmed) />
+                                <RadzenRequiredValidator Component="CustomerName" Text="El cliente es requerido" Popup="true" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <label for="WorkNo">No. Obra <b class="text-danger">*</b></label>
+                                <RadzenTextBox Name="WorkNo" @bind-Value="model.WorkNo" class="form-control w-100" Change="@onChangeWork" Disabled=@(!this.btnCUClosings || this.model.Confirmed)></RadzenTextBox>
+                                <RadzenRequiredValidator Component="WorkNo" Text="El no. obra es requerido" Popup="true" />
+                            </div>
+                            <div class="form-group col-sm-6">
+                                <label for="WorkName">Obra <b class="text-danger">*</b></label>
+                                <RadzenDropDown AllowFiltering="true" Name="WorkName"
+                                                class="form-control" @bind-Value="model.WorkNo" Multiple="false"
+                                                Data="@works" TextProperty="Description" ValueProperty="IdStr"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Change="@onChangeWork" Disabled=@(!this.btnCUClosings || this.model.Confirmed) />
+                                <RadzenRequiredValidator Component="WorkName" Text="La obra es requerida" Popup="true" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-12">
+                                <label for="OthersWorkNo">Otras Obras</label>
+                                <RadzenTextBox Name="OthersWorkNo" @bind-Value="model.OthersWorkNo" class="form-control w-100" Change="@onChangeWork" Disabled=@(!this.btnCUClosings || this.model.Confirmed)></RadzenTextBox>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <label for="AdminName">Administrador <b class="text-danger">*</b></label>
+                                <RadzenDropDown AllowFiltering="true" Name="AdminName"
+                                                class="form-control" @bind-Value="model.AdminId" Multiple="false"
+                                                Data="@administrators" TextProperty="Description" ValueProperty="IdStr"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!this.btnCUClosings || this.model.Confirmed) />
+                                <RadzenRequiredValidator Component="AdminName" Text="El administrador es requerido" Popup="true" />
+                            </div>                            
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <h4>Factura Electronica</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">                            
+                            <div class="form-group col-sm-6">
+                                <label for="EBNumber">Numero Factura</label>
+                                <RadzenTextBox Name="EBNumber" @bind-Value="model.EBNumber" class="form-control w-100" Disabled=@(!this.btnCUClosings || this.model.Confirmed)></RadzenTextBox>
+                            </div>
+                            <div class="form-group col-sm-6">
+                                <label for="Date">Fecha Factura</label>
+                                <RadzenDatePicker TValue="DateTime" Name="Date" @bind-Value="model.EBDate" DateFormat="dd/MM/yyyy" id="InvoiceDate" class="d-block" Disabled=@(!this.btnCUClosings || this.model.Confirmed) />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <h4>Totales</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-row">
+                            <div class="form-group col-sm-4">
+                                <label for="orderId">Total Facturado <b class="text-danger">*</b></label>
+                                <RadzenNumeric Format="F" Name="TotalInvoiceAmount" TValue="Decimal" @bind-Value="model.TotalInvoiceAmount" class="form-control" Min="0" Disabled=@(!this.btnCUClosings || this.model.Confirmed)></RadzenNumeric>
+                                <RadzenRequiredValidator Component="AdminName" Text="El total facturado es requerido" Popup="true" DefaultValue="0" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-12 navbar justify-content-between">
+                        <div class="text-left">
+                            @if (!this.confirmed)
+                            {
+                                if (!string.IsNullOrEmpty(this.model.Id))
+                                {
+                                    <RadzenButton Click="@(args => this.openConfirm())" Text="Confirmar" Icon="check" Variant="Variant.Text" ButtonStyle="ButtonStyle.Success" Style="width: 150px; height: 33.5px" hidden="@(!this.btnConfirm)" />
+                                }
+                                else
+                                {
+                                    <div></div>
+                                }
+                            }
+                            else
+                            {
+                                <span><span class="badge text-bg-success">@(this.confirmed ? "Confirmado" : "")</span> - <span>@this.confirmedDate.ToString()</span></span>
+                            }
+                        </div>
+                        <div class="text-right">
+                            @if (!this.confirmed)
+                            {
+                                <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Text="Cancelar" Style="width: 150px; height: 33.5px" />
+                                <RadzenButton ButtonType="ButtonType.Submit" Variant="Variant.Text" ButtonStyle="ButtonStyle.Primary" Text="Guardar" Style="width: 150px; height: 33.5px" hidden="@(!this.btnCUClosings)"></RadzenButton>
+                            }
+                            else
+                            {
+                                <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Text="Cerrar" Style="width: 150px; height: 33.5px" />
+                            }
+                        </div>
+                    </div>
+                </div>
+            </RadzenTemplateForm>
+        </RadzenTabsItem>
+        @{
+            if(this.tabRNotes)
+            {
+                <RadzenTabsItem Text="Observaciones">
+                    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50"
+                        AllowSorting="true" Data="@this.closingInvoicedNotes" TItem="DTOClosingInvoicedNote" style="height: 540px">
+                        <Columns>
+                            <RadzenGridColumn TItem="DTOClosingInvoicedNote" Property="CreatedAt" Title="Creación" Width="120px">
+                                <Template Context="data">
+                                    @(data.CreatedAt.ToString("dd/MM/yyyy"))
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="DTOClosingInvoicedNote" Property="Note" Title="Observación"></RadzenGridColumn>
+                            <RadzenGridColumn TItem="DTOClosingInvoicedNote" Property="UserName" Title="Usuario" Width="300px"></RadzenGridColumn>
+                            <RadzenGridColumn TItem="DTOClosingInvoicedNote" Property="AttachFileName" Title="" Width="50px" TextAlign="TextAlign.Center">
+                                <Template Context="data">
+                                    @if (!string.IsNullOrEmpty(data.AttachFileName))
+                                    {
+                                        <a href="@string.Format("./api/ElectronicBilling/download/2/{0}", data.Id)" target="_blank">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
+                                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
+                                            </svg>
+                                        </a>
+                                    }
+                                </Template>
+                            </RadzenGridColumn>
+                        </Columns>
+                    </RadzenGrid>
+                    <div class="row pt-2">
+                        <div class="col-md-12 navbar justify-content-between">
+                            <div></div>
+                            <div class="text-right">
+                                @if (!this.confirmed)
+                                {
+                                    <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Text="Cancelar" Style="width: 150px; height: 33.5px" />
+                                    <RadzenButton Click="@(args => this.openCreateClosingInvoicedNote())" Text="Nueva" Variant="Variant.Text" ButtonStyle="ButtonStyle.Primary" Style="width: 150px; height: 33.5px" hidden="@(!this.btnCNotes)" />
+                                }
+                                else
+                                {
+                                    <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Text="Cerrar" Style="width: 150px; height: 33.5px" />
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </RadzenTabsItem>
+            }
+        }        
+    </Tabs>
+</RadzenTabs>
+

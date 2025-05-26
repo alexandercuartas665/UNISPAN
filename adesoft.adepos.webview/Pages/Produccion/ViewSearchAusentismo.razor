@@ -1,0 +1,112 @@
+﻿@page "/ViewSearchAusentismo/{CodeNovedadId:long}"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject NominaService nominaService
+@inject ProduccionService produccionService
+@code {
+
+}
+@if (listsNovedades == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            @(CodeNovedadId == 16? "NOVEDADES" : "AUSENTISMOS")
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <a href="/ViewAusentismo/0/@CodeNovedadId" class="btn btn-primary btn-sm">@(CodeNovedadId == 16? "Registrar Novedad" : "Registrar Ausentismo")</a>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-3">
+                    <label for="FilterDateinit">Inicio</label>
+                    <RadzenDatePicker Name="FilterDateinit" DateFormat="MM/dd/yyyy" Change="changueDates" @bind-Value="DayInitNovedad" />
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label for="FilterDateend">Fin</label>
+                    <RadzenDatePicker Name="FilterDateend" DateFormat="MM/dd/yyyy" Change="changueDates" @bind-Value="DayEndNovedad" />
+                </div>
+            </div>
+            <div class="row">
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@listsNovedades" TItem="NominaNovedad">
+                    <Columns>
+                        <RadzenGridColumn TItem="NominaNovedad" Property="Tercero.FullNameCode" Sortable="false" Title="Empleado" />
+                        <RadzenGridColumn TItem="NominaNovedad" Filterable="false" Property="DateInitEndLabelProduction" Sortable="false" Title="Fechas" />
+
+                        <RadzenGridColumn TItem="NominaNovedad" Property="StateNovedadLabel" Sortable="false" Title="Estado del Registro">
+                            <Template Context="data">
+                                @data.StateNovedadLabel
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="NominaNovedad" Sortable="false" Title="">
+                            <Template Context="data">
+                                <NavLink href="@("/ViewAusentismo/"+data.NominaNovedadId + "/" + data.CodeNovedadId)">Ver</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public long CodeNovedadId { get; set; }
+
+    public long auxcodenovedadid { get; set; }
+    DateTime DayInitNovedad { get; set; }
+    DateTime DayEndNovedad { get; set; }
+    List<NominaNovedad> listsNovedades = new List<NominaNovedad>();
+    protected override async Task OnInitializedAsync()
+    {
+
+        DayInitNovedad = new DateTime((int)DateTime.Now.Year, (int)DateTime.Now.Month, 1);
+        int lastDayOfMonth = DateTime.DaysInMonth((int)DateTime.Now.Year, (int)DateTime.Now.Month);
+        DayEndNovedad = new DateTime((int)DateTime.Now.Year, (int)DateTime.Now.Month, lastDayOfMonth);
+
+        listsNovedades = await nominaService.selectAll(new NominaNovedad()
+        {
+            DayInit = DayInitNovedad,
+            CodeNovedadId = CodeNovedadId,
+            DayEnd = DayEndNovedad,
+            TransOption = 3
+        });
+
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (auxcodenovedadid != CodeNovedadId)
+        {
+            auxcodenovedadid = CodeNovedadId;
+            listsNovedades = await nominaService.selectAll(new NominaNovedad()
+            {
+                DayInit = DayInitNovedad,
+                CodeNovedadId = CodeNovedadId,
+                DayEnd = DayEndNovedad,
+                TransOption = 3
+            });
+            StateHasChanged();
+        }
+    }
+
+    async void changueDates()
+    {
+        listsNovedades = await nominaService.selectAll(new NominaNovedad()
+        {
+            DayInit = DayInitNovedad,
+            CodeNovedadId = CodeNovedadId,
+            DayEnd = DayEndNovedad,
+            TransOption = 3
+        });
+        StateHasChanged();
+    }
+}

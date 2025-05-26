@@ -1,0 +1,109 @@
+﻿@page "/ViewSearchOrderManufacturing"
+@inject NotificationService notificationService
+@inject TransactionGenericService transactionGenericService
+@inject WarehouseService warehouseService
+@inject DialogService dialogService
+
+@code {
+    RadzenGrid<TransactionGeneric> grid;
+    List<TransactionGeneric> lists = new List<TransactionGeneric>();
+    TransactionGeneric model = new TransactionGeneric();
+    List<Warehouse> Warehouses = new List<Warehouse>();
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Warehouses = await warehouseService.selectAll(new Warehouse() { TransOption = 2 });
+        model.DateInit = LocalDateTime.Now;
+        model.DateEnd = LocalDateTime.Now;
+    }
+
+    async void selectWarehouseChanged(long Warehouseid)
+    {
+        model.TransOption = 7;
+        model.WarehouseOriginId = Warehouseid;
+        model.TypeTransactionId = 9;
+        lists = await transactionGenericService.selectAll(model);
+        StateHasChanged();
+    }
+
+    async void GenerateReport()
+    {
+        if (lists.Count > 0)
+        {
+            dialogService.Open<ViewRptItemFabricacion>("REPORTE DE ITEMS EN FABRICACION", new Dictionary<string, object>() { { "Warehouseid", model.WarehouseOriginId } },
+                new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+        }
+    }
+
+}
+
+
+<div class="card">
+    <div class="card-header">
+        ORDENES DE FABRICACION
+    </div>
+    <div class="card-body">
+        <div class="form-row" style="margin-bottom:25px;">
+            <a href="/ViewOrderManufacturing/0" class="btn btn-primary">Nueva orden</a>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <label for="selectWarehouse">Bodega</label>
+                <RadzenDropDown Name="selectWarehouse" TValue="long" class="form-control" Change="@(args=>selectWarehouseChanged((long)args))" AllowClear="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Warehouses" TextProperty="Name" ValueProperty="WarehouseId" />
+            </div>
+            <div class="col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input type="button" class="btn btn-success btn-sm" value="Generar Reporte" @onclick="GenerateReport" />
+            </div>
+        </div>
+        @*<div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="inputName">Fecha Inicial</label>
+                    <RadzenDatePicker Name="inputDateInit" @bind-Value="model.DateInit" DateFormat="MM/dd/yyyy" class="d-block" id="inputDateInit" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="Input2">Fecha Final</label>
+                    <RadzenDatePicker Name="inputDateInit" @bind-Value="model.DateEnd" DateFormat="MM/dd/yyyy" class="d-block" id="inputDateInit" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="Input3">&nbsp;</label>
+                    <button style="display:block;" @onclick="BtnSearch" class="btn btn-primary ">Buscar</button>
+                </div>
+            </div>*@
+        <div class="form-row">
+            <RadzenGrid @ref="grid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="15" AllowSorting="true" Data="@lists" TItem="TransactionGeneric">
+                <Columns>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="ConsecutiveChar" Title="Consecutivo">
+                        <Template Context="data">
+                            <strong> @(data.ConsecutiveChar)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="DocumentExtern" Title="N° Orden interno">
+                        <Template Context="data">
+                            <strong> @(data.DocumentExtern)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="ConsecutiveChar" Title="Bodega">
+                        <Template Context="data">
+                            <strong> @(data.Warehouse.Name)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="TransactionGenericId" Title="Abrir" Filterable="false">
+                        <Template Context="data">
+                            <NavLink href="@("/ViewOrderManufacturing/"+data.TransactionGenericId)">Abrir Orden</NavLink>
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+
+    </div>
+</div>

@@ -1,0 +1,69 @@
+﻿@page "/ViewRptOrderRequisition"
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject IHttpContextAccessor httpContextAccessor
+@inject TransactionGenericService transactionService
+@code{
+
+    [Parameter]
+    public List<TransactionGeneric> transactionGenerics { get; set; }
+
+
+    ConnectionDB connectionDB;
+
+    DTOFiltersCompras filter;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        filter = new DTOFiltersCompras();
+        List<DTOInventary> itemss = new List<DTOInventary>();
+        // transactionGenerics.Select(x => x.Details.Select(x => x.ItemId)).ToList().ForEach(t => itemss.AddRange(t));
+
+        foreach (TransactionGeneric trans in transactionGenerics)
+        {
+            foreach (DetailTransactionGeneric DetailTran in trans.Details.Where(x=>x.InventarioPendiente>0).ToList())
+            {
+                DTOInventary dtoinventary = new DTOInventary();
+                dtoinventary = itemss.Where(x => x.ItemId == DetailTran.ItemId).FirstOrDefault();
+
+                if (dtoinventary == null)
+                {
+                    dtoinventary = new DTOInventary();
+                    dtoinventary.Syncode = DetailTran.Item.Syncode;
+                    dtoinventary.CantReservada = DetailTran.InventarioPendiente;
+                    dtoinventary.ItemName = DetailTran.Item.Description;
+                    dtoinventary.ItemId = DetailTran.ItemId;
+                    dtoinventary.Barcode = DetailTran.Item.Barcode;
+                    dtoinventary.PriceUnd = DetailTran.Item.PrecioSyncode;
+                    itemss.Add(dtoinventary);
+                }
+                else
+                {
+                    dtoinventary.CantReservada += DetailTran.InventarioPendiente;
+                }
+            }
+        }
+
+        filter.Inventaries = itemss;
+        filter.TypeReportId = 1;
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await transactionService.AddFilterCompras(filter);
+
+        connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+        //string paramurl = "ReportOrderDispatch.aspx?CuentaN=" + connectionDB.CuentaN + "&RptOpt=1&TransactionId=" + transactionGeneric.TransactionGenericId
+        //    + "&ItemId=" + ItemId + "&Warehouseid=" + transactionGeneric.WarehouseOriginId + "&FilterOnlyPendient=" + FilterOnlyPendient.ToString();
+        //if (DateEnd != null)
+        //{
+        //    paramurl = paramurl + "&DateEnd=" + DateEnd.Value.ToString("MM/dd/yyyy");
+        //}
+        string paramurl = "RptOrderRequisition.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + 1;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+    }
+}
+
+<div class="card">
+    <div class="card-body">
+        <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+    </div>
+</div>

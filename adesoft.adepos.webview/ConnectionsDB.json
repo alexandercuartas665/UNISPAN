@@ -1,0 +1,7 @@
+[
+  {
+    "Name": "UnisPanPro",
+    "CuentaN": "1004",
+    "Connection": "Data Source=localhost, 1433;Initial Catalog=UnisPanPro;Persist Security Info=True;User ID=sa;Password=Maravilla1;MultipleActiveResultSets=True"
+  }
+] 

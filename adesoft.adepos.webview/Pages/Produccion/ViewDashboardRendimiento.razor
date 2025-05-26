@@ -1,0 +1,207 @@
+﻿@page "/ViewDashboardRendimiento/"
+@using  adesoft.adepos.webview.Controller
+@using System.Linq
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using Radzen.Blazor.Rendering
+@inject DialogService dialogService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject ProduccionService produccionService
+@code {
+    List<DTOMonth> ListMonths;
+    List<DTOYear> ListYears;
+    public long ValueYear { get; set; }
+    public long ValueMonth { get; set; }
+    string mesLbl = string.Empty;
+    List<Rendimiento> rendimientoOrigin = new List<Rendimiento>();
+    protected override async Task OnInitializedAsync()
+    {
+        //DateTime daterecords = DateTime.Now.Date.AddDays(-1);
+        //rendimientoOrigin = await produccionService.GenerarRendimiento(new Rendimiento() { DateActivity = daterecords });
+        ListYears = await GetYearsFilter();
+        ListMonths = DTOViewRptCompra.GetMonths();
+        ValueYear = DateTime.Now.Year;
+        ValueMonth = DateTime.Now.AddMonths(-1).Month;
+        GenerateDashBoard();
+        //filter = new DTOFiltersCompras();
+        //ListMonths = DTOViewRptCompra.GetMonths();
+        //ListYears = await GetYearsFilter();
+        //DayInitMonth = 1;
+        //DayEndMonth = DateTime.DaysInMonth((int)DateTime.Now.Year, (int)DateTime.Now.Month);
+    }
+    public async Task<List<DTOYear>> GetYearsFilter()
+    {
+        Production prod = await produccionService.SelectProductionById(new Production() { TransOption = 2 });
+
+        ListYears = new List<DTOYear>();
+        if (prod != null)
+        {
+            long yearinit = 0;
+            if (prod.DateProduction != DateTime.MinValue)
+                yearinit = prod.DateProduction.Year;
+            if (yearinit == 0)
+                yearinit = DateTime.Now.Year - 1;
+            long yearEnd = DateTime.Now.Year + 1;
+            for (long i = yearinit; i <= yearEnd; i++)
+            {
+                ListYears.Add(new DTOYear() { IdYear = i, Name = i.ToString() });
+            }
+        }
+        return ListYears;
+    }
+    void changueYear(long ValueYear)
+    {
+        this.ValueYear = ValueYear; GenerateDashBoard();
+    }
+
+
+    async void GenerateDashBoard()
+    {
+        ActividadPintura.Clear();
+        Reparacionmartinete.Clear();
+        mesLbl = ListMonths.Where(x => x.IdMonth == ValueMonth).FirstOrDefault().Name;
+        rendimientoOrigin = await produccionService.GenerarRendimiento(new Rendimiento() { YearId = ValueYear, MonthId = ValueMonth });
+
+        if (rendimientoOrigin.Where(x => x.TypeActivity.TypeActivityId == 5).Count() > 0)
+        {
+            //accesorios
+            List<Rendimiento> PinturaRendimientos = rendimientoOrigin.Where(x => x.TypeActivity.TypeActivityId == 5).ToList();
+            foreach (Rendimiento pintrend in PinturaRendimientos)
+            {
+                DataTercerosMedicion dt = new DataTercerosMedicion();
+                dt.Categoria = pintrend.IdDay.ToString();
+                if (ActividadPintura.Where(x => x.CategoriaDate == pintrend.DateActivity).Count() == 0)
+                {
+                    decimal valueren = PinturaRendimientos.Where(x => x.TypeActivity.TypeActivityId == pintrend.TypeActivityId && x.IdDay == pintrend.IdDay).Sum(x => x.Cant);
+                    if (valueren > 0)
+                    {
+                        dt.CategoriaDate = pintrend.DateActivity;
+
+                        dt.ValueMedicion = valueren;
+                        ActividadPintura.Add(dt);
+                    }
+                }
+            }
+            //ActividadPintura = ActividadPintura.OrderByDescending(x => x.CategoriaDate).Take(10).ToList();
+        }
+
+
+        if (rendimientoOrigin.Where(x => x.TypeActivity.TypeActivityId == 5).Count() > 0)
+        {
+            List<long> activiyCut = new List<long>() { 2, 3 };
+            //accesorios
+            List<Rendimiento> RepaMartiRendimientos = rendimientoOrigin.Where(x => activiyCut.Contains(x.TypeActivity.TypeActivityId)).ToList();
+            foreach (Rendimiento pintrend in RepaMartiRendimientos)
+            {
+                DataTercerosMedicion dt = new DataTercerosMedicion();
+                dt.Categoria = pintrend.IdDay.ToString();
+                if (Reparacionmartinete.Where(x => x.CategoriaDate == pintrend.DateActivity).Count() == 0)
+                {
+                    decimal valueren = RepaMartiRendimientos.Where(x => x.IdDay == pintrend.IdDay).Sum(x => x.Cant);
+                    if (valueren > 0)
+                    {
+                        dt.CategoriaDate = pintrend.DateActivity;
+
+                        dt.ValueMedicion = valueren;
+                        Reparacionmartinete.Add(dt);
+                    }
+                }
+            }
+            //ActividadPintura = ActividadPintura.OrderByDescending(x => x.CategoriaDate).Take(10).ToList();
+        }
+    }
+
+    void changueMonth(long ValueMonth)
+    {
+        this.ValueMonth = ValueMonth; GenerateDashBoard();
+    }
+    class DataTercerosMedicion
+    {
+        public string Categoria { get; set; }
+
+        public DateTime CategoriaDate { get; set; }
+
+        public decimal ValueMedicion { get; set; }
+    }
+    List<DataTercerosMedicion> tercerosMedM2 = new List<DataTercerosMedicion>();
+    List<DataTercerosMedicion> tercerosMedKG = new List<DataTercerosMedicion>();
+    List<DataTercerosMedicion> ActividadPintura = new List<DataTercerosMedicion>();
+    List<DataTercerosMedicion> Reparacionmartinete = new List<DataTercerosMedicion>();
+    //DataItem[] revenue = new DataItem[] {
+    //new DataItem
+    //{
+    //Quarter = "Q1",
+    //Revenue = 30000
+    //},
+    //new DataItem
+    //{
+    //Quarter = "Q2",
+    //Revenue = 40000
+    //},
+    //new DataItem
+    //{
+    //Quarter = "Q3",
+    //Revenue = 50000
+    //},
+    //new DataItem
+    //{
+    //Quarter = "Q4",
+    //Revenue = 80000
+    //},
+    //};
+}
+
+
+<h1>DASHBOARD RENDIMIENTO</h1>
+<div class="row">
+    <div class="form-group col-md-1">
+        <label for="Filter4">Año</label>
+        <RadzenDropDown AllowFiltering="true" class="form-control" Value="ValueYear" TValue="long" ValueChanged="changueYear" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ListYears" TextProperty="Name" ValueProperty="IdYear" />
+
+    </div>
+    <div class="form-group col-md-2">
+        <label for="Filter4">Mes </label>
+        <RadzenDropDown AllowFiltering="true" class="form-control" Value="ValueMonth" TValue="long" ValueChanged="changueMonth" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ListMonths" TextProperty="Name" ValueProperty="IdMonth" />
+    </div>
+</div>
+<div class="row">
+
+
+    <div class="col-xl-12 col-lg-12 py-2">
+        <RadzenCard>
+            <h4>PINTURA</h4>
+            <RadzenChart  style="width: 100%; height: 220px;">
+                <RadzenColumnSeries Data=@ActividadPintura ValueProperty="ValueMedicion" CategoryProperty="Categoria" Title="M2" Fill="#0479cc" />
+                <RadzenCategoryAxis Padding="50">
+                    <RadzenAxisTitle Text="@("Dias " + mesLbl)" />
+                </RadzenCategoryAxis>
+                <RadzenColumnOptions Margin="10" />
+                <RadzenLegend Visible="true" />
+                <RadzenValueAxis>
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Cantidades en M2" />
+                    
+                </RadzenValueAxis>
+            </RadzenChart>
+        </RadzenCard>
+    </div>
+    <div class="col-xl-12 col-lg-12 py-2">
+        <RadzenCard>
+            <h4>REPARACION Y MARTINETE</h4>
+            <RadzenChart style="width: 100%; height: 220px;">
+                <RadzenColumnSeries Data=@Reparacionmartinete ValueProperty="ValueMedicion" CategoryProperty="Categoria" Title="M2" Fill="#ff6f00" />
+                <RadzenCategoryAxis Padding="50">
+                    <RadzenAxisTitle Text="@("Dias " + mesLbl)" />
+                </RadzenCategoryAxis>
+                <RadzenColumnOptions Margin="10" />
+                <RadzenLegend Visible="true" />
+                <RadzenValueAxis>
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Cantidades en M2" />
+                </RadzenValueAxis>
+            </RadzenChart>
+        </RadzenCard>
+    </div>
+
+</div>

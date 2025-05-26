@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_baseline_mediciones"
+            android:title="Mediciones" />
+        <item
+            android:id="@+id/novedades"
+            android:icon="@drawable/ic_baseline_novedades"
+            android:title="Novedades" />
+        <item
+            android:id="@+id/parameter"
+            android:icon="@drawable/ic_baseline_parameter"
+            android:title="Parametros" />
+        <item
+            android:id="@+id/administracion"
+            android:icon="@drawable/ic_baseline_sinc"
+            android:title="Sincronización" />
+
+    </group>
+    <group
+        android:id="@+id/group1"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/logout"
+            android:icon="@drawable/ic_baseline_cerrar"
+            android:title="Cerrar Sesion" />
+    </group>
+</menu>

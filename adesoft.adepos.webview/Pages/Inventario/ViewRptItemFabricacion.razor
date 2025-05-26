@@ -1,0 +1,28 @@
+﻿@page "/viewrptitemfabricacion"
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject IHttpContextAccessor httpContextAccessor
+@code {
+    [Parameter]
+    public long Warehouseid { get; set; }
+
+  
+    ConnectionDB connectionDB;
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+        string paramurl = "ReportOrderDispatch.aspx?CuentaN=" + connectionDB.CuentaN + "&RptOpt=3&Warehouseid=" + Warehouseid;
+
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+    }
+}
+
+<div class="card">
+    <div class="card-body">
+        <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+    </div>
+</div>

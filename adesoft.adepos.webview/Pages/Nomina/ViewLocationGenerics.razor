@@ -1,0 +1,99 @@
+﻿@page "/ViewLocationGenerics/{LocationGenericId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject LocationGenericService locationService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject CompanyService companyService
+<div class="card">
+    <div class="card-header">
+        Cargo
+    </div>
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formLocation" id="formLocation" Method="post" @onsubmit="OnSubmit" class="col-md-12" TItem="LocationGeneric" Data="@model">
+            <div class="form-row">
+                <div class="form-group col-md-1">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-1">
+                    <a class="btn btn-success btn-sm" href="/ViewSearchLocationGenerics">Buscar</a>
+                </div>
+            </div>
+            <RadzenFieldset Text="Informacion del Cargo">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="inputDescription">Cargo 8.5</label>
+                        <RadzenTextBox Name="inputDescription" @bind-Value="model.Description" class="form-control" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="inputLongDescription">Descripcion</label>
+                        <RadzenTextBox Name="inputLongDescription" @bind-Value="model.LongDescription" class="form-control" placeholder="" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+
+        </RadzenTemplateForm>
+
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string LocationGenericId { get; set; }
+    List<LocationGeneric> locationGenerics { get; set; }
+
+    LocationGeneric model = new LocationGeneric();
+    Company companyCurrent;
+    public int TabSelected = 0;
+    protected override async Task OnInitializedAsync()
+    {
+        locationGenerics = await locationService.selectAll(new LocationGeneric());
+        if (long.Parse(LocationGenericId) != 0)
+        {
+
+            model = await locationService.SelectById(new LocationGeneric() { LocationGenericId = long.Parse(LocationGenericId), TransOption = 3 });
+        }
+    }
+
+    public void Changed()
+    {
+
+    }
+
+    public void ChangedFile()
+    {
+
+    }
+
+    async void OnSubmit()
+    {
+        if (model.LocationGenericId != 0)
+        {
+            model.TransOption = 2;
+            LocationGeneric u = await locationService.Update(model);
+            model.LocationGenericId = u.LocationGenericId;
+        }
+        else
+        {
+            model.TransOption = 2;
+            LocationGeneric u = await locationService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el cliente correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+}

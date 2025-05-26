@@ -1,0 +1,148 @@
+﻿@page "/viewpermission"
+
+@using System.IO
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject SecurityService securityService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+
+
+
+<div class="card">
+    <div class="card-header">
+        Permisos
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <select class="form-control" @onchange="OnSelectRole">
+                    <option value=""></option>
+                    @foreach (var cnt in listRoles)
+                    {
+                        <option value="@cnt.RoleAppId">@cnt.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-success" @onclick="BtnGuardar">Guardar</button>
+            </div>
+        </div>
+
+
+        <div class="row" Style="width: 100%; height: 600px">
+            <div class="col-md-10" style="margin-bottom: 16px">
+                <div class="row">
+                    <div class="col-md-12" style="margin-bottom: 20px">
+                        @if (listactions.Count > 0)
+                        {
+                            <TreePermission listactions="@listactions" changeTree="@LogChange"></TreePermission>
+                        }
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+
+@code {
+
+    long RoleId = 0; string temp = "";
+    List<ActionApp> listactions = new List<ActionApp>();
+    List<RoleApp> listRoles = new List<RoleApp>();
+    protected override async Task OnInitializedAsync()
+    {
+        listRoles = await securityService.GetRoles();
+        // listactions.Add(new ActionApp() { HavePermission = null });
+    }
+
+    void OnSelectRole(ChangeEventArgs e)
+    {
+        // this.InvokeAsync(() => { JSRuntime.InvokeVoidAsync("$.fn.DestrooyTree"); });
+
+        if (!string.IsNullOrEmpty(e.Value.ToString()))
+        {
+            RoleId = long.Parse(e.Value.ToString());
+            List<ActionApp> listactions2 = securityService.GetActionsPermissionByRole(RoleId).Result;
+          
+            foreach (ActionApp a in listactions)
+            {
+                a.HavePermission = listactions2.Where(x => a.ActionAppId == x.ActionAppId).First().HavePermission;
+            }
+              if (listactions.Count == 0)
+                listactions.AddRange(listactions2);
+        }
+        else
+        {
+            RoleId = 0;
+            listactions = new List<ActionApp>();
+        }
+        StateHasChanged();
+
+    }
+    //despues de renderizar
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        //{
+        //    try
+        //    {
+        //        await Task.Delay(TimeSpan.FromMilliseconds(300));
+        //        await JSRuntime.InvokeVoidAsync("Fnjstreepermission");
+        //        await JSRuntime.InvokeVoidAsync("Fnjstreepermission");
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+        // await Task.Delay(TimeSpan.FromMilliseconds(300));DestrooyTree
+    }
+
+    void OnExpand(TreeExpandEventArgs args)
+    {
+
+    }
+
+    public void BtnGuardar()
+    {
+        List<Permission> lisper = listactions.Where(x => x.HavePermission == true).Select(t => new Permission() { ActionAppId = t.ActionAppId, RoleAppId = RoleId }).ToList();
+
+        securityService.SavePermissionOfListActionApp(new RoleApp() { RoleAppId = RoleId, Permissions = lisper });
+        //   listactions = new List<ActionApp>();
+        // listRoles = new List<RoleApp>();
+        // RoleId = 0;
+        //this.StateHasChanged();
+        // NavigationManager.NavigateTo("/");
+        this.InvokeAsync(() => { JSRuntime.InvokeVoidAsync("OnReload"); });
+        //await InvokeAsync(StateHasChanged);
+    }
+
+    void LogChange(TreeEventArgs args)
+    {
+        ActionApp ac = ((ActionApp)args.Value);
+        AsignPermission(ac);
+        ActionApp.UtilSetPermission(ref listactions);
+    }
+
+    void AsignPermission(ActionApp ac)
+    {
+        listactions.Where(x => x.IdFather == ac.ActionAppId).ToList().ForEach(t => t.HavePermission = ac.HavePermission);
+        foreach (ActionApp ad in listactions.Where(x => x.IdFather == ac.ActionAppId).ToList())
+        {
+            AsignPermission(ad);
+        }
+    }
+}
+
+
+

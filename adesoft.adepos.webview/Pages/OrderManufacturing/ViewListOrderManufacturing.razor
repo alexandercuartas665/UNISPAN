@@ -1,0 +1,73 @@
+﻿@page  "/viewlistordermanufacturing"
+@inject NotificationService notificationService
+@inject TransactionGenericService transactionGenericService
+@inject WarehouseService warehouseService
+@inject DialogService dialogService
+@code {
+    [Parameter]
+    public long ItemId { get; set; }
+    [Parameter]
+    public string NameItem { get; set; }
+    [Parameter]
+    public long warehouseId { get; set; }
+
+    public List<TransactionGeneric> lists;
+    protected override async Task OnInitializedAsync()
+    {
+        lists = new List<TransactionGeneric>();
+        lists = await transactionGenericService.selectAll(new TransactionGeneric() { AuxTerceroId = ItemId, WarehouseOriginId = warehouseId, TransOption = 8 });
+    }
+
+
+}
+
+<div class="card">
+    <div class="card-header">
+        lISTADO DE  ORDENES DE FABRICACION QUE CONTIENEN EL ITEM <span style="color:red;">@(NameItem)</span>
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="15" AllowSorting="true" Data="@lists" TItem="TransactionGeneric">
+                <Columns>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="ConsecutiveChar" Title="Consecutivo">
+                        <Template Context="data">
+                            <strong> @(data.ConsecutiveChar)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="DocumentExtern" Title="N° Orden interno">
+                        <Template Context="data">
+                            <strong> @(data.DocumentExtern)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="ConsecutiveChar" Title="Bodega">
+                        <Template Context="data">
+                            <strong> @(data.Warehouse.Name)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Title="Cant Solicitada">
+                        <Template Context="data">
+                            <strong> @(data.Details.First().Cant)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Title="Fabricada">
+                        <Template Context="data">
+                            <strong> @(data.Details.First().Total)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Title="Pendiente">
+                        <Template Context="data">
+                            <strong> @(data.Details.First().InventarioPendiente)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="TransactionGeneric" Property="TransactionGenericId" Title="Abrir" Filterable="false">
+                        <Template Context="data">
+                            <NavLink @onclick="@(args=> { dialogService.Close(); })" href="@("/ViewOrderManufacturing/"+data.TransactionGenericId)">Abrir Orden</NavLink>
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+
+    </div>
+</div>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.unispanapp.ui.home.HomeFragment"
+        android:label="Mediciones"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/administracion"
+        android:name="com.example.unispanapp.ui.home.ManagerFragment"
+        android:label="Administración"
+        tools:layout="@layout/fragment_manager" />
+
+    <fragment
+        android:id="@+id/productionFragment"
+        android:name="com.example.unispanapp.ui.home.NewProductionFragment"
+        android:label="Rendimiento"
+        tools:layout="@layout/fragment_new_production" />
+    <fragment
+        android:id="@+id/parameter"
+        android:name="com.example.unispanapp.ui.home.ParametersFragment"
+        android:label="Parametros"
+        tools:layout="@layout/fragment_parameters"/>
+
+    <fragment
+        android:id="@+id/detail_production_fragment"
+        android:name="com.example.unispanapp.ui.home.DetailProductionFragment"
+        android:label="Rendimiento"
+        tools:layout="@layout/fragment_detail_production" />
+
+    <fragment
+        android:id="@+id/add_product_fragment"
+        android:name="com.example.unispanapp.ui.home.AddProductFragment"
+        android:label="Rendimiento"
+        tools:layout="@layout/fragment_add_product" />
+
+    <fragment
+        android:id="@+id/novedades"
+        android:name="com.example.unispanapp.Novedades.NovedadesFragment"
+        android:label="Novedades"
+        tools:layout="@layout/fragment_novedades" />
+
+</navigation>

@@ -1,0 +1,136 @@
+﻿@page "/viewrequestinterncertificated"
+@inject SecurityService securityService
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@inject TerceroService terceroService
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject RequestCertificateService RequestCertificateService
+@inject LocationGenericService locationGenericService
+<div class="card">
+    <div class="card-header">
+        SOLICITUD DE CERTIFICACIONES
+    </div>
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formcliente" id="formcliente" Method="post" @onsubmit="OnSubmit" class="col-md-12" TItem="RequestCertificate" Data="@model">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-2 ">
+                    <a class="btn btn-danger btn-sm" @onclick="ClickCancel">Cancelar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label for="InputCertifica">Tipo de Certificado</label>
+                    <RadzenDropDown Name="InputCertifica" Placeholder="Tipo de Certificado" class="form-control" @bind-Value="model.TypeCertificate" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="false" Data="@(model.ListTypeCertificates)" />
+                    <RadzenRequiredValidator Component="InputCertifica" Text="Debe seleccionar el tipo" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="inputDocument">Número de documento</label>
+                    <RadzenTextBox Name="inputDocument" @bind-Value="model.NumberDocument" AutoComplete="false" Change="@(args=>DocumentChange(args))" class="form-control" />
+                    <RadzenRequiredValidator Component="inputDocument" Text="Documento es requerido" Popup="false" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="inputName">Empleado</label>
+                    <RadzenTextBox Name="inputName" Value="@model.Tercero.FullName" ReadOnly="true" class="form-control" placeholder="Nombre" />
+                </div>
+            </div>
+            <div class="form-row">
+                <br />
+                <p class="font-weight-normal">@resumeTercero</p>
+            </div>
+
+        </RadzenTemplateForm>
+    </div>
+</div>
+
+
+@code{
+    RequestCertificate model = new RequestCertificate();
+    public string ResultMessage { get; set; }
+    public string typemessage { get; set; }
+    [Parameter]
+    public object objectView { get; set; }
+
+    async void OnSubmit()
+    {
+        Tercero tercer = await terceroService.SelectById2(new Tercero() { NumDocument = model.NumberDocument, TransOption = 2 });
+        if (tercer == null || tercer.TerceroId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "No existe!", Detail = "El numero de documento no se encuentra registrado en nuestra base de datos.", Duration = 6000 });
+            return;
+        }
+        if (model.TypeCertificate == null || model.TypeCertificate == "")
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Tipo de certificado!", Detail = "Debe escoger el tipo de certificado.", Duration = 6000 });
+            return;
+        }
+        model.TerceroId = tercer.TerceroId;
+        model.DateRecord = DateTime.Now;
+        model.StateRequestCertificateId = 1;
+        model.TransOption = 2;
+        RequestCertificate reques = await RequestCertificateService.SelectById(model);
+        if (reques != null && reques.RequestCertificateId != 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "No existe!", Detail = "Ya existe una solicitud pendiente de respuesta para esta persona.", Duration = 6000 });
+            return;
+        }
+        await RequestCertificateService.Create(model);
+
+        ((ViewListCertificated)objectView).RegisterCertificadoOk();
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        model.Tercero = new Tercero();
+    }
+
+    string resumeTercero = string.Empty;
+    public async void DocumentChange(string value)
+    {
+        //Tercero terc = await terceroService.SelectById(new Tercero() { NumDocument = value, TransOption = 2 });
+        Tercero terc = await terceroService.SelectById2(new Tercero() { NumDocument = value, TransOption = 2 });
+        if (terc == null || terc.NumDocument == "1")
+            model.Tercero = new Tercero();
+        else
+        {
+            model.Tercero = terc;
+            LocationGeneric locat = await locationGenericService.SelectById(new LocationGeneric() { LocationGenericId = model.Tercero.CargoIdHomologate });
+            LocationGeneric cargo = locat;
+
+            string fecharetiro = string.Empty;
+            if (model.Tercero.DateRetirement != null)
+            {
+                fecharetiro = " Fecha de retiro: " + model.Tercero.LabelDateRetirement;
+            }
+
+            resumeTercero = "Cargo: " + locat.Description + "   " + "Salario: $ " + model.Tercero.Salary.ToString("N0")
+                + Environment.NewLine + "Fecha inicio : " + model.Tercero.LabelDateContractStart + fecharetiro
+                + " Estado actual: " + (model.Tercero.IsActive ? "ACTIVO" : "RETIRADO");
+
+
+
+        }
+    }
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+    }
+    void ClickCancel()
+    {
+        dialogService.Close();
+    }
+
+}

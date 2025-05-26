@@ -1,0 +1,238 @@
+﻿@using System.Globalization
+@using adesoft.adepos.webview.Pages.ElectronicBilling
+@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+@using adesoft.adepos.webview.Data.Interfaces
+@using Microsoft.JSInterop;
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService;
+@inject IElectronicBillingService electronicBillingService;
+@inject NotificationService notificationService;
+@inject SecurityService securityService;
+@inject NavigationManagerViewControl manager;
+@inject NavigationManager navigationManager;
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject SecurityService securityService
+@inject CompanyService companyService
+
+@code {
+    private DTOElectronicBillingFilter filter;
+
+    public List<DTOClosingInvoiced> closingsInvoiced = new List<DTOClosingInvoiced>();
+
+    DTOClosingInvoiced closingInvoicedSelected = null;
+
+    List<string> periods = new List<string>();
+
+    public string LastUpdateModule { get; set; }
+
+    RadzenGrid<DTOClosingInvoiced> grid;
+
+    private bool btnGenerateReport = false;
+    private bool btnConfirm = false;
+    private bool btnCUClosings = false;
+    private bool colRNotes = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.filter = new DTOElectronicBillingFilter();
+
+        this.periods = electronicBillingService.GetPeriods(3);
+        this.filter.Period = this.periods.FirstOrDefault();
+
+        await this.GetSecurity();
+
+        this.dialogService.OnClose += Close;
+
+        this.onGetClosingsInvoiced();
+    }
+
+    void Close(dynamic result)
+    {
+        onGetClosingsInvoiced();
+    }
+
+    async Task onConfirm()
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Esta seguro que desea confirmar los cierres seleccionados"))
+                return;
+
+            var result = this.electronicBillingService.Confirm(this.closingsInvoiced.Where(si => si.Confirmed).ToList());
+
+            this.onGetClosingsInvoiced();
+
+            this.dialogService.Close();
+
+            if (result)
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "Los cierres seleccionados han sido confirmados.", Duration = 5000 });
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void selectRow(DTOClosingInvoiced closingInvoiced)
+    {
+        closingInvoicedSelected = closingInvoiced;
+    }
+
+    void openClosingInvoiced(DTOClosingInvoiced closingInvoicedSelected)
+    {
+        if (closingInvoicedSelected is null)
+        {
+            dialogService.Open<EditClosingInvoiced>($"Nuevo Cierre",
+                new Dictionary<string, object>() { { "callView", this }, { "model", null } },
+                new DialogOptions() { Width = "60%" });
+        }
+        else
+        {
+            var closingInvoiced = electronicBillingService.GetClosingInvoiced(closingInvoicedSelected.Id);
+            dialogService.Open<EditClosingInvoiced>($"Cierre - {closingInvoiced.WorkName}",
+                new Dictionary<string, object>() { { "callView", this }, { "model", closingInvoiced } },
+                new DialogOptions() { Width = "60%" });
+        }
+    }
+
+    public void onGetClosingsInvoiced()
+    {
+        this.closingsInvoiced = this.electronicBillingService.GetClosingsInvoiced(this.filter);
+
+        StateHasChanged();
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var userApp = await securityService.GetUserAppByTooken(tooken);
+        this.filter.AdminId = userApp.AdminId;
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("EBGenerateReportPendingInvoice")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.btnGenerateReport = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("EBConfirmPendingInvoice")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.btnConfirm = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("EBCUClosings")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.btnCUClosings = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("EBRNotes")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.colRNotes = opt.IsActive;
+        }
+    }
+
+    void generateReport()
+    {
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        filter.GridQuery = grid.Query;
+        electronicBillingService.AddReportFilter(filter);
+        dialogService.Open<ViewRptClosingsInvoiced>($"PENDIENTES DE FACTURACION - CIERRES",
+            new Dictionary<string, object>() { { "guidfilter", guidfilter } },
+            new DialogOptions() { Width = "90%" });
+    }
+}
+
+<div class="row">
+    <div class="col-sm-12 pt-1">
+        <div class="form-row navbar justify-content-between">
+            <div class="form-row">
+                <div class="form-group col-sm-4">
+                    <label>Filtrar por</label>
+                    <RadzenDropDown class="form-control" @bind-Value="filter.Status" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter.SalesInvoiceStatus" TextProperty="Name" ValueProperty="Id" Change="@(args => { this.onGetClosingsInvoiced(); })" />
+                </div>
+                <div class="form-group col-sm-4">
+                    <label>Periodo</label>
+                    <RadzenDropDown class="form-control" @bind-Value="filter.Period" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@this.periods" Change="@(args => { this.onGetClosingsInvoiced(); })" />
+                </div>
+            </div>
+            <div class="form-inline justify-content-end">
+                <RadzenButton Click="@(args => { this.generateReport(); })" Text="Generar reporte" Variant="Variant.Text" ButtonStyle="ButtonStyle.Success" Style="width: 170px; height: 33.5px" hidden="@(!this.btnGenerateReport)" />
+                <span>&nbsp;</span>
+                <RadzenButton Click="@(args => { this.openClosingInvoiced(null); })" Text="Nuevo" Icon="add" Variant="Variant.Text" ButtonStyle="ButtonStyle.Primary" Style="width: 170px; height: 33.5px" hidden="@(!this.btnCUClosings)" />
+                <span>&nbsp;</span>
+                <RadzenButton Click="@(args => { this.onConfirm(); })" Text="Confirmar" Icon="check" Variant="Variant.Text" ButtonStyle="ButtonStyle.Success" Style="width: 170px; height: 33.5px" Disabled="@(this.filter.Status.Equals(1) || (this.closingsInvoiced.Where(si => si.Confirmed).ToList().Count().Equals(0)))" hidden="@(!this.btnConfirm)" />
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row pt-2">
+    <div class="col-sm-12">
+        <RadzenGrid @ref="grid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50"
+                    AllowSorting="true" Data="@closingsInvoiced" TItem="DTOClosingInvoiced" ColumnWidth="200px"
+                    Style="height: calc(100vh - 150px)" RowSelect="@(args => this.selectRow(args))" RowDoubleClick="@(args => this.openClosingInvoiced(args))">
+            <Columns>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Property="Date" Title="Fecha" Width="100px">
+                    <Template Context="data">
+                        @(data.Date.ToString("dd/MM/yyyy"))
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Property="CustomerName" Title="Cliente" Width="400px"></RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Title="Codigo Obra" Width="400px">
+                    <Template Context="data">
+                        @($"{data.WorkNo}")@(!string.IsNullOrEmpty(data.OthersWorkNo) ? $"-{data.OthersWorkNo}" : "")
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Property="WorkName" Title="Obra" Width="400px"></RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Property="TotalInvoiceAmount" Title="Total Facturado">
+                    <Template Context="data">
+                        @(data.TotalInvoiceAmount.ToString("C", new CultureInfo("en-us", false)))
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Property="AdminName" Title="Administrador de Proyecto"></RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Title="Confirmado" TextAlign="TextAlign.Center" Width="120px">
+                    <Template Context="data">
+                        <RadzenCheckBox @bind-Value="data.Confirmed" Disabled="@this.filter.Status.Equals(1)"></RadzenCheckBox>
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOClosingInvoiced" Property="EBNumber" Title="Fact. Electronica" Width="200px"></RadzenGridColumn>
+                @{
+                    if (this.colRNotes)
+                    {
+                        <RadzenGridColumn TItem="DTOClosingInvoiced" Property="Note" Title="Observación" Width="400px">
+                            <Template Context="data">
+                                <span>@data.Note</span>
+                            </Template>
+                        </RadzenGridColumn>
+                    }
+                }                
+            </Columns>
+        </RadzenGrid>
+    </div>
+</div>
+
+<style>
+    .ui-splitbutton .ui-splitbutton-menubutton {
+        border-left: solid 1px #dfdfdf !important;
+    }
+
+    .ui-splitbutton .ui-button {
+        background-color: #e6ecef !important;
+        color: black;
+    }
+</style>

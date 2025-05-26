@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".Dialogs.DialogFindProductFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="right">
+
+        <ImageButton
+            android:id="@+id/btnCloseDialog"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_baseline_close"
+            />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Buscar Producto"
+            android:textSize="30dp"
+            android:gravity="center"
+            android:textColor="#000000"/>
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16.7dp"
+        android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/blue_border_rounded_cornwe">
+                    <!-- INPUT -->
+
+                    />
+
+                    <EditText
+                        android:id="@+id/tbxFiltro1"
+                        android:layout_width="250dp"
+                        android:paddingLeft="17dp"
+                        android:layout_height="wrap_content"
+                        android:layout_toRightOf="@+id/username_icon"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/poppins_regular"
+                        android:hint="Parametro 1"
+                        android:inputType="textCapCharacters"
+                        android:maxLines="1"
+                        android:paddingTop="15dp"
+                        android:paddingBottom="15dp"
+                        android:textColor="#000000"
+                        android:textColorHint="#000000"
+                        android:textCursorDrawable="@drawable/cursor_color"
+                        android:textSize="12sp" />
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_marginLeft="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/blue_border_rounded_cornwe">
+                    <!-- INPUT -->
+
+                    />
+
+                    <EditText
+                        android:id="@+id/tbxFiltro2"
+                        android:layout_width="250dp"
+                        android:layout_height="wrap_content"
+                        android:layout_toRightOf="@+id/username_icon"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/poppins_regular"
+                        android:hint="Parametro 2"
+                        android:inputType="textCapCharacters"
+                        android:maxLines="1"
+                        android:paddingLeft="17dp"
+                        android:paddingTop="15dp"
+                        android:paddingBottom="15dp"
+                        android:textColor="#000000"
+                        android:textColorHint="#000000"
+                        android:textCursorDrawable="@drawable/cursor_color"
+                        android:textSize="12sp" />
+
+                </RelativeLayout>
+
+
+            </LinearLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity=""
+        android:layout_marginTop="16.7dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+
+            android:gravity="center">
+
+            <LinearLayout
+
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_width="190dp"
+                >
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:text="Alto"/>
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/blue_border_rounded_cornwe">
+                <!-- INPUT -->
+                    <Spinner
+                        android:id="@+id/ddlMedida1"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_toRightOf="@+id/username_icon"
+                        android:fontFamily="@font/poppins_regular"
+
+                        android:spinnerMode="dialog"
+                        android:maxLines="1"
+                        android:paddingLeft="10dp"
+                        android:inputType="none"
+                        android:textCursorDrawable="@drawable/cursor_color"
+                        android:textSize="20sp"
+                        android:textColorHint="#000000"
+                        android:textColor="#000000"/>
+
+
+
+            </RelativeLayout>
+            </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="190dp"
+            android:layout_height="wrap_content"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="100dp"
+
+                android:layout_height="wrap_content"
+                android:text="Ancho 1"/>
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+
+                android:background="@drawable/blue_border_rounded_cornwe">
+                <!-- INPUT -->
+
+                />
+
+                <Spinner
+                    android:id="@+id/ddlMedida2"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_toRightOf="@+id/username_icon"
+                    android:fontFamily="@font/poppins_regular"
+
+                    android:inputType="none"
+                    android:maxLines="1"
+                    android:paddingLeft="10dp"
+                    android:spinnerMode="dialog"
+                    android:textCursorDrawable="@drawable/cursor_color"
+                    android:textSize="12sp"
+                    android:textColorHint="#000000"
+                    android:textColor="#000000"/>
+
+
+            </RelativeLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="190dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            >
+
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:text="Ancho 2"/>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/blue_border_rounded_cornwe">
+                <!-- INPUT -->
+
+                />
+
+                <Spinner
+                    android:id="@+id/ddlMedida3"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_toRightOf="@+id/username_icon"
+                    android:fontFamily="@font/poppins_regular"
+
+                    android:inputType="none"
+                    android:maxLines="1"
+                    android:paddingLeft="10dp"
+                    android:spinnerMode="dialog"
+                    android:textCursorDrawable="@drawable/cursor_color"
+                    android:textSize="12sp"
+                    android:textColorHint="#000000"
+                    android:textColor="#000000"/>
+
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="right"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="16.7dp"
+        android:layout_marginRight="20dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnAddProduct"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/blue_fill__rounded_color"
+            android:fontFamily="@font/poppins_medium"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Buscar"
+            android:textColor="#ffffff"
+            android:textSize="12sp" />
+
+
+    </RelativeLayout>
+
+
+    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_marginTop="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="25dp"
+        android:stretchColumns="1"
+        android:orientation="vertical"
+        android:background="#1566E0">
+        <TableRow>
+            <TextView
+                android:text="Producto"
+                android:padding="3dip"
+                android:textColor="#FFFFFF"/>
+            <TextView
+                android:text="Cantidad"
+                android:gravity="center"
+                android:padding="3dip"
+                android:textColor="#FFFFFF"/>
+            <TextView
+                android:text="Opcion"
+                android:gravity="right"
+                android:padding="3dip"
+                android:textColor="#FFFFFF"/>
+        </TableRow>
+
+    </TableLayout>
+
+
+    <ListView
+        android:id="@+id/lvItems"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+
+</LinearLayout>

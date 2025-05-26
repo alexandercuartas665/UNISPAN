@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.home.HomeFragment"
+    android:orientation="vertical"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="@drawable/blue_bg"
+            android:paddingVertical="50dp"
+            android:gravity="center"
+            >
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="92dp"
+                android:layout_marginTop="36.7dp"
+                android:layout_marginRight="92dp"
+                android:background="@drawable/blue_border_rounded_cornwe">
+                <!-- INPUT -->
+                <EditText
+                    android:clickable="false"
+                    android:cursorVisible="false"
+                    android:focusable="false"
+                    android:id="@+id/tbxDateNow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/username_icon"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/poppins_regular"
+                    android:hint="Seleccione Fecha"
+                    android:inputType="none"
+                    android:maxLines="1"
+                    android:paddingLeft="17dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:textCursorDrawable="@drawable/cursor_color"
+                    android:textSize="12sp"
+                    android:textColorHint="#000000"
+                    android:textColor="#000000"/>
+                <!-- ICON -->
+            </RelativeLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:layout_marginTop="210dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="MEDICIONES"
+                android:textSize="30dp"
+                android:gravity="center"
+                android:textColor="#000000"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:gravity="right"
+            android:orientation="horizontal"
+            android:paddingRight="5dp"
+            android:paddingTop="5dp"
+            android:layout_marginBottom="10dp"
+            >
+
+            <Button
+                android:id="@+id/btnNewMedicion"
+                android:layout_width="250dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/blue_fill__rounded_color"
+                android:fontFamily="@font/poppins_medium"
+                android:gravity="center"
+                android:text="+ Tomar Nueva Medición"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                />
+
+        </LinearLayout>
+
+
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="25dp"
+            android:stretchColumns="1"
+            android:orientation="vertical"
+            android:background="#1566E0"
+            >
+            <TableRow>
+
+                <TextView
+                    android:layout_width="116dp"
+                    android:layout_marginLeft="20dp"
+                    android:padding="3dip"
+                    android:text="Operarios"
+                    android:textColor="#FFFFFF"/>
+                <TextView
+                    android:layout_width="100dp"
+                    android:text="Actividad"
+                    android:gravity="right"
+                    android:padding="3dip"
+                    android:layout_marginRight="30dp"
+                    android:textColor="#FFFFFF"/>
+            </TableRow>
+
+        </TableLayout>
+
+
+
+        <ListView
+            android:id="@+id/list_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            />
+
+    </LinearLayout>
+
+
+</RelativeLayout>

@@ -1,0 +1,294 @@
+﻿@page "/ViewRptPendingInvoices/{Option:int}"
+
+@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+@using Newtonsoft.Json
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IElectronicBillingService electronicBillingService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+@inject IHttpContextAccessor httpContextAccessor
+
+@code {
+
+    ConnectionDB connectionDB;
+    DTOElectronicBillingFilter filter;
+    List<CommonData> GroupBy;
+    List<CommonData> Months;
+    List<CommonData> POs;
+
+    [Parameter]
+    public int Option { get; set; }
+
+    public int selectedPage = 1;
+
+    protected override void OnInitialized()
+    {
+        this.selectedPage = this.Option;
+
+        this.GroupBy = new List<CommonData>()
+        {
+            new CommonData()
+            {
+                IdStr = "AdminId",
+                Description = "Administrador"
+            },
+            new CommonData()
+            {
+                IdStr = "ZoneParentId",
+                Description = "Zona"
+            },
+            new CommonData()
+            {
+                IdStr = "WorkNo",
+                Description = "Obra"
+            },
+            new CommonData()
+            {
+                IdStr = "CustomerNum",
+                Description = "Cliente"
+            }
+        };
+
+        this.Months = new List<CommonData>()
+            {
+                new CommonData()
+                {
+                    Id = 1,
+                    Description = "Enero"
+                },
+                new CommonData()
+                {
+                    Id = 2,
+                    Description = "Febrero"
+                },
+                new CommonData()
+                {
+                    Id = 3,
+                    Description = "Marzo"
+                },
+                new CommonData()
+                {
+                    Id = 4,
+                    Description = "Abril"
+                },
+                new CommonData()
+                {
+                    Id = 5,
+                    Description = "Mayo"
+                },
+                new CommonData()
+                {
+                    Id = 6,
+                    Description = "Junio"
+                },
+                new CommonData()
+                {
+                    Id = 7,
+                    Description = "Julio"
+                },
+                new CommonData()
+                {
+                    Id = 8,
+                    Description = "Agosto"
+                },
+                new CommonData()
+                {
+                    Id = 9,
+                    Description = "Septiembre"
+                },
+                new CommonData()
+                {
+                    Id = 10,
+                    Description = "Octubre"
+                },
+                new CommonData()
+                {
+                    Id = 11,
+                    Description = "Noviembre"
+                },
+                new CommonData()
+                {
+                    Id = 12,
+                    Description = "Diciembre"
+                }
+            };
+
+        filter = new DTOElectronicBillingFilter();
+        this.filter.Option = this.selectedPage;
+        this.filter.GroupBy = new List<string> { "AdminId" };
+        this.filter.ShowBalance = true;
+
+        var today = electronicBillingService.GetLastPeriod(1);
+        this.filter.Year = today.Year;
+        this.filter.MonthsSelected = new List<int> { today.Month };
+
+        var diff = ((today.Year - DateTime.Now.Year) * 12) + today.Month - DateTime.Now.Month;
+
+        POs = electronicBillingService.GetPOs();
+        var pos = new List<string>();
+        POs.ForEach(po => {
+            pos.Add(po.IdStr);
+        });
+        this.filter.POs = pos;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await GenerateRpt();
+        }
+    }
+
+    async Task GenerateRpt()
+    {
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        electronicBillingService.AddReportFilter(filter);
+
+        var diff = ((filter.Year - DateTime.Now.Year) * 12) + filter.MonthSelected - DateTime.Now.Month;
+
+        string paramurl = "RptPendingInvoices.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + this.filter.GroupBy.Count();
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+
+    async void changeOption(int option)
+    {
+        this.navigationManager.NavigateTo($"/ViewRptPendingInvoices/{option}");
+        this.filter.Option = option;
+
+        await GenerateRpt();
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                PENDIENTES DE FACTURACION
+            </div>
+        </div>
+    </div>
+    <div class="card-body pt-0">
+        <div class="form-row">
+            <div class="col-md-10">
+                <nav class="row mb-2">
+                    <div class="col-sm-12 form-inline">
+                        <RadzenRadioButtonList @bind-Value=@selectedPage TValue="int" Change="@(args => this.changeOption(args) )">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="Arriendos" Value="1" />
+                                <RadzenRadioButtonListItem Text="Cierres" Value="2" />
+                                <RadzenRadioButtonListItem Text="Ordenes de Producción" Value="3" />
+                            </Items>
+                        </RadzenRadioButtonList>                        
+                    </div>
+                </nav>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Agrupar por</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.GroupBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@GroupBy" TextProperty="Description" ValueProperty="IdStr" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Año</label>
+                                    <RadzenNumeric id="year" class="form-control" @bind-Value="filter.Year" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Meses</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.MonthsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@this.Months" TextProperty="Description" ValueProperty="Id" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Conceptos</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.POs" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@POs" TextProperty="Description" ValueProperty="IdStr" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="d-block">&nbsp;</label>
+                                <div class="form-group">
+                                    <RadzenCheckBox @bind-Value=@this.filter.ShowBalance Name="ShowBalance" />
+                                    <RadzenLabel Text="Mostrar saldos" Component="ShowBalance" />
+                                </div>
+                            </div>
+                            @*@{
+                                if (ledgerBalanceFilter.GroupBy.ToList().Count().Equals(1))
+                                {
+                                    var groupBySelected = ledgerBalanceFilter.GroupBy.FirstOrDefault();
+                                    if (groupBySelected.Equals("CustomerAccount"))
+                                    {
+                                        <div class="col-sm-1">
+                                            <div class="form-group">
+                                                <label>Top</label>
+                                                <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.TopSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ledgerBalanceFilter.Top" TextProperty="Description" ValueProperty="Id" />
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }*@
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label class="d-block">&nbsp;</label>
+                                    <input class="btn btn-success btn-sm" @onclick="GenerateRpt" value="Generar Reporte" type="button" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @*<div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            @if (this.filterSector)
+                            {
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label>Sectores</label>
+                                        <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.SectorsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Sectors" TextProperty="Description" ValueProperty="Id" />
+                                    </div>
+                                </div>
+                            }
+
+                            @if (this.filterZone)
+                            {
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label>Zonas</label>
+                                        <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.ZonesSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Zones" TextProperty="Description" ValueProperty="Id" />
+                                    </div>
+                                </div>
+                            }
+
+                            @if (this.filterAdministrator)
+                            {
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label>Administradores</label>
+                                        <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.AdministratorsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Administrators" TextProperty="CommonDataTitle" ValueProperty="Id" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>*@
+            </div>
+        </div>
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height: calc(100vh - 200px); width: 100%; padding: 0px;"></iframe>
+        </div>
+    </div>
+</div>

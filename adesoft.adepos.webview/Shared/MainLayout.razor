@@ -1,0 +1,47 @@
+﻿@using  adesoft.adepos.webview.Data;
+@inherits LayoutComponentBase
+@inject IHttpContextAccessor httpContextAccessor
+@inject NavigationManager MyNavigationManager
+<RadzenNotification />
+<RadzenDialog />
+
+<AuthorizeView>
+    <NotAuthorized>
+        @*@if (httpContextAccessor.HttpContext.Request.Path.Value.ToUpper() != "/ViewRequestCertificated".ToUpper())
+        {*@
+        @if (MyNavigationManager.Uri.ToUpper().Contains("/ViewRequestCertificated".ToUpper()))
+        {
+            <ViewRequestCertificated></ViewRequestCertificated>
+        }
+        else
+        {
+            <LoginPersonalizado></LoginPersonalizado>
+        }
+    </NotAuthorized>
+    <Authorizing>
+
+    </Authorizing>
+
+    <Authorized>
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+        <div class="main">
+            @*<div class="top-row px-4">
+                    <a href="" @onclick="CloseSession">Cerrar Sesion</a>
+                </div>*@
+
+            <div class="content px-4">
+                @Body
+            </div>
+        </div>
+    </Authorized>
+
+</AuthorizeView>
+
+@code{
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+}

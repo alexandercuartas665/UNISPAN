@@ -1,0 +1,174 @@
+﻿@page "/viewpricedolar"
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Util
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject BiableService biableService
+@inject ParameterService parameterService
+@inject NotificationService notificationService
+@inject DialogService dialogService
+@inject IJSRuntime JSRuntime
+@code {
+    List<DTOYear> ListYears;
+    List<DTOParamContable> listgeneralparams;
+    List<DTOParamContable> listyearspara;
+    public Parameter parammodel { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        ListYears = await biableService.BuildAnosParameter();
+        long lastyear = ListYears.Max(x => x.IdYear) + 1;
+        DTOYear lastdtoyear = new DTOYear();
+        lastdtoyear.IdYear = lastyear;
+        lastdtoyear.Name = lastyear.ToString();
+        ListYears.Add(lastdtoyear);
+        parammodel = await parameterService.SelectById(new Parameter() { TransOption = 3, NameIdentify = "ParametrosMensuales" });
+        // return base.OnInitializedAsync();
+        if (!string.IsNullOrEmpty(parammodel.Value2))
+        {
+            listgeneralparams = JsonConvert.DeserializeObject<List<DTOParamContable>>(parammodel.Value2);
+        }
+        else
+        {
+            listgeneralparams = new List<DTOParamContable>();
+        }
+        listyearspara = new List<DTOParamContable>();
+    }
+
+    async void ChangueYear(long idyear)
+    {
+        listyearspara = listgeneralparams.Where(x => x.year == idyear).ToList();
+        if (listyearspara.Count == 0)
+        {
+            foreach (DTOMonth m in DTOViewRptCompra.GetMonths().OrderBy(x => x.IdMonth).ToList())
+            {
+                DTOParamContable pa = new DTOParamContable();
+                pa.monthObj = m;
+                pa.month = m.IdMonth;
+                pa.year = idyear;
+                listgeneralparams.Add(pa);
+            }
+            listyearspara = listgeneralparams.Where(x => x.year == idyear).ToList();
+        }
+        StateHasChanged();
+    }
+
+    async void ChangueValue(string type, decimal val, DTOParamContable paramc)
+    {
+        if (type == "ValueDolar")
+        {
+            paramc.ValueDolar = val;
+        }
+        else if (type == "Imp")
+        {
+            paramc.ImptRenta = val;
+        }
+        else if (type == "Iva")
+        {
+            paramc.Iva = val;
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        dialogService.Close();
+    }
+
+    async void Save()
+    {
+        string par = JsonConvert.SerializeObject(listgeneralparams);
+        parammodel.Value2 = par;
+        await parameterService.Create(parammodel);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+        dialogService.Close();
+    }
+
+    async void Cancel()
+    {
+        dialogService.Close();
+    }
+}
+<div class="card">
+    <div class="card-header">
+        TASAS E IMPUESTOS ANUALES
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <input class="btn btn-success btn-sm" @onclick="Save" value="Guardar" type="button" />
+            </div>
+            <div class="form-group col-md-2">
+                <input class="btn btn-danger btn-sm" @onclick="Cancel" value="Cancelar" type="button" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="Filter4">Año</label>
+                <RadzenDropDown AllowFiltering="true" TValue="long" ValueChanged="ChangueYear" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ListYears" TextProperty="Name" ValueProperty="IdYear"></RadzenDropDown>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-1">
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label style="display:block;">&nbsp;</label>
+                        <label>Tasa</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label style="display:block;">&nbsp;</label>
+                        <label>Impt Renta</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label style="display:block;">&nbsp;</label>
+                        <label>Iva</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-11">
+                <div class="form-row">
+                    @{
+                        int i = 0;
+                        foreach (DTOParamContable m in listyearspara)
+                        {
+                            <div class="form-group col-md-1">
+                                <label for="@("input"+m.monthObj.IdMonth)">@(m.monthObj.NameAbrev)</label>
+                                <RadzenNumeric TValue="decimal" Value="m.ValueDolar" ValueChanged="@(args => { ChangueValue("ValueDolar", args, m); })" Name="@("input"+m.monthObj.IdMonth)" class="form-control" id="@("input"+m.monthObj.IdMonth)" />
+                            </div>
+                            i++;
+                        }
+                    }
+                </div>
+                <div class="form-row">
+                    @{
+                        i = 0;
+                        foreach (DTOParamContable m in listyearspara)
+                        {
+                            <div class="form-group col-md-1">
+                                <RadzenNumeric TValue="decimal" Value="m.ImptRenta" ValueChanged="@(args => { ChangueValue("Imp", args, m); })" Name="@("input"+m.monthObj.IdMonth)" class="form-control" id="@("input"+m.monthObj.IdMonth)" />
+                            </div>
+                            i++;
+                        }
+                    }
+                </div>
+                <div class="form-row">
+                    @{
+                        i = 0;
+                        foreach (DTOParamContable m in listyearspara)
+                        {
+                            <div class="form-group col-md-1">
+                                <RadzenNumeric TValue="decimal" Value="m.Iva" ValueChanged="@(args => { ChangueValue("Iva", args, m); })" Name="@("input"+m.monthObj.IdMonth)" class="form-control" id="@("input"+m.monthObj.IdMonth)" />
+                            </div>
+                            i++;
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

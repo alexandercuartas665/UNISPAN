@@ -1,0 +1,268 @@
+﻿@page "/ViewParamLimitMetas/{ParameterModule}"
+@using  Newtonsoft.Json
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ProduccionService produccionService
+@inject NotificationService notificationService
+@inject ParameterService parameterService
+@inject IJSRuntime JSRuntime
+@code {
+    [Parameter]
+    public string ParameterModule { get; set; }
+
+    Parameter parammodel;
+    List<DTOYear> ListYears;
+    List<DTOMonth> ListMonths;
+    List<TypeActivity> TypeActivitys;
+    public DTOParamRangoDetail Mdetail { get; set; }
+    List<DTOParamRango> Listparams;
+    DTOParamRango model { get; set; }
+    public long idyear { get; set; }
+    public long idmonth { get; set; }
+    public long TypeActivityId { get; set; }
+    public string UndMedida { get; set; }
+    public string UndBonificacion { get; set; }
+    public long CategoryMedicionId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new DTOParamRango();
+        Listparams = new List<DTOParamRango>();
+        ListYears = GetYearsFilter();
+        ListMonths = DTOViewRptCompra.GetMonths();
+        TypeActivitys = await produccionService.selectAllTypeActivitys();
+        Mdetail = new DTOParamRangoDetail();
+        parammodel = await parameterService.SelectById(new Parameter() { TransOption = 3, NameIdentify = ParameterModule });
+        if (!string.IsNullOrEmpty(parammodel.Value2))
+        {
+            Listparams = JsonConvert.DeserializeObject<List<DTOParamRango>>(parammodel.Value2);
+        }
+        if (ParameterModule == "ParametrosM2")
+        {
+            UndMedida = "M2"; UndBonificacion = "$"; CategoryMedicionId = 3;
+        }
+        else if (ParameterModule == "ParametrosKG")
+        {
+            UndMedida = "KG"; UndBonificacion = "$"; CategoryMedicionId = 4;
+        }
+        else if (ParameterModule == "ParametrosAusen")
+        {
+            TypeActivityId = 1; UndBonificacion = "%";
+            UndMedida = "DIAS";
+        }
+        TypeActivitys = TypeActivitys.Where(x => x.CategoryId == CategoryMedicionId).ToList();
+    }
+
+
+
+    async void ChangueYear(long idyear)
+    {
+        this.idyear = idyear; SetModelRange();
+    }
+
+    void SetModelRange()
+    {
+        if (idyear != 0 && idmonth != 0 && TypeActivityId != 0)
+        {
+            if (idyear != model.YearId || idmonth != model.MonthId || TypeActivityId != model.TypeActivityId)
+            {
+                DTOParamRango rang = Listparams.Where(x => x.YearId == idyear && x.MonthId == idmonth && x.TypeActivityId == TypeActivityId).FirstOrDefault();
+                if (rang == null)
+                {
+                    model = new DTOParamRango();
+                    model.YearId = idyear;
+                    model.MonthId = idmonth;
+                    model.TypeActivityId = TypeActivityId;
+                    model.ParaModule = ParameterModule;
+                    model.MonthName = ListMonths.Where(x => x.IdMonth == idmonth).First().Name;
+                    Listparams.Add(model);
+                }
+                else
+                {
+                    model = rang;
+                }
+            }
+        }
+    }
+
+    async void ChangueActivity(TypeActivity typeActivity)
+    {
+        TypeActivityId = typeActivity.TypeActivityId; SetModelRange();
+    }
+    async void ChangueMonth(long idmonth)
+    {
+        this.idmonth = idmonth; SetModelRange();
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void ClickAddRange()
+    {
+        if (idyear == 0 || idmonth == 0 || TypeActivityId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+
+        if (model.Details.Where(x => Mdetail.RangoInit >= x.RangoInit && Mdetail.RangoInit <= x.RangoEnd).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El rango ingresado se cruza con uno de los rangos ya existentes.", Duration = 4000 });
+            return;
+        }
+
+        if (model.Details.Where(x => Mdetail.RangoEnd >= x.RangoInit && Mdetail.RangoEnd <= x.RangoEnd).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El rango ingresado se cruza con uno de los rangos ya existentes.", Duration = 4000 });
+            return;
+        }
+
+        model.Details.Add(Mdetail);
+        Mdetail = new DTOParamRangoDetail();
+        Save();
+    }
+
+    public List<DTOYear> GetYearsFilter()
+    {
+        ListYears = new List<DTOYear>();
+        long yearinit = 0;
+        if (Listparams.Count() > 0)
+            yearinit = Listparams.Min(x => x.YearId);
+        if (yearinit == 0)
+            yearinit = DateTime.Now.Year - 1;
+        long yearEnd = DateTime.Now.Year + 1;
+        for (long i = yearinit; i <= yearEnd; i++)
+        {
+            ListYears.Add(new DTOYear() { IdYear = i, Name = i.ToString() });
+        }
+        return ListYears;
+    }
+    async void DeleteRang(DTOParamRangoDetail rangdelete)
+    {
+        model.Details.Remove(rangdelete);
+        Save();
+    }
+    async void Save()
+    {
+        string par = JsonConvert.SerializeObject(Listparams);
+        parammodel.Value2 = par;
+        await parameterService.Create(parammodel);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Cambios guardados correctamente.", Duration = 1000 });
+        this.StateHasChanged();
+        //dialogService.Close();
+    }
+
+    async void ReplicarMesAnterior()
+    {
+        if (idyear == 0 || idmonth == 0 || TypeActivityId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+        long idyearAnt = idyear;
+        long idmonthAnte = idmonth - 1;
+        if (idmonthAnte == 0)
+        {
+            idyearAnt = idyearAnt - 1;
+            idmonthAnte = 12;
+        }
+
+        DTOParamRango paramrang = Listparams.Where(x => x.YearId == idyearAnt && x.MonthId == idmonthAnte && x.TypeActivityId == TypeActivityId).FirstOrDefault();
+        if (paramrang == null || paramrang.Details.Count() == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El mes anterior no tiene ninguna configuracion.", Duration = 4000 });
+            return;
+        }
+        model.Details.Clear();
+        foreach (DTOParamRangoDetail d in paramrang.Details)
+        {
+            model.Details.Add((DTOParamRangoDetail)d.Clone());
+        }
+        Save();
+    }
+}
+<div class="card">
+    <div class="card-header">
+        PARAMETROS @parammodel.Description
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="Filter4">Año</label>
+                <RadzenDropDown AllowFiltering="true" TValue="long" ValueChanged="ChangueYear" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ListYears" TextProperty="Name" ValueProperty="IdYear"></RadzenDropDown>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter4">Meses</label>
+                <RadzenDropDown AllowFiltering="true" TValue="long" ValueChanged="ChangueMonth" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" TextProperty="Name" Data="@ListMonths" ValueProperty="IdMonth" />
+            </div>
+            @if (ParameterModule != "ParametrosAusen")
+            {
+                <div class="form-group col-md-3">
+                    <label for="Filter4">Actividad</label>
+                    <RadzenDropDown AllowFiltering="true" TValue="TypeActivity" ValueChanged="ChangueActivity" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@TypeActivitys" TextProperty="Name"></RadzenDropDown>
+                </div>
+            }
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-danger btn-sm" @onclick="ReplicarMesAnterior" value="Replicar datos mes anterior" type="button" />
+                </div>
+            </div>
+        </div>
+        <RadzenFieldset Text="Rangos">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Rango Inicial @UndMedida</label>
+                    <RadzenNumeric Name="inputinit" TValue="decimal" @bind-Value="Mdetail.RangoInit" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputend">Rango Final  @UndMedida</label>
+                    <RadzenNumeric Name="inputend" TValue="decimal" @bind-Value="Mdetail.RangoEnd" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="Price">Bonificacion @UndBonificacion</label>
+                    <RadzenNumeric Name="Price" TValue="decimal" @bind-Value="Mdetail.Bono" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="ClickAddRange" value="+ Adicionar" type="button" />
+                </div>
+            </div>
+            <div class="form-row">
+
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@model.Details.OrderBy(x=>x.RangoEnd).ToList()" TItem="DTOParamRangoDetail" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="RangoInit" Title="Rango Inicial">
+                            <Template Context="data">
+                                @(data.RangoInit + " " + UndMedida)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="RangoEnd" Title="Rango Final">
+                            <Template Context="data">
+                                @(data.RangoEnd + " " + UndMedida)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="Bono" Title="Bonificación">
+                            <Template Context="data">
+                                @(UndBonificacion + " " + data.Bono)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="RangoInit" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { DeleteRang(data); })">Eliminar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

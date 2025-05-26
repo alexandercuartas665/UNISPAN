@@ -1,0 +1,126 @@
+﻿@page "/EditOrderPalletProduct"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IPlantService plantService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+
+@code {
+    [Parameter]
+    public string orderPalletId { get; set; }
+
+    [Parameter]
+    public string orderPalletProductId { get; set; }
+
+    DTOOrderPallet orderPallet;
+    DTOOrderPalletProduct model;
+
+    List<DTOOrderProduct> orderProducts;
+
+    decimal maxValue = 0;
+
+    protected override void OnInitialized()
+    {
+        this.GetOrderPallet();
+        this.GetOrderProducts();
+        this.GetOrderPalletProduct();
+    }
+
+    public void GetOrderPallet()
+    {
+        this.orderPallet = this.plantService.GetOrderPallet(this.orderPalletId).ToModel();
+    }
+
+    public void GetOrderProducts()
+    {
+        this.orderProducts = this.plantService.GetOrderProducts(this.orderPallet.OrderId, this.orderPallet.ZoneProductId);
+        if (this.orderProducts is null)
+            this.orderProducts = new List<DTOOrderProduct>();
+    }
+
+    public void GetOrderPalletProduct()
+    {
+        if(!string.IsNullOrEmpty(this.orderPalletProductId))
+        {
+            this.model = this.plantService.GetOrderPalletProduct(this.orderPalletProductId).ToModel();
+        }
+        else
+        {
+            this.model = new DTOOrderPalletProduct(this.orderPallet);            
+            this.model.ZoneProductId = orderPallet.ZoneProductId;
+        }
+    }
+
+    void CreateOrUpdate(DTOOrderPalletProduct model)
+    {
+        try
+        {
+            dialogService.Close(this.model);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    void ChangeProduct(object value)
+    {
+        if(!(value is null))
+        {
+            var orderProduct = orderProducts.Where(op => op.OrderProductId.Equals(value)).FirstOrDefault();
+            this.model.Qty = orderProduct.Qty;
+        }
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+}
+
+<RadzenTemplateForm TItem="DTOOrderPalletProduct" Data=@model Submit=@CreateOrUpdate InvalidSubmit=@OnInvalidSubmit>
+    <div class="row mb-4">
+        <div class="col-md-12">
+
+            <div class="row mb-4">
+                <div class="col-md-4 align-items-center d-flex">
+                    <RadzenLabel Text="Zona" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenTextBox @bind-Value="orderPallet.ZoneProduct.Name" Placeholder="Entre la zona" style="display: block" class="w-100" Name="ZoneProduct" Disabled="true"></RadzenTextBox>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4 align-items-center d-flex">
+                    <RadzenLabel Text="Producto" />
+                </div>
+                @*<div class="col-md-8">
+                    <RadzenDropDown AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data=@orderProducts @bind-Value=@model.OrderProductId
+                                    TextProperty="Description" ValueProperty="OrderProductId" style="display: block" Class="w-100" Name="OrderProductId" Change=@(args => ChangeProduct(args))/>
+                    <RadzenRequiredValidator Component="OrderProductId" Text="El producto es obligatorio" Style="position: absolute" />
+                </div>*@
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4 align-items-center d-flex">
+                    <RadzenLabel Text="Cantidad" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenNumeric @bind-Value="model.Qty" Placeholder="Entre la cantidad" style="display: block" class="w-100" Name="Qty" Max=@maxValue Min="0"></RadzenNumeric>
+                    <RadzenRequiredValidator Component="Qty" Text="La cantidad es obligatoria" Style="position: absolute" DefaultValue="0" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-12 text-right">
+            <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light" Text="Cancel" Style="width: 120px" Class="me-1" />
+            <RadzenButton ButtonType="ButtonType.Submit" Variant="Variant.Flat" Text="Save" Style="width: 120px"></RadzenButton>
+        </div>
+    </div>
+</RadzenTemplateForm>

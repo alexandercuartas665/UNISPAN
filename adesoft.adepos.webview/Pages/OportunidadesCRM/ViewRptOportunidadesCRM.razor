@@ -1,0 +1,47 @@
+﻿@page "/ViewRptOportunidadesCRM"
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject IHttpContextAccessor httpContextAccessor
+@inject OportunidadesCRMService oportunidadService
+@code {
+    [Parameter]
+    public TransactionGeneric transactionGeneric { get; set; }
+
+    [Parameter]
+    public List<OportunidadesCRM> ListsOportunidades { get; set; }
+
+
+    [Parameter]
+    public OportunidadesCRM FilterOport { get; set; }
+
+
+    ConnectionDB connectionDB;
+
+    DTOFiltersCompras filter;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        filter = new DTOFiltersCompras();
+        connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+        filter.Oportunidades = ListsOportunidades;
+        filter.TypeReportId = 1;
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await oportunidadService.AddFilterCompras(filter);
+
+        connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+        string paramurl = "RptOportunidadCRM.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=1&DateInit="+ FilterOport.FilterDateInit.Value.ToString("dd/MM/yyyy") + "&DateEnd="+FilterOport.FilterDateEnd.Value.ToString("dd/MM/yyyy");
+        //if (DateEnd != null)
+        //{
+        //    paramurl = paramurl + "&DateEnd=" + DateEnd.Value.ToString("MM/dd/yyyy");
+        //}
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+    }
+}
+
+<div class="card">
+    <div class="card-body">
+        <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+    </div>
+</div>

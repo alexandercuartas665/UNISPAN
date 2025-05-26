@@ -1,0 +1,273 @@
+﻿@page "/ViewOrders";
+@page "/ViewOrders/{strFromDate}/{strToDate}"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IPlantService plantService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+@inject CompanyService companyService
+@inject SecurityService securityService
+
+@implements IDisposable
+@code {
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    double value = 90;
+
+    private DTOViewScheduleDispRet filter;
+    private List<DTOOrder> orders;
+    DTOOrder orderSelected = null;
+
+    public string LastUpdateModule { get; set; }
+
+    private bool reportPlantOrder = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(this.strFromDate) && !string.IsNullOrEmpty(this.strToDate))
+            this.filter = new DTOViewScheduleDispRet(DateTime.ParseExact(strFromDate, "dd-MM-yyyy", null), DateTime.ParseExact(strToDate, "dd-MM-yyyy", null));
+        else
+            this.filter = new DTOViewScheduleDispRet();
+
+        this.filter.Modules = new List<Module>()
+{
+            new Module
+            {
+                Id = 0,
+                Description = "Todos"
+            },
+            new Module
+            {
+                Id = 1,
+                Description = "Despachos"
+            },
+            new Module
+            {
+                Id = 2,
+                Description = "Devoluciones"
+            }
+        };
+        this.filter.ModuleId = 0;
+
+        this.onGetOrders();
+
+        await this.GetSecurity();
+    }
+
+    public void Dispose()
+    {
+        manager.UnRegisterView(this);
+    }
+
+    private void GetLastSyncOrders()
+    {
+        var lum = plantService.GetLastSyncOrders();
+        if (lum is null)
+            LastUpdateModule = "No registrada...";
+        else
+            LastUpdateModule = lum.LastSyncDate.ToString();
+    }
+
+    public void SyncOrders()
+    {
+        var syncOrders = this.plantService.SyncOrders((OrderType)this.filter.ModuleId, this.filter.FromDate, this.filter.ToDate);
+        this.onGetOrders();
+    }
+
+    public void EditEnlistmentOrder()
+    {
+        navigationManager.NavigateTo(string.Format("ViewOrder/{0}/{1}/{2}/{3}"
+            , this.filter.FromDate.ToString("dd-MM-yyyy")
+            , this.filter.ToDate.ToString("dd-MM-yyyy"), (int)this.orderSelected.OrderType, this.orderSelected.OrderId));
+    }
+
+    public void ViewOrderPallets()
+    {
+        navigationManager.NavigateTo(string.Format("ViewOrderPallets/{0}/{1}/{2}/{3}"
+            , this.filter.FromDate.ToString("dd-MM-yyyy")
+            , this.filter.ToDate.ToString("dd-MM-yyyy"), (int)this.orderSelected.OrderType, this.orderSelected.OrderId));
+    }
+
+    void selectRow(DTOOrder order)
+    {
+        orderSelected = order;
+    }
+
+    public void onGetOrders()
+    {
+        this.orders = this.plantService.GetOrders((OrderType)this.filter.ModuleId, (OrderStatus)this.filter.OrderStatus, this.filter.FromDate, this.filter.ToDate);
+        this.GetLastSyncOrders();
+    }
+
+    async Task OnReportOrderDetail()
+    {
+        this.dialogService.Open<ViewRptPlantOrderZone>($"ORDEN DE DESPACHO - {this.orderSelected.OrderNum}", new Dictionary<string, object>() { { "OrderSelected", this.orderSelected } },
+                new DialogOptions() { Width = "80%", Height = "91vh" });
+    }
+
+    async Task OnReportPickingStatus()
+    {
+        this.dialogService.Open<ViewRptPickingStatus>($"ESTADO DE ALISTAMIENTO - {this.orderSelected.OrderNum}", new Dictionary<string, object>() { { "OrderSelected", this.orderSelected } },
+                new DialogOptions() { Width = "80%", Height = "91vh" });
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>
+        ("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("ReportPlantOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.reportPlantOrder = opt.IsActive;
+        }
+    }
+
+    void RowRender(RowRenderEventArgs<DTOOrder> args)
+    {
+        //    args.Attributes.Add("class", $"{(statusesToHighlight.Contains(args.Data.Status) ? "row-highlight" : rowCounter % 2 == 0 ? "rz-datatable-even" : "rz-datatable-odd")}");
+
+        //    rowCounter += 1;
+        //}
+
+        Console.WriteLine(args);
+    }
+
+    async Task OnClick(RadzenSplitButtonItem item)
+    {
+        if(item != null)
+        {
+            switch (item.Value)
+            {
+                case "OrderDetail":
+                    await this.OnReportOrderDetail();
+                    break;
+
+                case "PickingStatus":
+                    await this.OnReportPickingStatus();
+                    break;
+            }
+        }
+    }
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <nav class="navbar navbar-light bg-transparent justify-content-between">
+            <h3>Ordenes</h3>
+        </nav>
+    </div>
+    <div class="col-sm-9 pt-1">
+        <div class="form-row">            
+            <div class="form-group col-sm-2">
+                <label>Desde</label>
+                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@filter.FromDate" class="d-block" />
+            </div>
+            <div class="form-group col-sm-2">
+                <label>Hasta</label>
+                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@filter.ToDate" class="d-block" />
+            </div>
+            <div class="form-group col-sm-2">
+                <label for="Filter4" class="d-block">&nbsp;</label>
+                <div class="btn-group" role="group" aria-label="button group">
+                    <button class="btn btn-primary" @onclick="@(args => { this.onGetOrders(); })">Consultar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-1 pt-1">
+    <div class="col-sm-12">
+        <div class="bg-light d-flex">
+            <div style="display: inline-block">
+                @*<RadzenButton Text="Sincronizar" Icon="sync" Variant="Variant.Text" ButtonStyle="ButtonStyle.Success" Style="height: 33.5px" Click=@SyncOrders />*@
+                <RadzenButton Text="Ver" Icon="visibility" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@EditEnlistmentOrder Disabled=@(this.orderSelected is null) />
+                @*<RadzenButton Text="Reporte" Icon="assignment" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@GenerateReport Disabled=@(this.orderSelected is null) hidden="@(!this.reportPlantOrder)"/>*@
+                <RadzenSplitButton Text="Reportes" Variant="Variant.Text" Click="@(args => this.OnClick(args))" ButtonStyle="ButtonStyle.Light" Disabled=@(this.orderSelected is null) hidden="@(!this.reportPlantOrder)" AlwaysOpenPopup=true>
+                    <RadzenSplitButtonItem Text="Orden de despacho" Value="OrderDetail"></RadzenSplitButtonItem>
+                    <RadzenSplitButtonItem Text="Estado de alistamiento" Value="PickingStatus"></RadzenSplitButtonItem>
+                </RadzenSplitButton>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" 
+                    AllowSorting="true" Data="@orders" TItem="DTOOrder" RowRender="RowRender"
+                    Style="height: calc(100vh - 180px)" RowSelect=@(args => this.selectRow(args))>
+            <Columns>
+                <RadzenGridColumn TItem="DTOOrder" Property="TransDateFilter" Title="Fecha despacho" Width="140px">
+                    <Template Context="data">
+                        @(data.TransDateFilter)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Property="OrderType" Title="Tipo orden" Width="120px">
+                    <Template Context="data">
+                        @(data.OrderType == OrderType.Dispatch ? "DESPACHO" : "DEVOLUCIÓN")
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Property="OrderNum" Title="Orden No." Width="120px">
+                    <Template Context="data">
+                        @(data.OrderNum)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Property="Works" Title="Obras">
+                    <Template Context="data">
+                        @(data.Works)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Property="CustomerName" Title="Cliente">
+                    <Template Context="data">
+                        @(data.CustomerName)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Title="Progreso" Width="150px">
+                    <Template Context="data">
+                        @{
+                            string style = $"width: {data.Progress.ToString("0")}%";
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="@style" aria-valuenow="@data.Progress" aria-valuemin="0" aria-valuemax="100">@string.Format("{0}%", data.Progress.ToString("0"))</div>
+                            </div>
+                        }                        
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Title="TON Alistadas" Width="120px" TextAlign="TextAlign.Right">
+                    <Template Context="data">
+                        @(data.TotalPalletWeight.ToString("0.00000"))
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="DTOOrder" Title="TON Totales" Width="120px" TextAlign="TextAlign.Right">
+                    <Template Context="data">
+                        @(data.Wight.ToString("0.00000"))
+                    </Template>
+                </RadzenGridColumn>                
+            </Columns>
+        </RadzenGrid>
+    </div>
+</div>
+
+<style>
+    .ui-splitbutton .ui-splitbutton-menubutton {
+        border-left: solid 1px #dfdfdf !important;
+    }
+
+    .ui-splitbutton .ui-button {
+        background-color: #e6ecef !important;
+        color: black;
+    }
+</style>

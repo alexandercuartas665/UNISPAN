@@ -1,0 +1,173 @@
+﻿@page "/ViewParamMetaMinima"
+@using  Newtonsoft.Json
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ProduccionService produccionService
+@inject NotificationService notificationService
+@inject ParameterService parameterService
+@inject CategoryService categoryService
+@inject IJSRuntime JSRuntime
+@code {
+
+
+    Parameter parammodel;
+    List<TypeActivity> TypeActivitys;
+    List<TypeActivity> activitysBinding;
+    public DTOParamRangoDetail Mdetail { get; set; }
+
+    DTOParamRango model { get; set; }
+   
+    public string UndMedida { get; set; }
+    public string UndBonificacion { get; set; }
+    public long CategoryMedicionId { get; set; }
+    List<Category> categorys = new List<Category>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new DTOParamRango();
+        activitysBinding = new List<TypeActivity>();
+        Mdetail = new DTOParamRangoDetail();
+        categorys = await categoryService.selectAll(new Category() { TransOption = 2 });
+        TypeActivitys = await produccionService.selectAllTypeActivitys();
+
+        parammodel = await parameterService.SelectById(new Parameter() { TransOption = 3, NameIdentify = "DailyMinimunMeta" });
+        if (!string.IsNullOrEmpty(parammodel.Value2))
+        {
+            model = JsonConvert.DeserializeObject<DTOParamRango>(parammodel.Value2);
+        }
+
+    }
+
+
+
+
+
+    async void ChangueActivity(long TypeActivityId)
+    {
+        
+        Mdetail.ActividadId = TypeActivityId;
+        if (Mdetail.ActividadId != 0)
+            Mdetail.Activida = TypeActivitys.Where(x => x.TypeActivityId == Mdetail.ActividadId).First().Name;
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void ClickAddRange()
+    {
+
+        if (model.Details.Where(x => x.ActividadId == Mdetail.ActividadId).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Ya existe .", Duration = 4000 });
+            return;
+        }
+
+        model.Details.Add(Mdetail);
+        Mdetail = new DTOParamRangoDetail();
+        Save();
+    }
+
+
+    async void DeleteRang(DTOParamRangoDetail rangdelete)
+    {
+        model.Details.Remove(rangdelete);
+        Save();
+    }
+    async void Save()
+    {
+        string par = JsonConvert.SerializeObject(model);
+        parammodel.Value2 = par;
+        await parameterService.Create(parammodel);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Cambios guardados correctamente.", Duration = 1000 });
+        this.StateHasChanged();
+        //dialogService.Close();
+    }
+
+
+    void ChangueCategory(long CategoryId)
+    {
+        Mdetail.ActividadId = 0;
+        Mdetail.CategoriaActividadId = CategoryId;
+        if (Mdetail.CategoriaActividadId != 0)
+        {
+            Mdetail.CategoriaActividad = categorys.Where(x => x.CategoryId == CategoryId).First().Name;
+            activitysBinding = TypeActivitys.Where(x => x.CategoryId == Mdetail.CategoriaActividadId).ToList();
+        }
+        else
+        {
+            activitysBinding = new List<TypeActivity>();
+        }
+        if (CategoryId == 3)
+        {
+            UndMedida = "M2";
+        }
+        else if (CategoryId == 4)
+        {
+            UndMedida = "KG";
+        }
+    }
+
+
+}
+<div class="card">
+    <div class="card-header">
+        PARAMETROS @parammodel.Description
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="selectCategoria">Categoria de medición</label>
+                <RadzenDropDown Name="selectCategoria" class="form-control" Value="@Mdetail.CategoriaActividadId" AllowClear="false" ValueChanged="ChangueCategory" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter4">Actividad</label>
+                <RadzenDropDown AllowFiltering="true" TValue="long" Value="@Mdetail.ActividadId" ValueChanged="ChangueActivity" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@activitysBinding" ValueProperty="TypeActivityId" TextProperty="Name"></RadzenDropDown>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="inputinit">@UndMedida/Día</label>
+                <RadzenNumeric Name="inputinit" TValue="decimal" @bind-Value="Mdetail.MetaMinimaUnd" class="form-control" />
+            </div>
+            <div class="form-group col-md-2">
+                <label for="inputend">Ton/Día</label>
+                <RadzenNumeric Name="inputend" TValue="decimal" @bind-Value="Mdetail.MetaMinimaTon" class="form-control" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="d-block" for="inputend">&nbsp;</label>
+                <input type="button" value="Adicionar" @onclick="ClickAddRange" class="btn btn-primary btn-sm" />
+            </div>
+        </div>
+        <RadzenFieldset Text="Metas">
+            <div class="form-row">
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@model.Details.OrderBy(x=>x.Activida).ToList()" TItem="DTOParamRangoDetail" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="CategoriaActividad" Title="Categoria de medición" />
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="Activida" Title="Actividad" />
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="MetaMinimaUnd" Title="META MÍNIMA x DÍA">
+                            <Template Context="data">
+                                @(data.MetaMinimaUnd + " " + data.UndMedida)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Property="MetaMinimaTon" Title="TONELADA x DÍA">
+                            <Template Context="data">
+                                @(data.MetaMinimaTon + " Ton")
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOParamRangoDetail" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { DeleteRang(data); })">Eliminar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

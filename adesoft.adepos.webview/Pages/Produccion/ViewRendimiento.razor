@@ -1,0 +1,369 @@
+﻿@page "/ViewRendimiento"
+@using  adesoft.adepos.webview.Controller
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject CategoryService categoryService
+@inject NotificationService notificationService
+@inject ProduccionService produccionService
+@inject TerceroService terceroService
+@inject SecurityService securityService
+@inject IHttpContextAccessor httpContextAccessor
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@inject BiableService biableService
+@inject IJSRuntime JSRuntime
+
+@code
+{
+    List<DTOMonth> ListMonths;
+    List<DTOYear> ListYears;
+    List<Rendimiento> rendimientoOrigin = new List<Rendimiento>();
+    List<Rendimiento> rendimientoOriginFilCategorys = new List<Rendimiento>();
+    List<Rendimiento> rendimientoDest = new List<Rendimiento>();
+    List<Tercero> Terceros = new List<Tercero>();
+    List<TypeActivity> TypeActivitys = new List<TypeActivity>();
+    List<Category> categorys = new List<Category>();
+    IEnumerable<long> tercSelect = new List<long>();
+    IEnumerable<long> ActivitysSelect = new List<long>();
+    public long ValueYear { get; set; }
+    public long ValueMonth { get; set; }
+    public long CategoriaMedicionId { get; set; }
+    int TabSelected = 0;
+    int DayInitMonth, DayEndMonth;
+    ConnectionDB connectionDB;
+    DTOFiltersCompras filter;
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOFiltersCompras();
+        ListMonths = DTOViewRptCompra.GetMonths();
+        ListYears = await GetYearsFilter();
+        DayInitMonth = 1;
+        DayEndMonth = DateTime.DaysInMonth((int)DateTime.Now.Year, (int)DateTime.Now.Month);
+    }
+
+    public async Task<List<DTOYear>> GetYearsFilter()
+    {
+        Production prod = await produccionService.SelectProductionById(new Production() { TransOption = 2 });
+
+        ListYears = new List<DTOYear>();
+        if (prod != null)
+        {
+            long yearinit = 0;
+            if (prod.DateProduction != DateTime.MinValue)
+                yearinit = prod.DateProduction.Year;
+            if (yearinit == 0)
+                yearinit = DateTime.Now.Year - 1;
+            long yearEnd = DateTime.Now.Year + 1;
+            for (long i = yearinit; i <= yearEnd; i++)
+            {
+                ListYears.Add(new DTOYear() { IdYear = i, Name = i.ToString() });
+            }
+        }
+        return ListYears;
+    }
+    //protected override async void OnAfterRender(bool firstRender)
+    //{
+    //    await JSRuntime.InvokeVoidAsync("$.fn.delegateToTableRendi");
+    //}
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+        }
+        if (rendimientoOrigin.Count > 0 && TabSelected == 0)
+            await JSRuntime.InvokeVoidAsync("$.fn.delegateToTableRendi");
+
+        if (TabSelected == 1)
+        {
+            string messelect = ListMonths.Where(x => x.IdMonth == ValueMonth).First().Name;
+            if (ActivitysSelect.Contains(-1))
+            {
+                decimal minimunGoalTon = 0;
+                Rendimiento renddef = rendimientoDest.Where(x => x.TypeActivityId == 2).FirstOrDefault();//REPARACION
+                if (renddef != null)
+                    minimunGoalTon = renddef.MinimumGoalTon;
+                else
+                {
+                    if (rendimientoDest.Count() > 0)
+                        minimunGoalTon = rendimientoDest.Where(x => x.TypeActivityId == 2).First().MinimumGoalTon;
+                }
+                rendimientoDest.ForEach(x => { x.TypeActivityGroupId = -1; x.GroupMinimumGoalTon = minimunGoalTon; });
+            }
+            else
+            {
+                rendimientoDest.ForEach(x => { x.TypeActivityGroupId = x.TypeActivityId; x.GroupMinimumGoalTon = x.MinimumGoalTon; });
+            }
+            filter.Rendimientos = rendimientoDest;
+            ProduccionController.filtersreports.Add(filter);
+            //string filterobj = JsonConvert.SerializeObject(filter);
+            string guidfilter = Guid.NewGuid().ToString();
+            filter.GuidFilter = guidfilter;
+            filter.TypeReportId = 1;
+            string paramurl = "RptPageRendimiento.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + 1
+                 + "&messelec=" + messelect + "&yearselec=" + ValueYear;
+            // + "&Bodega=" + bodegas;
+            await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        }
+        else if (TabSelected == 2)
+        {
+            string messelect = ListMonths.Where(x => x.IdMonth == ValueMonth).First().Name;
+            filter.Rendimientos = rendimientoDest;
+            ProduccionController.filtersreports.Add(filter);
+            //string filterobj = JsonConvert.SerializeObject(filter);
+            string guidfilter = Guid.NewGuid().ToString();
+            filter.GuidFilter = guidfilter;
+            filter.TypeReportId = 1;
+            string paramurl = "RptPageRendimiento.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + 2
+                   + "&messelec=" + messelect + "&yearselec=" + ValueYear;
+            // + "&Bodega=" + bodegas;
+            await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        }
+        //    return base.OnAfterRenderAsync(firstRender);
+    }
+
+    async void GenerateRendimiento()
+    {
+        rendimientoOrigin = await produccionService.GenerarRendimiento(new Rendimiento() { YearId = ValueYear, MonthId = ValueMonth });
+        DayInitMonth = 1;
+        DayEndMonth = DateTime.DaysInMonth((int)ValueYear, (int)ValueMonth);
+
+        categorys = rendimientoOrigin.Select(x => x.TypeActivity.Category).Distinct().ToList();
+        if (categorys.Count > 1)
+            CategoriaMedicionId = 3;
+        else
+        {
+            if (categorys != null && categorys.Count > 0)
+                CategoriaMedicionId = categorys.First().CategoryId;
+        }
+
+        rendimientoOriginFilCategorys = rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == CategoriaMedicionId).ToList();
+
+        loadFilters();
+        //  await JSRuntime.InvokeVoidAsync("$.fn.delegateToTableRendi");
+    }
+
+    void loadFilters()
+    {
+        TypeActivitys = rendimientoOriginFilCategorys.Select(x => x.TypeActivity).Distinct().ToList();
+        ActivitysSelect = TypeActivitys.Where(x => x.CategoryId == CategoriaMedicionId).Select(x => x.TypeActivityId).ToList();
+        Terceros = rendimientoOriginFilCategorys.Where(x => x.TypeActivity.CategoryId == CategoriaMedicionId).Select(x => x.Tercero).Distinct().ToList();
+        tercSelect = Terceros.Select(x => x.TerceroId).ToList();
+
+        rendimientoDest = rendimientoOriginFilCategorys;
+
+        if (CategoriaMedicionId == 3)
+        {
+            TypeActivitys.Add(new TypeActivity() { Name = "REPARACION + MARTINETE", TypeActivityId = -1 });
+        }
+    }
+    void changueFilterCategoriaMed(long CategoriaMedicionId)
+    {
+        this.CategoriaMedicionId = CategoriaMedicionId;
+        rendimientoOriginFilCategorys = rendimientoOrigin.Where(x => x.TypeActivity.CategoryId == CategoriaMedicionId).ToList();
+        loadFilters();
+    }
+    void GenerateRendiWithFilter()
+    {
+        if (ActivitysSelect.Contains(-1))
+        {
+            ActivitysSelect = new List<long>();
+            ((List<long>)ActivitysSelect).Add(-1);
+            IEnumerable<long> activiyCut = new List<long>() { 2, 3 };
+            rendimientoDest = rendimientoOriginFilCategorys.Where(x => tercSelect.Contains(x.TerceroId) && activiyCut.Contains(x.TypeActivityId)).ToList();
+        }
+        else
+        {
+            rendimientoDest = rendimientoOriginFilCategorys.Where(x => tercSelect.Contains(x.TerceroId) && ActivitysSelect.Contains(x.TypeActivityId)).ToList();
+        }
+    }
+
+    public async void SelectedChangeTab(int tabselected)
+    {
+        TabSelected = tabselected;
+
+    }
+
+    void changueFilterActividades()
+    {
+        GenerateRendiWithFilter();
+    }
+
+    void changueYear(long ValueYear)
+    {
+        this.ValueYear = ValueYear;
+        Terceros.Clear(); TypeActivitys.Clear(); rendimientoDest.Clear(); rendimientoOrigin.Clear(); rendimientoOriginFilCategorys.Clear(); categorys.Clear();
+    }
+
+    void changueMonth(long ValueMonth)
+    {
+        this.ValueMonth = ValueMonth;
+        Terceros.Clear(); TypeActivitys.Clear(); rendimientoDest.Clear(); rendimientoOrigin.Clear(); rendimientoOriginFilCategorys.Clear();
+        categorys.Clear();
+    }
+
+    void ChangueTercero()
+    {
+        GenerateRendiWithFilter();
+    }
+
+    void ClickCelda(Rendimiento rendi)
+    {
+
+        dialogService.Open<ViewReportNovedades>("DETALLE NOVEDADES", new Dictionary<string, object>() { { "listsNovedades", rendi.ReportNovedades }
+        , { "terceroFullName" , rendi.Tercero.FullName } }, new DialogOptions() { Width = "1000px", Height = "600px", Left = "calc(50% - 500px)", Top = "10px" });
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        TABLERO RENDIMIENTO
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-1">
+                <label for="Filter4">Año</label>
+                <RadzenDropDown AllowFiltering="true" class="form-control" TValue="long" ValueChanged="changueYear" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ListYears" TextProperty="Name" ValueProperty="IdYear" />
+                @*<RadzenDropDown Name="Filter4" class="form-control" AllowClear="false" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />*@
+            </div>
+            <div class="form-group col-md-2">
+                <label for="Filter4">Mes </label>
+                <RadzenDropDown AllowFiltering="true" class="form-control" TValue="long" ValueChanged="changueMonth" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ListMonths" TextProperty="Name" ValueProperty="IdMonth" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" @onclick="GenerateRendimiento" value="Generar" type="button" />
+            </div>
+            @if (Terceros.Count > 0)
+            {
+                <div class="form-group col-md-2">
+                    <label for="Filter4">Categoria de medición</label>
+                    <RadzenDropDown Value="@CategoriaMedicionId" ValueChanged="changueFilterCategoriaMed" class="form-control" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId"></RadzenDropDown>
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="Filter4">Actividades</label>
+                    <RadzenDropDown AllowFiltering="true" TValue="IEnumerable<long>" @bind-Value="ActivitysSelect" Change="changueFilterActividades" Multiple="true" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data="@TypeActivitys" TextProperty="Name" ValueProperty="TypeActivityId"></RadzenDropDown>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="selectOperario">Operarios</label>
+                    <RadzenDropDown Name="selectOperario" class="form-control" @bind-Value="tercSelect" Change="ChangueTercero" Multiple="true" TValue="IEnumerable<long>" AllowClear="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Terceros" TextProperty="FullName" ValueProperty="TerceroId" />
+                </div>
+            }
+        </div>
+
+        <div class="form-row">
+
+
+
+        </div>
+    </div>
+</div>
+
+@if (rendimientoOrigin.Count > 0)
+{
+    <RadzenTabs Change="SelectedChangeTab" SelectedIndex="TabSelected" Style="font-size:11px;">
+        <Tabs>
+            <RadzenTabsItem Text="RESUMEN GENERAL">
+                <div id="table-scroll" class="table-scroll">
+                    <div class="table-wrap" id="table-wrap">
+                        <table class="main-table">
+                            <thead>
+                                <tr>
+                                    <th class="fixed-side" scope="col">CODIGO</th>
+                                    <th class="fixed-side" scope="col">NOMBRE</th>
+                                    <th class="fixed-side" scope="col">ACTIVIDAD</th>
+                                    @for (int i = DayInitMonth; i <= DayEndMonth; i++)
+                                    {
+                                        <th scope="col">@((i).ToString().PadLeft(6))</th>
+                                    }
+                                    <th class="tablet-totales" scope="col">TOTAL MES</th>
+                                    <th class="tablet-totales" scope="col">BONOS</th>
+                                    <th class="tablet-totales" scope="col">DIAS AUSENTISMO</th>
+                                    <th class="tablet-totales" scope="col">% BONIFICACION</th>
+                                    <th class="tablet-totales" scope="col">VR. A PAGAR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    //for (int il = 0; il < 30; il++)
+                                    //{
+                                    var renheader = rendimientoDest.GroupBy(x => new { x.TerceroId, x.TypeActivityId }).Select(x => x.FirstOrDefault());
+
+
+                                    foreach (Rendimiento rend in renheader.OrderBy(x => x.TypeActivityId))
+                                    {
+                                        <tr>
+                                            <th class="fixed-side">@rend.Tercero.CodeEnterprise</th>
+                                            <th class="fixed-side">@rend.Tercero.FullName</th>
+                                            <th class="fixed-side">@rend.TypeActivity.Name</th>
+                                            @foreach (Rendimiento renddetail in rendimientoDest.Where(x => x.TypeActivityId == rend.TypeActivityId
+&& x.TerceroId == rend.TerceroId).OrderBy(x => x.IdDay).ToList())
+                                            {
+                                                if (renddetail.ReportaNovedad)
+                                                {
+                                                    <td scope="col" style=" background-color:#efbebe;" @onclick="@(args=> { ClickCelda(renddetail); })">@(renddetail.Cant + " " + renddetail.UndMedida)</td>
+                                                }
+                                                else
+                                                {
+                                                    <td scope="col">@(renddetail.Cant + " " + renddetail.UndMedida)</td>
+                                                }
+
+                                            }
+                                            <td class="tablet-totales" scope="col">@(rend.TotalMedicion.ToString("N2") + " " + rend.UndMedida)</td>
+                                            <td class="tablet-totales" scope="col">@("$ " + rend.TotalBonificacion.ToString("N2"))</td>
+                                            <td class="tablet-totales" scope="col">@(rend.DiasAusentismo.ToString("N2") + " DIAS")</td>
+                                            <td class="tablet-totales" scope="col">@(rend.PorcentajeBonificacion.ToString("N2") + " %")</td>
+                                            <td class="tablet-totales" scope="col">@("$ "+ rend.ValorAPagar.ToString("N2") + " ")</td>
+                                        </tr>
+                                    }
+                                    //}
+
+                                }
+                                @*<tr>
+                                        <th class="fixed-side">Left Column</th>
+                                        <th class="fixed-side"></th>
+                                        <th class="fixed-side"><a href="#">Cell content longer</a></th>
+                                        @for (int i = DayInitMonth; i <= DayEndMonth; i++)
+                                        {
+                                            <td scope="col">@i</td>
+                                        }
+                                    </tr>*@
+                            </tbody>
+                            @*<tfoot>
+                                    <tr>
+                                        <th class="fixed-side">&nbsp;</th>
+                                        <td>Footer 2</td>
+                                        <td>Footer 3</td>
+                                        <td>Footer 4</td>
+                                        <td>Footer 5</td>
+                                        <td>Footer 6</td>
+                                        <td>Footer 7</td>
+                                        <td>Footer 8</td>
+                                    </tr>
+                                </tfoot>*@
+                        </table>
+                    </div>
+                </div>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="REPORTE GENERAL">
+                <div class="form-row">
+
+                    <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+
+                </div>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="MEDICION POR OPERARIO">
+                <div class="form-row">
+
+                    <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+
+                </div>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+}
+

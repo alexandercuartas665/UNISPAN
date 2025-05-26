@@ -1,0 +1,343 @@
+﻿@page "/viewitem/{ItemId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject CategoryService categoryService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+<div class="card">
+    <div class="card-header">
+        Item
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formcategory" id="formcategory" class="col-md-12" TItem="Item" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-2">
+                    <a class="btn btn-success btn-sm" href="/ViewSearchItem">Buscar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-5">
+                    <label for="inputName">Desripcion</label>
+                    <RadzenTextBox Name="inputName" @bind-Value="model.Description" class="form-control" id="inputName" placeholder="Descripcion Item" />
+                    <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="true" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="selectCategoria">Categoria</label>
+                    <RadzenDropDown Name="selectCategoria" class="form-control" AllowClear="false" @bind-Value="model.CategoryId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId" />
+                    <RadzenRequiredValidator Component="selectCategoria" Text="Categoria es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputBarcode">Codigo de barras</label>
+                    <RadzenTextBox Name="inputBarcode" @bind-Value="model.Barcode" class="form-control" id="inputBarcode" placeholder="Barra" />
+                    <RadzenRequiredValidator Component="inputBarcode" Text="Codigo de barras es requerido" Popup="true" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="inputRef">Referencia</label>
+                    <RadzenTextBox Name="inputRef" @bind-Value="model.Referencia" class="form-control" placeholder="Referencia" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputUniMed">Unidad Medida</label>
+                    <RadzenDropDown Name="inputUniMed" class="form-control" AllowClear="false" @bind-Value="model.UnitMeasurementId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@UnitMeasurements" TextProperty="Name" ValueProperty="UnitMeasurementId" />
+                    <RadzenRequiredValidator Component="inputUniMed" Text="Unidad de medida es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="CheckHasInventory1">Maneja Inventario?</label>
+                    <RadzenCheckBox Name="CheckHasInventory1" class="form-control" @bind-Value="model.HasIventory"></RadzenCheckBox>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="CheckHasInventory2">Es Combo o Compuesto?</label>
+                    <RadzenCheckBox Name="CheckHasInventory2" @onchange="@(args=>{ StateHasChanged(); } )" class="form-control" @bind-Value="model.IsCompuesto"></RadzenCheckBox>
+                </div>
+            </div>
+            <div class="form-row">
+                @*<div class="form-group col-md-3">
+                        <label for="inputCosto">Costo</label>
+                        <RadzenNumeric Name="inputCosto" TValue="decimal" @bind-Value="model.PriceCost" class="form-control" />
+                    </div>*@
+                <div class="form-group col-md-3">
+                    <label for="InputPrecioBase">Precio Base (Sin impuesto)</label>
+                    <RadzenNumeric @ref="InputPrecioBase" Change="@(args => ChangeDecimal(args, "DropDown"))" Name="InputPrecioBase" TValue="decimal" @bind-Value="model.PrecioBase" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputTax">Impuesto</label>
+                    <RadzenDropDown Name="inputTax" class="form-control" AllowClear="false" @bind-Value="model.TypeTaxId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@listimpues" TextProperty="Name" ValueProperty="TypeTaxId" Change="@(args => Change(args, "DropDown"))" />
+                    <RadzenRequiredValidator Component="inputTax" Text="Unidad de medida es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputPrecio">Precio Neto</label>
+                    <RadzenNumeric Name="inputPrecio" Disabled="true" TValue="decimal" @bind-Value="model.PrecioDef" class="form-control" />
+                </div>
+            </div>
+        </RadzenTemplateForm>
+
+        <RadzenTabs Visible="(model.IsCompuesto)">
+            <Tabs>
+                    <RadzenTabsItem Text="Insumos o Kit" Visible="model.IsCompuesto">
+                        <div class="col-md-12">
+
+                            <div class="form-row">
+
+                                <div class="input-group mb-0 col-md-3">
+                                    <RadzenTextBox @bind-Value="itemcompue.Barcode" Change="@(args => InputBarcodeChange(args))" class="form-control" placeholder="Barcode" />
+                                    <div class="input-group-append">
+                                        <button @onclick="OnClickSearchItem" class="btn btn-outline-secondary" style="height:36px;" type="button">Buscar</button>
+                                    </div>
+                                </div>
+
+
+                                <div class="col-md-3">
+                                    <RadzenTextBox ReadOnly="true" @bind-Value="itemcompue.Description" class="form-control" placeholder="Item" />
+                                </div>
+                                <label>Cant: </label>
+                                <div class="col-md-1">
+                                    <RadzenNumeric @bind-Value="itemcompue.Cant" class="form-control" placeholder="Cant" />
+                                </div>
+                                <button type="button" @onclick="BtnAddItem" class="btn btn-primary mb-2" style="height:37px;">+</button>
+
+                            </div>
+
+                            <div class="form-row col-md-6">
+
+                                <table class="table tableGridTrans">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th scope="col"></th>
+                                            <th scope="col">N°</th>
+                                            <th scope="col">Item</th>
+                                            <th scope="col">Cant</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (Item t in itemsCompuest)
+                                        {
+                                            <tr>
+                                                <td><a href="javascript:void(0)" @onclick="@(args => DeleteItemKit(t))"><RadzenIcon Icon="delete_forever"></RadzenIcon></a></td>
+                                                <td>@(t.NumOrder)</td>
+                                                <td>@(t.Description)</td>
+                                                <td>@(t.Cant)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </RadzenTabsItem>
+                
+                @*<RadzenTabsItem Text="Inventario">
+                        <div class="col-md-12">
+                            <div class="form-group row">
+                                <label for="CheckHasInventory" class="col-sm-2 col-form-label">Maneja Inventario?</label>
+                                <div class="col-sm-1">
+                                    <RadzenCheckBox Name="CheckHasInventory" @onclick="@(args=>CheckHasInventory("DivInventory"))" class="form-control-sm" @bind-Value="model.HasIventory"></RadzenCheckBox>
+
+                                </div>
+
+                            </div>
+                            <div class="form-group row @DivCollapseInv" id="DivInventory">
+                                <label for="CantInventario" class="col-sm-2 col-form-label">Cant Inventario</label>
+                                <div class="col-sm-1">
+                                    <RadzenNumeric Name="CantInventario" @bind-Value="model.Aux1" class="form-control-sm" placeholder="Cantidad" />
+                                </div>
+                            </div>
+                        </div>
+                    </RadzenTabsItem>*@
+            </Tabs>
+        </RadzenTabs>
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string ItemId { get; set; }
+    string DivCollapseInv = "collapse";
+    RadzenNumeric<decimal> InputPrecioBase;
+    List<Item> itemsCompuest = new List<Item>();
+    Item model = new Item();
+    Item itemcompue = new Item();
+    List<TypeTax> listimpues = new List<TypeTax>();
+    TypeTax typetselect = new TypeTax();
+    List<Category> categorys = new List<Category>();
+    List<UnitMeasurement> UnitMeasurements = new List<UnitMeasurement>();
+    protected override async Task OnInitializedAsync()
+    {
+
+        categorys = await categoryService.selectAll(new Category());
+        UnitMeasurements = await itemService.SelectAllUnitMeasurement(new UnitMeasurement());
+       
+        // listimpues=
+        if (long.Parse(ItemId) != 0)
+        {
+            model = await itemService.SelectById(new Item() { ItemId = long.Parse(ItemId) });
+            foreach (Item it in model.ListItemKits.Select(x => x.Item).ToList())
+            {
+                itemsCompuest.Add(it.GetClone<Item>());
+            }
+            ReorderItems();
+        }
+        else
+        {
+            model.TypeTaxId = 2;
+            model.UnitMeasurementId = 3;
+        }
+
+    }
+
+
+    /// <summary>
+    /// Guardado de formulario
+    /// </summary>
+    /// <param name="para"></param>
+    async void OnSubmit(Item para)
+    {
+        if (model.CategoryId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la categoria.", Duration = 4000 });
+            return;
+        }
+        else if (model.UnitMeasurementId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la unidad de medida.", Duration = 4000 });
+            return;
+        }
+
+        model.ListItemKits.Clear();
+        foreach (Item it in itemsCompuest)
+        {
+            ItemKit ki = new ItemKit();
+            ki.ItemFatherId = model.ItemId;
+            ki.ItemId = it.ItemId;
+            ki.Cant = it.Cant;
+            model.ListItemKits.Add(ki);
+        }
+        if (model.ItemId != 0)
+        {
+
+            Item u = await itemService.Update(model);
+            model.ItemId = u.ItemId;
+        }
+        else
+        {
+            Item u = await itemService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el item correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+
+    void Change(object value, string name)
+    {
+        typetselect = listimpues.Where(x => x.TypeTaxId == (long)value).FirstOrDefault();
+        model.PrecioDef = model.PrecioBase + (model.PrecioBase * typetselect.Value);
+        StateHasChanged();
+    }
+
+    void Change(string text)
+    {
+
+        StateHasChanged();
+    }
+
+
+    void ChangeDecimal(object value, string name)
+    {
+        typetselect = listimpues.Where(x => x.TypeTaxId == model.TypeTaxId).FirstOrDefault();
+        model.PrecioDef = model.PrecioBase + model.PrecioBase * typetselect.Value;
+        StateHasChanged();
+    }
+
+
+    async void OnClickSearchItem(MouseEventArgs e)
+    {
+        List<Item> itemsSearch = await itemService.selectAll(new Item());
+
+        dialogService.Open<CtrlSearchItem>("Busqueda", new Dictionary<string, object>() { { "lists", itemsSearch }, { "viewItem", this } }, new DialogOptions() { Width = "700px", Height = "530px", Left = "calc(50% - 350px)", Top = "calc(50% - 265px)" });
+
+    }
+
+
+    public void SelectSearchItem(Item select)
+    {
+        dialogService.Close();
+        itemcompue = select;
+        itemcompue.Cant = 1;
+        StateHasChanged();
+    }
+
+
+    void BtnAddItem()
+    {
+        if (!string.IsNullOrEmpty(itemcompue.Barcode) && itemcompue.Cant != 0)
+        {
+            Item newite = new Item();
+            newite = itemsCompuest.Where(x => x.ItemId == itemcompue.ItemId).FirstOrDefault();
+            if (newite == null)
+            {
+                newite = itemcompue.GetClone<Item>();
+                itemsCompuest.Add(newite);
+                ReorderItems();
+            }
+            else
+            {
+                newite.Cant += itemcompue.Cant;
+            }
+            StateHasChanged();
+            itemcompue = new Item();
+        }
+    }
+
+    void ReorderItems()
+    {
+        int ord = 1;
+        foreach (Item it in itemsCompuest)
+        {
+            it.NumOrder = ord++;
+        }
+    }
+
+
+    void DeleteItemKit(Item item)
+    {
+        itemsCompuest.Remove(item);
+        ReorderItems();
+        StateHasChanged();
+    }
+
+    public async void InputBarcodeChange(string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            itemcompue = await itemService.SelectById(new Item() { TransOption = 2, Barcode = value });
+            itemcompue.Cant = 1;
+            StateHasChanged();
+        }
+    }
+
+    void CheckHasInventory(string idElement)
+    {
+        //  JSRuntime.InvokeAsync<string>("addclassCollapse", idElement);
+        if (DivCollapseInv == "collapse")
+            DivCollapseInv = string.Empty;
+        else
+            DivCollapseInv = "collapse";
+    }
+}

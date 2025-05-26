@@ -1,0 +1,93 @@
+﻿@page "/ViewAdministrators"
+@using Newtonsoft.Json
+@using Data.Interfaces;
+@using System.Globalization;
+
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject ILedgerBalanceService ledgerBalanceService;
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    CommonDataTable model = new CommonDataTable();
+    List<CommonDataTable> administrators;
+
+    protected override void OnInitialized()
+    {
+        administrators = ledgerBalanceService.GetCommonDataTable("Administrator");
+
+        base.OnInitialized();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void EditCommonDataTable(CommonDataTable commonDataTable)
+    {
+        this.model = commonDataTable;
+    }
+
+    void Save()
+    {
+        model = ledgerBalanceService.CreateOrUpdate(model);
+
+        administrators = ledgerBalanceService.GetCommonDataTable("Administrator");
+
+        this.model = new CommonDataTable();
+    }
+}
+
+
+<div class="card">
+    <div class="card-header">
+        ADMINISTRADORES
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">        
+        <RadzenFieldset Text="Administradores">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="Filter4">Nombre</label>
+                    <RadzenTextBox class="form-control" @bind-Value="model.Description" Disabled="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Reporte</label>
+                    <RadzenTextBox @bind-Value="model.CommonDataTitle" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="Save" value="Guardar" type="button" />
+                </div>
+            </div>
+            <div class="form-row">
+
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@administrators" TItem="CommonDataTable" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="CommonDataTable" Property="Description" Title="Nombre">
+                            <Template Context="data">
+                                @(data.Description)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="CommonDataTable" Property="Amount" Title="Reporte">
+                            <Template Context="data">
+                                @(data.CommonDataTitle)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="CommonDataTable" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { EditCommonDataTable(data); })">Editar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

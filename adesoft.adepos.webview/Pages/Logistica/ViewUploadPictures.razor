@@ -1,0 +1,43 @@
+﻿@page "/ViewUploadPictures";
+
+@using BlazorInputFile
+@using Data.DTO.PL;
+@using Data.Model.PL;
+
+@inject LogisticsService logisticsService;
+@inject Data.Interfaces.ILogisticsCoreService logisticsCoreService;
+
+@inject DialogService dialogService;
+
+@code {
+
+    DTOOrder model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.model = await logisticsService.GetOrder((Data.Model.PL.OrderType)orderType, orderId);
+    }
+
+    [Parameter]
+    public long orderId { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    void OnInputFileChange(IFileListEntry[] files)
+    {
+        try
+        {
+            logisticsCoreService.UploadPicturesAsync(model, files);
+            dialogService.Close(this.model);
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+}
+
+
+<InputFile OnChange="@(args => { OnInputFileChange(args); })" multiple />
+<RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light" Text="Cancel" Style="width: 120px" Class="me-1" />

@@ -1,0 +1,390 @@
+﻿@page "/ViewRptSummaryRents"
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.Interfaces;
+@using  Newtonsoft.Json
+
+@inject IHttpContextAccessor httpContextAccessor
+@inject NotificationService notificationService
+@inject ILedgerBalanceService balanceService;
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager;
+@inject DialogService dialogService;
+@inject CompanyService companyService
+@inject SecurityService securityService
+
+@code {
+    ConnectionDB connectionDB;
+    DTOLedgerBalanceFilter ledgerBalanceFilter = new DTOLedgerBalanceFilter();
+    public List<CommonData> ReportTypes { get; set; }
+
+    public List<CommonDataTable> Sectors = new List<CommonDataTable>();
+    public List<CommonDataTable> Zones = new List<CommonDataTable>();
+    public List<CommonDataTable> Administrators = new List<CommonDataTable>();
+
+    bool filterSector = false;
+    bool filterZone = false;
+    bool filterAdministrator = false;
+
+    private bool commercialSync = false;
+
+    public string LastUpdateModule { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await this.GetSecurity();
+    }
+
+    protected override void OnInitialized()
+    {
+        this.GetLastUpdateModule();
+
+        ReportTypes = new List<CommonData>()
+{
+            new CommonData()
+            {
+                IdStr = "SectorId",
+                Description = "Sector"
+            },
+            new CommonData()
+            {
+                IdStr = "ZoneParentId",
+                Description = "Zona"
+            },
+            new CommonData()
+            {
+                IdStr = "AdminId",
+                Description = "Administrador"
+            },
+            new CommonData()
+            {
+                IdStr = "CustomerAccount",
+                Description = "Cliente"
+            }
+        };
+
+        ledgerBalanceFilter.Year = DateTime.UtcNow.Year;
+        ledgerBalanceFilter.MonthsSelected = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+        ledgerBalanceFilter.GroupBy = new List<string> { "AdminId" };
+
+        this.Sectors = balanceService.GetCommonDataTable("Sector");
+        var no_sector = this.Sectors.Where(s => string.IsNullOrEmpty(s.Description)).FirstOrDefault();
+        if (no_sector != null)
+        {
+            no_sector.Description = "SIN SECTOR";
+            no_sector.Id = "NO_SECTOR";
+        }
+        else
+        {
+            this.Sectors.Add(new CommonDataTable()
+            {
+                Id = "NO_SECTOR",
+                Description = "SIN SECTOR"
+            });
+        }
+
+        this.Zones = balanceService.GetCommonDataTable("ZoneParent");
+        var no_zone = this.Zones.Where(s => string.IsNullOrEmpty(s.Description)).FirstOrDefault();
+        if (no_zone != null)
+        {
+            no_zone.Description = "SIN ZONA";
+            no_zone.Id = "NO_ZONE";
+        }
+        else
+        {
+            this.Zones.Add(new CommonDataTable()
+            {
+                Id = "NO_ZONE",
+                Description = "SIN ZONA"
+            });
+        }
+
+        this.Administrators = balanceService.GetCommonDataTable("Administrator").Where(a => !string.IsNullOrEmpty(a.CommonDataTitle)).ToList();
+        var no_administrator = this.Administrators.Where(s => string.IsNullOrEmpty(s.Description)).FirstOrDefault();
+        if (no_administrator != null)
+        {
+            no_administrator.Description = "SIN ADMINISTRADOR";
+            no_administrator.Id = "NO_ADMINISTRATOR";
+        }
+        else
+        {
+            this.Administrators.Add(new CommonDataTable()
+            {
+                Id = "NO_ADMINISTRATOR",
+                CommonDataTitle = "SIN ADMINISTRADOR"
+            });
+        }
+
+        this.ledgerBalanceFilter.SectorsSelected = new List<string>();
+        this.ledgerBalanceFilter.ZonesSelected = new List<string>();
+        this.ledgerBalanceFilter.AdministratorsSelected = new List<string>();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateRpt();
+        }
+    }
+
+    void GetLastUpdateModule()
+    {
+        var lum = balanceService.GetLastUpdateModule("Commercial");
+        if (lum is null)
+            LastUpdateModule = "No registrada...";
+        else
+        {
+            LastUpdateModule = lum.LastUpdateModule_At.ToString();
+        }
+    }
+
+    async Task BtnGenerateRpt()
+    {
+        string guidfilter = Guid.NewGuid().ToString();
+        ledgerBalanceFilter.FilterId = guidfilter;
+        balanceService.AddLedgerBalanceFilter(ledgerBalanceFilter);
+
+        string RptOpt = ledgerBalanceFilter.GroupBy.AsQueryable().Count().ToString();
+        if (ledgerBalanceFilter.GroupBy.LastOrDefault().Equals("SectorId") || ledgerBalanceFilter.GroupBy.LastOrDefault().Equals("CustomerAccount"))
+        {
+            RptOpt += "S";
+        }
+
+        string paramurl = "RptSummaryRents.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + RptOpt;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void UpdateCommercialData()
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            try
+            {
+                balanceService.UpdateCommercialData();
+                this.GetLastUpdateModule();
+                //await BtnGenerateRpt();
+
+            }
+            catch (Exception ex)
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                dialogService.Close();
+            }
+
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "La información ha sido actualizada correctectamente.", Duration = 5000 });
+                StateHasChanged();
+            });
+        });
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>
+        ("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("SyncSummaryRents")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.commercialSync = opt.IsActive;
+        }
+    }
+
+    void OnChange(object value)
+    {
+        if (ledgerBalanceFilter.GroupBy.ToList().Count() > 1)
+        {
+            this.ledgerBalanceFilter.TopSelected = 0;
+
+            for (int i = 0; i < ledgerBalanceFilter.GroupBy.Count() - 1; i++)
+            {
+                var groupBy = ledgerBalanceFilter.GroupBy.ToArray()[i];
+                switch (groupBy)
+                {
+                    case "SectorId":
+                        this.ledgerBalanceFilter.SectorsSelected = this.Sectors.Select(s => s.Id).ToList();
+                        filterSector = true;
+                        break;
+
+                    case "ZoneParentId":
+                        this.ledgerBalanceFilter.ZonesSelected = this.Zones.Select(s => s.Id).ToList();
+                        filterZone = true;
+                        break;
+
+                    case "AdminId":
+                        this.ledgerBalanceFilter.AdministratorsSelected = this.Administrators.Select(s => s.Id).ToList();
+                        filterAdministrator = true;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+
+            var unselect = this.ReportTypes
+                .Where(r => !ledgerBalanceFilter.GroupBy.Contains(r.IdStr));
+            foreach (var item in unselect)
+            {
+                switch (item.IdStr)
+                {
+                    case "SectorId":
+                        this.ledgerBalanceFilter.SectorsSelected = new List<string>();
+                        filterSector = false;
+                        break;
+
+                    case "ZoneParentId":
+                        this.ledgerBalanceFilter.ZonesSelected = new List<string>();
+                        filterZone = false;
+                        break;
+
+                    case "AdminId":
+                        this.ledgerBalanceFilter.AdministratorsSelected = new List<string>();
+                        filterAdministrator = false;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+        else
+        {
+            var groupBySelected = ledgerBalanceFilter.GroupBy.FirstOrDefault();
+            if ((groupBySelected != null) && !groupBySelected.Equals("CustomerAccount"))
+                this.ledgerBalanceFilter.TopSelected = 0;
+
+            this.ledgerBalanceFilter.SectorsSelected = new List<string>();
+            filterSector = false;
+            this.ledgerBalanceFilter.ZonesSelected = new List<string>();
+            filterZone = false;
+            this.ledgerBalanceFilter.AdministratorsSelected = new List<string>();
+            filterAdministrator = false;
+        }
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                RESUMEN DE RENTAS
+            </div>
+            <div class="col-4">
+                <label>Última actualización:</label>
+                <span>@LastUpdateModule</span>
+                @{
+                    if (this.commercialSync)
+                    {
+                        <RadzenButton Click=@(args => UpdateCommercialData()) Icon="refresh" ButtonStyle="ButtonStyle.Light" Text="Sincronizar" style="margin-left: 10px" />
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-10">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Agrupar por</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.GroupBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@ReportTypes" TextProperty="Description" ValueProperty="IdStr" Change=@(args => OnChange(args)) />
+                                </div>
+                            </div>
+                            @{
+                                if (ledgerBalanceFilter.GroupBy.ToList().Count().Equals(1))
+                                {
+                                    var groupBySelected = ledgerBalanceFilter.GroupBy.FirstOrDefault();
+                                    if (groupBySelected.Equals("CustomerAccount"))
+                                    {
+                                        <div class="col-sm-1">
+                                            <div class="form-group">
+                                                <label>Top</label>
+                                                <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.TopSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@ledgerBalanceFilter.Top" TextProperty="Description" ValueProperty="Id" />
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Año</label>
+                                    <RadzenNumeric id="year" class="form-control" @bind-Value="ledgerBalanceFilter.Year" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Meses</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.MonthsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@ledgerBalanceFilter.Months" TextProperty="Description" ValueProperty="Id" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label class="d-block">&nbsp;</label>
+                                    <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            @if (this.filterSector)
+                            {
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label>Sectores</label>
+                                        <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.SectorsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Sectors" TextProperty="Description" ValueProperty="Id" />
+                                    </div>
+                                </div>
+                            }
+
+                            @if (this.filterZone)
+                            {
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label>Zonas</label>
+                                        <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.ZonesSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Zones" TextProperty="Description" ValueProperty="Id" />
+                                    </div>
+                                </div>
+                            }
+
+                            @if (this.filterAdministrator)
+                            {
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label>Administradores</label>
+                                        <RadzenDropDown class="form-control" @bind-Value="ledgerBalanceFilter.AdministratorsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Administrators" TextProperty="CommonDataTitle" ValueProperty="Id" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height: calc(100vh - 220px); width: 100%; padding: 0px;"></iframe>
+        </div>
+    </div>
+</div>
+

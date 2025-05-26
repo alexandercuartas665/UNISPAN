@@ -1,0 +1,60 @@
+﻿.thead-transport {
+    background: #0070C0;
+}
+
+.fixed-content-grid-transport {
+    top: 175px;
+    bottom: 0;
+    position: fixed;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.col-W200 {
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    vertical-align: middle !important;
+}
+
+.col-W300 {
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+    vertical-align: middle !important;
+}
+
+.col-W150 {
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    vertical-align: middle !important;
+}
+
+.col-W100 {
+    width: 100px;
+    max-width: 100px;
+    min-width: 100px;
+    vertical-align: middle !important;
+}
+
+.col-W120 {
+    width: 120px;
+    max-width: 120px;
+    min-width: 120px;
+    vertical-align: middle !important;
+}
+
+.col-W50 {
+    width: 50px;
+    max-width: 50px;
+    min-width: 50px;
+    vertical-align: middle !important;
+}
+
+.col-W70 {
+    width: 70px;
+    max-width: 70px;
+    min-width: 70px;
+    vertical-align: middle !important;
+}

@@ -1,0 +1,909 @@
+﻿@page "/ViewScheduleDispRet/{orderType:int}"
+@page "/ViewScheduleDispRet/{strFromDate}/{strToDate}/{orderType:int}"
+@using Microsoft.JSInterop;
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.DTO.PL
+@using System.Text;
+@using System.Net.Mail;
+@using System.Net;
+
+@inject LogisticsService logisticsService;
+@inject ParameterService parameterService;
+@inject DialogService dialogService;
+@inject NotificationService notificationService;
+@inject NavigationManager navigationManager;
+@inject IHttpContextAccessor httpContextAccessor
+
+@inject IJSRuntime JSRuntime
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject SecurityService securityService
+@inject CompanyService companyService
+
+@code {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public string searchBy;
+
+    class AmountTotal
+    {
+        public decimal total { get; set; }
+
+        public string date { get; set; }
+    }
+
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    private DTOViewScheduleDispRet scheduleDisRet;
+    private List<DTOOrder> orders;
+    private List<AmountTotal> amountTotals;
+    private Parameter banner;
+
+    private bool exportToExcel = false;
+    private bool createOrUpdate = false;
+    private bool searchOrder = false;
+
+
+    private decimal totalTon = 0;
+    private int initDay = 0;
+    private double days = 0;
+    private DateTime fromDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = httpContextAccessor.HttpContext.User.Identity;
+        if (!string.IsNullOrEmpty(this.strFromDate) && !string.IsNullOrEmpty(this.strToDate))
+            this.scheduleDisRet = new DTOViewScheduleDispRet(DateTime.ParseExact(strFromDate, "dd-MM-yyyy", null), DateTime.ParseExact(strToDate, "dd-MM-yyyy", null));
+        else
+            this.scheduleDisRet = new DTOViewScheduleDispRet();
+
+        this.scheduleDisRet.ModuleId = orderType;
+        this.banner = new Parameter() { Value = "" };
+        //this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate);
+        //this.SearchOrder();
+
+        await this.GetSecurity();
+
+        this.SearchOrder();
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsSearchOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.searchOrder = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsCreateOrEditOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.createOrUpdate = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsExportOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.exportToExcel = opt.IsActive;
+        }
+    }
+
+    void EditOrder(long orderId)
+    {
+        navigationManager.NavigateTo(string.Format("editOrder/{0}/{1}/{2}/{3}/{4}", this.scheduleDisRet.FromDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ToDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ModuleId, orderId, (orderId != 0 ? false : true)));
+    }
+
+    void ExportToExcel()
+    {
+        this.days = (this.scheduleDisRet.ToDate - this.scheduleDisRet.FromDate).TotalDays + 1;
+        if (this.days > 31)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = "El rango de fechas seleccionado supera el maximo de dias permitidos, la cantidad de dias permitida es 31 dias.", Duration = 5000 });
+        }
+        else
+        {
+            navigationManager.NavigateTo(string.Format("viewRptLogisticOrders/{0}/{1}/{2}", this.scheduleDisRet.FromDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ToDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ModuleId));
+        }
+    }
+    // Propiedad que indica si se quiere seleccionar/deseleccionar todas
+    bool SelectAll { get; set; }
+    // SELECCION DE TODAS LAS ORDENS
+    void ToggleSelectAll(ChangeEventArgs e)
+    {
+        // Convertimos el valor recibido a booleano.
+        bool isChecked = false;
+        if (e.Value != null && bool.TryParse(e.Value.ToString(), out isChecked))
+        {
+            // Si la conversión es exitosa, actualizamos cada orden.
+            foreach (var order in orders)
+            {
+                order.IsSelected = isChecked;
+            }
+        }
+    }
+
+    //ENVIA NOTIFICACION
+    void SendNotification()
+    {
+        StringBuilder reportContent = new StringBuilder();
+        string ListaOrdenes = "";
+        var selectedOrders = orders.Where(o => o.IsSelected).ToList();
+        var ordersByClient = selectedOrders.GroupBy(o => o.CustomerName);
+        foreach (var clientGroup in ordersByClient)
+        {
+            reportContent.Clear();
+            ListaOrdenes = "";
+            var clientName = clientGroup.Key;
+            var ordersForClient = clientGroup.ToList();
+            Console.WriteLine($"Cliente: {clientName}");
+            foreach (var order in ordersForClient)
+            {
+                reportContent.AppendLine($"<br/>{GenerateOrderReport(order)}"); // o iterar si son múltiples
+                ListaOrdenes += "," + order.OrderId;
+                Console.WriteLine($" - Orden ID: {order.OrderId}");
+            }
+            var textocorreo = TextoParaCorreo(reportContent.ToString()); // o iterar si son múltiples
+            try
+            {
+                Task.Run(() =>
+                {
+                    SmtpClient client = new SmtpClient("smtp.office365.com", 587);
+                    client.UseDefaultCredentials = false;
+                    client.EnableSsl = true;
+                    client.Credentials = new NetworkCredential("formularios@unispan.com.co", "Sistemas2024*");
+                    MailMessage mailMessage = new MailMessage();
+                    mailMessage.From = new MailAddress("formularios@unispan.com.co");
+                    mailMessage.To.Add("sistemas@unispan.com.co");
+                    mailMessage.To.Add("acuartas@bitcode.com.co");
+                    mailMessage.IsBodyHtml = true;
+                    //mailMessage.Body = $" {reportContent}  ";
+                    mailMessage.Body = $" {textocorreo}  ";
+                    mailMessage.Subject = $"PROGRAMACIÓN DESPACHO {ListaOrdenes}";
+                    Attachment attachment = new Attachment(@"C:\Users\acuartas\OneDrive - Bitcode IT Services S.A.S\Bitcode\18. Proyectos\035. Unispan\04. Proyeto EnviarCorreos\PLANTILLA DEVOLUCIONES.zip");
+                    mailMessage.Attachments.Add(attachment);
+                    client.Send(mailMessage);
+                });
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    async void SearchOrder()
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            this.initDay = this.scheduleDisRet.FromDate.Day;
+            this.totalTon = 0;
+            this.days = (this.scheduleDisRet.ToDate - this.scheduleDisRet.FromDate).TotalDays + 1;
+            this.fromDate = this.scheduleDisRet.FromDate;
+            amountTotals = new List<AmountTotal>();
+
+            this.banner = await parameterService.SelectByIdentify(this.scheduleDisRet.ModuleId == 1 ? "LogisticsBannerDispatchs" : "LogisticsBannerReturns");
+
+            try
+            {
+                this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, searchBy);
+                foreach (var order in this.orders)
+                {
+                    this.totalTon += order.Wight;
+                    AmountTotal amountTotal = null;
+                    string date = "";
+                    if (this.scheduleDisRet.ModuleId == 1)
+                    {
+                        date = order.DispatchDateTime.Value.ToString("dd/MM/yyyy");
+                        amountTotal = amountTotals.Where(t => t.date.Equals(date)).FirstOrDefault();
+                    }
+                    else
+                    {
+                        date = order.ReturnDateTime.Value.ToString("dd/MM/yyyy");
+                        amountTotal = amountTotals.Where(t => t.date.Equals(date)).FirstOrDefault();
+                    }
+
+                    if (amountTotal is null)
+                    {
+                        this.amountTotals.Add(new AmountTotal()
+                            {
+                                date = date,
+                                total = order.Wight
+                            });
+                    }
+                    else
+                    {
+                        amountTotal.total += order.Wight;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                dialogService.Close();
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                throw;
+            }
+
+            this.InvokeAsync(() =>
+            {
+                dialogService.Close();
+                StateHasChanged();
+            });
+        });
+    }
+    async void keySearchBy(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            this.SearchOrder();
+        }
+    }
+
+    #region Preparar correos
+    public string GenerateOrderReport(DTOOrder order)
+    {
+        var sb = new StringBuilder();
+        // ESTILOS CSS
+        string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
+        string headerStyle = "background-color: #3498db; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
+        string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
+        sb.AppendLine("<h2 style='color: #2c3e50; margin-bottom: 20px;'>REPORTE DE ORDEN</h2>");
+        // TABLA CON MÚLTIPLES COLUMNAS
+        sb.AppendLine($"<div style='overflow-x: auto;'>");
+        sb.AppendLine($"<table style='{tableStyle}'>");
+        // ENCABEZADOS
+        sb.AppendLine("<tr>");
+        AddTableHeader(sb, headerStyle, "ID de Orden");
+        AddTableHeader(sb, headerStyle, "Número de Orden");
+        AddTableHeader(sb, headerStyle, "Tipo de Orden");
+        AddTableHeader(sb, headerStyle, "Cliente");
+        AddTableHeader(sb, headerStyle, "Fecha Despacho");
+        AddTableHeader(sb, headerStyle, "Vendedor");
+        AddTableHeader(sb, headerStyle, "Transporte");
+        AddTableHeader(sb, headerStyle, "Peso Total");
+        AddTableHeader(sb, headerStyle, "Ciudad");
+        AddTableHeader(sb, headerStyle, "Módulo");
+        AddTableHeader(sb, headerStyle, "Conformidad");
+        AddTableHeader(sb, headerStyle, "Última Modificación");
+        sb.AppendLine("</tr>");
+        // FILA DE DATOS
+        sb.AppendLine("<tr>");
+        AddTableCell(sb, cellStyle, order.OrderId.ToString());
+        AddTableCell(sb, cellStyle, order.OrderNum);
+        AddTableCell(sb, cellStyle, order.OrderType.ToString());
+        AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
+        AddTableCell(sb, cellStyle, order.DispatchDateTime?.ToString("dd/MM/yyyy HH:mm") ?? "N/A");
+        AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
+        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
+        AddTableCell(sb, cellStyle, $"{order.TotalPalletWeight} kg");
+        AddTableCell(sb, cellStyle, order.City);
+        AddTableCell(sb, cellStyle, order.Module);
+        AddTableCell(sb, cellStyle, order.IsConform ?? "N/A");
+        AddTableCell(sb, cellStyle, order.ModifiedOn.ToString("dd/MM/yyyy HH:mm"));
+        sb.AppendLine("</tr>");
+        sb.AppendLine("</table>");
+        sb.AppendLine("</div>");
+        return sb.ToString();
+    }
+    private void AddTableHeader(StringBuilder sb, string style, string header)
+    {
+        sb.AppendLine($"<th style='{style}'>{header}</th>");
+    }
+    private void AddTableCell(StringBuilder sb, string style, string value)
+    {
+        sb.AppendLine($"<td style='{style}'>{value}</td>");
+    }
+
+    #region Texto base correo
+    public string TextoParaCorreo(string Tablas)
+    {
+        var sb = new StringBuilder();
+        sb.Append($@"<html><head>
+            <meta http-equiv=""Content-Type"" content=""text/html; charset=Windows-1252"">
+            <style type=""text/css"" style=""display:none;""> P {{margin - top:0;margin-bottom:0;}} </style>
+            </head>
+            <body dir=""ltr"">
+            <div style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            </div>
+            <div class=""elementToProof"" style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div class=""elementToProof"" style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div id=""Signature"" class=""elementToProof"">
+            <div style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            Cordial Saludo</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            Se programa el cupo(s) solicitado(s) as :</div>{Tablas}<div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            &nbsp;</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            La fecha indicada, es el d a en que se recibe el veh culo en nuestra planta, la cual est  ubicada en Km 2 V a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            LOS VEH CULO PROGRAMADOS DESDE LAS 12:00, SER N DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL D A SIGUIENTE SE CONTINUAR  EL PROCESO DE ORGANIZACI N Y CLASIFICACI N DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
+            <div style=""direction: ltr; text-align: center; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <b>CONDICIONES Y REQUISITOS</b></div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            La siguiente informaci n es importante que se tenga en cuenta para cumplir con de los requisitos y condiciones de alistamiento y envi  del equipo:</div>
+            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
+            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
+            <b>PROGRAMACI N DEVOLUCIONES</b>: Las devoluciones deben ser programadas con cinco (5) d as h biles de anticipaci n, se recibe equipo en bodega de lunes a viernes (No festivos).</li></ul>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            Si por alg n motivo no puede cumplir con la cita programada, por favor comunicarse con el Asesor de Obra de Unispan con la mayor antelaci n posible para proceder a reprogramar y liberar el cupo en nuestra planta para otro cliente.</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            Si inicialmente ha solicitado programar un determinado veh culo, por ejemplo una Tractomula, y por alguna raz n no consigue este veh culo y decide enviar el equipo en dos Dobletroques, por favor comun quese previamente con el  rea de operaciones
+            <span style=""color: rgb(5, 99, 193);""><u><a href=""mailto:diroperaciones@unispan.com.co"" id=""OWAd49d3ee8-a475-a0d0-9627-f7183e77d513"" class=""x_OWAAutoLink"" style=""color: rgb(5, 99, 193);"">diroperaciones@unispan.com.co</a></u></span>&nbsp;para que sea verificado si
+             es posible aceptar esta modificaci n, en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo veh culo, ya que para bajar cada carro se requiere espacio f sico y una cuadrilla de personal.</div>
+            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
+            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
+            <b>VEH CULOS</b>: Todos los veh culos deben permitir retirar la carrocer a por ambos lados y venir cargados de acuerdo a la metodolog a adjunta
+            <b>PRO-P.LO-006 - PROCEDIMIENTO DE CARGUE.pdf</b>, este m todo es muy importante para poder descargar el equipo mec nicamente, brindando as  menores tiempos de atenci n a nuestros clientes y salvaguardando la seguridad del personal involucrado en esta labor.&nbsp;
+             No se aceptan devoluciones en Volquetas y se sugiere no emplear camas bajas, cami n gr a o veh culos que no dispongan de carrocer a, dado a la alta posibilidad de extraviar parte del equipo, en especial piezas peque as. Debido a la escases de veh culos Turbo
+             (4.0 Ton) que dispongan de carrocer a removible, ser  el  nico tipo de veh culo que se acepta con esta condici n. Lo invitamos a ver v deo sobre la Gu a para el cargue de equipos:
+            <span style=""color: rgb(5, 99, 193);""><u><a href=""https://www.youtube.com/watch?v=UTyIqQiTCsY"" id=""OWA2178799a-a6c4-d9da-043a-76d8e821ed2a"" class=""x_OWAAutoLink"" data-auth=""NotApplicable"" style=""color: rgb(5, 99, 193);"">https://www.youtube.com/watch?v=UTyIqQiTCsY</a></u></span></li></ul>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            Si el equipo no llega de acuerdo a la metodolog a descrita para poder descargar el equipo mec nicamente, el cliente deber  asumir los siguientes costos por servicio de descargue manual de acuerdo al tipo de veh culo:</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            &nbsp;</div>
+            <div align=""center"">
+            <table cellspacing=""0"" cellpadding=""0"" style=""direction: ltr; box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;"">
+            <tbody>
+            <tr>
+            <td style=""direction: ltr; border-width: 1pt; border-style: solid; border-color: initial; padding: 0cm 5.4pt; width: 119.6pt;"">
+            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <b>TIPO DE VEH CULO</b></div>
+            </td>
+            <td style=""direction: ltr; border-top: 1pt solid; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; width: 65.1pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <b>CAPACIDAD</b></div>
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <b>(Ton)</b></div>
+            </td>
+            <td style=""direction: ltr; border-top: 1pt solid; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; width: 119.85pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <b>COSTO SERVICIO DESCARGUE MANUAL</b></div>
+            </td>
+            </tr>
+            <tr>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
+            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            TRACTOMULA</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            33 Ton</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            $ 2.000.000 + IVA</div>
+            </td>
+            </tr>
+            <tr>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
+            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            DOBLETROQUE</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            16 Ton</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            $ 1.400.000 + IVA</div>
+            </td>
+            </tr>
+            <tr>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
+            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            SENCILLO</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            8 Ton</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            $ 800.000 + IVA</div>
+            </td>
+            </tr>
+            <tr>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
+            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            TURBO O INFERIOR*</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            4 Ton</div>
+            </td>
+            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
+            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            $ 0</div>
+            </td>
+            </tr>
+            </tbody>
+            </table>
+            </div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            &nbsp;</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <b>*</b>NO EXISTIR  COBRO PARA VEH CULOS TURBO QUE LLEGUEN A DEVOLVER EQUIPO SIN LA METODOLOG A ESTABLECIDA PARA SER DESCARGADOS MEDIANTE MONTACARGA, PERO SI EL EQUIPO VIENE EN P SIMO ESTADO DE ORGANIZACI N, S  TENDR  COBRO POR $240.000 + Iva.</div>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            &nbsp;</div>
+            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px; flex-direction: column; display: flex;"">
+            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
+            <div style=""direction: ltr;""><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operaci n, debido que al cargarlo de esta forma,
+             las piezas se desplazan.</div>
+            </li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); align-self: center;"">
+            <div style=""direction: ltr; text-align: center;""><img id=""x_image_0"" size=""1181026"" contenttype=""image/png"" style=""max-width: 1867px;"" data-outlook-trace=""F:2|T:2"" src=""http://manager.unispan.com.co/Images/imagen_despachos.png""></div>
+            </li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
+            <b>FUNCIONARIO DE OBRA</b>: Se recomienda enviar un funcionario de la obra para que valide los conteos en la planta Unispan, notificar previamente por mail, los datos del funcionario que env e la obra, el cual debe presentarse con sus respectivos EPP y Planilla
+             de Seguridad Vigente (Unispan asumir  los gastos de vi ticos del funcionario que envi  la obra, con previa coordinaci n de Unispan, para no superar los topes establecidos en los gastos y presentar los respectivos soportes legales para el reembolso), de acuerdo
+             a lo especificado en el documento adjunto <b>VIATICOS FUNCIONARIOS.pdf</b>.&nbsp; En caso de no enviar funcionario, tener en cuenta que no se aceptar n reclamos por diferencias de cantidad entre el listado enviado por la obra y el conteo que se realice en la planta
+             Unispan (solo se recibe en la planta; una vez el equipo se descargue, clasifique y organice por referencias; para poder contar con precisi n y validar las condiciones de limpieza y estado de cada elemento del equipo.)</li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
+            <b>ESTADO DEL EQUIPO</b>: Los elementos deben devolverse libres de residuos de concreto, implementar limpieza mec nica (copagrata, esp tula, viruta met lica etc.) de lo contrario se generar n cobros por limpieza.&nbsp;</li></ul>
+            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            No aplicar ACPM o alg n antiadherente a los elementos que se vayan a devolver, podr  generarse un cobro por el lavado del equipo. Tampoco aplicar alg n tipo de sustancia como ( cidos) que corroen, oxidan y afectan la composici n de los materiales del equipo,
+             pudiendo clasificar el equipo afectado como irreparable.</div>
+            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
+            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 8pt 36pt;"">
+            <b>PACKING LIST</b>: Debe enviarse un listado claro y preciso de los elementos que se devuelven con los nombres t cnicos del equipo. Para lo cual se adjuntan &nbsp;<b>MANUAL ELPIS.pdf</b>&nbsp;(Plataforma para acceder a consultar los saldos de equipo que dispone la obra
+             por cada frente, puede consultar los movimientos, valores de reposici n, peso en Kg) y
+            <b>MANUAL DEL USUARIO.pdf</b>&nbsp;(Documento para identificaci n de los elementos empleados en los diferentes sistemas).</li></ul>
+            <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div id=""x_Signature"" class=""x_elementToProof"">
+            <div style=""text-align: left; text-indent: 0px; background-color: rgb(255, 255, 255); margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);"">
+            Atte,</div>
+            <table style=""text-align: left; background-color: rgb(255, 255, 255); color: rgb(36, 36, 36); box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;"">
+            <tbody>
+            <tr>
+            <td style=""text-align: left; padding: 0cm 5.4pt; vertical-align: top; width: 155.7pt; height: 87px;"">
+            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt;""><span style=""font-family: Calibri, sans-serif, serif, EmojiFont; font-size: 11pt; color: rgb(0, 0, 0);"">&nbsp;<img id=""x_x_x_x_x_image_0"" width=""231"" height=""83"" size=""51851"" contenttype=""image/png"" style=""width: 231px; height: 83px; min-width: auto; min-height: auto; margin: 0px;"" data-outlook-trace=""F:6|T:6"" src=""http://manager.unispan.com.co/Images/Unispan2.png""></span></p>
+            </td>
+            <td style=""text-align: left; padding: 0cm 5.4pt; width: 276.65pt; height: 87px;"">
+            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
+            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;""><br>
+            </span></p>
+            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
+            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;"">Julian Andr s Mora Ruiz.
+            </span><span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;"">Director de Operaciones&nbsp;</span></p>
+            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
+            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;"">Tel.: (602) 6664040&nbsp; Ext.: 149 Cel.: 3216383756&nbsp;</span></p>
+            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
+            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;"">diroperaciones@unispan.com.co<b>&nbsp;/
+            </b></span><span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: rgb(23, 15, 173);""><b><u><a href=""https://unispan.com.co/"" id=""OWA5aef641b-f10f-d499-3a1c-7f91fa85647e"" class=""x_x_x_x_x_OWAAutoLink"" title=""https://unispan.com.co/"" data-linkindex=""9"" data-auth=""NotApplicable"" style=""margin: 0px;"">www.unispan.com.co</a></u>&nbsp;</b></span></p>
+            </td>
+            </tr>
+            </tbody>
+            </table>
+            <div style=""text-align: left; text-indent: 0px; background-color: rgb(255, 255, 255); margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);"">
+              Copyright exclusivos de UNISPAN COLOMBIA S.A.S.</div>
+            <div style=""direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            <div style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
+            <br>
+            </div>
+            </div>
+            </body>
+            </html>");
+        return sb.ToString();
+    }
+    #endregion
+
+    #endregion
+
+
+}
+<div class="row">
+    <div class="col-sm-5">
+        <div class="row">
+            <div class="col-sm-12">
+                @{
+                    if (this.createOrUpdate)
+                    {
+                        <button type="button" @onclick="@(args => { EditOrder(0); })" class="btn btn-primary">Nueva orden</button>
+                    }
+                    if (this.exportToExcel)
+                    {
+                        <button type="button" @onclick="@(args => { ExportToExcel(); })" class="btn btn-success">Exportar a excel</button>
+                    }
+                    <button type="button" @onclick="@(args => { SendNotification(); })" class="btn btn-success">Notificar</button>
+                }
+            </div>
+            <div class="col-sm-12">
+                <div class="row pt-2">
+                    <div class="form-group col-sm-4">
+                        <label>Modulo</label>
+                        <RadzenDropDown class="form-control" @bind-Value="scheduleDisRet.ModuleId" Change="@SearchOrder" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@scheduleDisRet.Modules" TextProperty="Description" ValueProperty="Id" />
+                    </div>
+                    <div class="form-group col-sm-4">
+                        <label>Desde</label>
+                        <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@scheduleDisRet.FromDate" class="d-block" />
+                    </div>
+                    <div class="form-group col-sm-4">
+                        <label>Hasta</label>
+                        <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@scheduleDisRet.ToDate" class="d-block" />
+                    </div>
+                </div>
+                <div class="row pt-1">
+                    <div class="form-group col-sm-12">
+                        <div class="input-group input-group-lg">
+                            <input type="text" @bind-value="searchBy" class="form-control" placeholder="Filtrar ordenes" @onkeyup="@(args => { keySearchBy(args); })">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="button-addon1" @onclick="@(args => { SearchOrder(); })">Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-7">
+        <div class="banner">
+            <img src="@this.banner.Value" />
+        </div>
+    </div>
+</div>
+<div class="order-table-scroll fixed-content-grid ">
+    <div class="order-table-wrap">
+        @{
+            if (this.scheduleDisRet.ModuleId == 1)
+            {
+                <table>
+                    <thead>
+                        <tr class="thead-title-bold row-fixed-1">
+                            <th colspan="7" class="col-title-totalTon"><span>SUMA TONELADAS PROGRAMADAS ---></span></th>
+                            <th class="col-totalTon">@(string.Format("{0}Ton", this.totalTon.ToString("0.00")))</th>
+                            @{
+                                for (int i = 0; i < days; i++)
+                                {
+                                    <th colspan="4" class="col-totalTonXDay">
+                                        @{
+                                            var totalAmount = amountTotals.Where(t => t.date.Equals(fromDate.AddDays(i).ToString("dd/MM/yyyy"))).FirstOrDefault();
+                                            if (!(totalAmount is null))
+                                            {
+                                                <span>@(string.Format("{0}Ton", totalAmount.total.ToString("0.00")))</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@(string.Format("0.00Ton"))</span>
+                                            }
+                                        }
+                                    </th>
+                                }
+                            }
+                            <th colspan="2" style="background-color: white;"></th>
+                        </tr>
+                        @*<tr>
+                                <th colspan="8" class="col-banner">
+                                    <img src="@this.banner.Value" />
+                                </th>
+                            </tr>*@
+                        <tr class="thead-title-bold row-fixed-2">
+                            <th colspan="8" class="col-title">@(this.scheduleDisRet.ModuleId == 1 ? "CONTROL DE DESPACHOS" : "CONTROL DE DEVOLUCIONES")</th>
+                            @{
+                                for (int i = 0; i < days; i++)
+                                {
+                                    <th colspan="4">
+                                        @{
+                                            <span>@fromDate.AddDays(i).ToString("dddd").ToUpper()</span>
+                                            <br />
+                                            <span>@fromDate.AddDays(i).ToString("d-MMMM-yyyy").ToUpper()</span>
+                                        }
+                                    </th>
+                                }
+                            }
+                            <th colspan="2" style="background-color: #9BBB59; color: black;">DESPACHOS PENDIENTES POR DEFINIR FECHA</th>
+                        </tr>
+                        <tr class="thead-title-nobold row-fixed-3">
+                            <!-- Columna para el checkbox "Seleccionar Todo" -->
+                            <th>
+                                <input class="col-work" type="checkbox" id="selectAll" @onchange="ToggleSelectAll" />
+                            </th>
+                            <th class="col-work">OBRAS</th>
+                            <th class="col-customerName">CLIENTE</th>
+                            <th class="col-orderId"><span>ORDEN DE</span><br /><span>DESPACHO</span></th>
+                            <th class="col-opNum"># OP</th>
+                            <th class="col-salesPerson">COMERCIAL</th>
+                            <th class="col-module">MODULÓ</th>
+                            <th class="col-city">CIUDAD</th>
+                            <th class="col-transport"><span>TRANSPORTE A</span><br /><span>CARGO DE</span></th>
+                            @{
+                                for (int i = 0; i < days; i++)
+                                {
+                                    <th class="col-wight"><span>PESO</span><br /><span>(Ton)</span></th>
+                                    <th class="col-time"><span>Hora de</span><br /><span>cargue</span></th>
+                                    <th>OK</th>
+                                    <th>VEHICULO</th>
+                                }
+                            }
+                            <th class="col-wight2"><span>PESO</span><br /><span>(Ton)</span></th>
+                            <th>OBSERVACIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            if (!(orders is null))
+                            {
+                                foreach (var order in orders)
+                                {
+                                    <tr>
+                                        <!-- Columna para checkbox individual -->
+                                        <td>
+                                            <input type="checkbox" name="selectedOrders" class="orderCheckbox" @bind="order.IsSelected" />
+                                        </td>
+                                        @{
+                                            if (order.Status.Equals(OrderStatus.Paused))
+                                            {
+                                                if (order.DispatchDateTime.Value.ToString("yyyy").Equals("0001"))
+                                                {
+                                                    <td class="col-work" style="background: red; color: white; padding: 0px !important;">
+                                                        <div style="border: 4px solid #ffc107; display: inline-block; width: 100%; height: 28px">
+                                                            <span style="display: inline-block; margin: 2px 5px;">@order.Works</span>
+                                                        </div>
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="col-work" style="background: #ffc107; color: black">@order.Works</td>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (order.DispatchDateTime.Value.ToString("yyyy").Equals("0001"))
+                                                {
+                                                    <td class="col-work" style="background: red; color: white">@order.Works</td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="col-work">@order.Works</td>
+                                                }
+                                            }
+                                        }
+                                        <td class="col-customerName">@order.CustomerName</td>
+                                        <td class="col-orderId">
+                                            @{
+                                                if (this.searchOrder || this.createOrUpdate)
+                                                {
+                                                    <a href="" @onclick="@(args => { this.EditOrder(order.OrderId); })">
+                                                        @{
+                                                            if (order.DispatchParent)
+                                                            {
+                                                                <span style="color: red; font-weight:bold; font-size: 12px">*</span>
+                                                            }
+                                                            if (!string.IsNullOrEmpty(order.OrderNum))
+                                                            {
+                                                                var orderNumList = order.OrderNum.Split(',');
+                                                                foreach (var orderNum in orderNumList)
+                                                                {
+                                                                    <span>@orderNum</span>
+                                                                    <br />
+                                                                }
+                                                            }
+                                                        }
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span>@order.OrderNum</span>
+                                                }
+                                            }
+                                        </td>
+                                        <td class="col-opNum">@order.OPNum</td>
+                                        <td class="col-salesPerson">@order.SalesPerson</td>
+                                        <td class="col-module">@order.Module</td>
+                                        <td class="col-city">@order.City</td>
+                                        <td class="col-transport">@order.ReponsableTrans</td>
+                                        @{
+                                            fromDate = this.scheduleDisRet.FromDate;
+                                            for (int i = 0; i < days; i++)
+                                            {
+                                                var curDate = fromDate.AddDays(i);
+                                                if (order.DispatchDateTime.Value.ToString("dd-MM-yyyy").Equals(curDate.ToString("dd-MM-yyyy")))
+                                                {
+                                                    if (order.DispatchParent || (order.OrderId != order.DispatchId))
+                                                    {
+                                                        <td style="background: yellow;">@order.Wight</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td>@order.Wight</td>
+                                                    }
+                                                    <td><span>@order.DispatchDateTime.Value.ToString("HH:mm")</span></td>
+                                                    <td>
+                                                        @{
+                                                            if (order.Ok)
+                                                            {
+                                                                <span>OK</span>
+                                                            }
+                                                        }
+                                                    </td>
+                                                    <td>@order.VehicleType</td>
+                                                }
+                                                else
+                                                {
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                }
+                                            }
+                                            if (order.DispatchDateTime.Equals(DateTime.MinValue))
+                                            {
+                                                <td>@order.Wight</td>
+                                                <td>@order.Comment</td>
+                                            }
+                                            else
+                                            {
+                                                <td></td>
+                                                <td></td>
+                                            }
+                                        }
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr class="thead-title-bold row-fixed-1">
+                            <th colspan="4" class="col-ret-title-totalTon"><span>SUMA TONELADAS PROGRAMADAS ---></span></th>
+                            <th class="col-ret-totalTon">@(string.Format("{0}Ton", this.totalTon.ToString("0.00")))</th>
+                            @{
+                                for (int i = 0; i < days; i++)
+                                {
+                                    <th colspan="3" class="col-totalTonXDay">
+                                        @{
+                                            var totalAmount = amountTotals.Where(t => t.date.Equals(fromDate.AddDays(i).ToString("dd/MM/yyyy"))).FirstOrDefault();
+                                            if (!(totalAmount is null))
+                                            {
+                                                <span>@(string.Format("{0}Ton", totalAmount.total.ToString("0.00")))</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@(string.Format("0.00Ton"))</span>
+                                            }
+                                        }
+                                    </th>
+                                }
+                            }
+                        </tr>
+                        <tr class="thead-title-bold row-fixed-2">
+                            <th colspan="5" class="col-ret-title">@(this.scheduleDisRet.ModuleId == 1 ? "CONTROL DE DESPACHOS" : "CONTROL DE DEVOLUCIONES")</th>
+                            @{
+                                for (int i = 0; i < days; i++)
+                                {
+                                    <th colspan="3">
+                                        @{
+                                            <span>@fromDate.AddDays(i).ToString("dddd").ToUpper()</span>
+                                            <br />
+                                            <span>@fromDate.AddDays(i).ToString("d-MMMM-yyyy").ToUpper()</span>
+                                        }
+                                    </th>
+                                }
+                            }
+                        </tr>
+                        <tr class="thead-title-nobold row-fixed-3">
+                            <th class="col-ret-work">OBRAS</th>
+                            <th class="col-ret-customerName">CLIENTE</th>
+                            <th class="col-ret-city">CIUDAD</th>
+                            <th class="col-ret-salesPerson">COMERCIAL</th>
+                            <th class="col-transportdev"><span>TRANSPORTE A</span><br /><span>CARGO DE</span></th>
+                            @{
+                                for (int i = 0; i < days; i++)
+                                {
+                                    <th class="col-wight"><span>PESO</span><br /><span>(Ton)</span></th>
+                                    <th class="col-time"><span>Hora de</span><br /><span>cargue</span></th>
+                                    <th>OK</th>
+                                }
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            if (!(orders is null))
+                            {
+                                foreach (var order in orders)
+                                {
+                                    <tr>
+                                        <td class="col-ret-work">
+                                            @{
+                                                if (this.searchOrder || this.createOrUpdate)
+                                                {
+                                                    <a href="" @onclick="@(args => { this.EditOrder(order.OrderId); })">@order.Works</a>
+                                                }
+                                                else
+                                                {
+                                                    <span>@order.Works</span>
+                                                }
+                                            }
+                                        </td>
+                                        @*<td class="col-ret-orderId">@order.OrderNum</td>*@
+                                        <td class="col-ret-customerName">@order.CustomerName</td>
+                                        <td class="col-ret-city">@order.City</td>
+                                        <td class="col-ret-salesPerson">@order.SalesPerson</td>
+                                        <td class="col-transportdev">@order.ReponsableTrans</td>
+                                        @{
+                                            fromDate = this.scheduleDisRet.FromDate;
+                                            for (int i = 0; i < days; i++)
+                                            {
+                                                var curDate = fromDate.AddDays(i);
+                                                if (order.ReturnDateTime.Value.ToString("dd-MM-yyyy").Equals(curDate.ToString("dd-MM-yyyy")))
+                                                {
+                                                    <td>@order.Wight</td>
+                                                    <td><span>@order.ReturnDateTime.Value.ToString("HH:mm")</span></td>
+                                                    <td>
+                                                        @{
+                                                            if (order.Ok)
+                                                            {
+                                                                <span>OK</span>
+                                                            }
+                                                        }
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                }
+                                            }
+                                        }
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </div>
+</div>
+<div class="form-row">
+    <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
+</div>

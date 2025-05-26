@@ -1,0 +1,118 @@
+﻿@page "/CancelSalesInvoice"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+@using Microsoft.JSInterop;
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IElectronicBillingService electronicBillingService
+@inject NotificationService notificationService
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject SecurityService securityService
+@inject CompanyService companyService
+
+@code {
+
+    [Parameter]
+    public EditSalesInvoice callView { get; set; }
+
+    [Parameter]
+    public DTOSalesInvoice salesInvoice { get; set; }
+
+    private DTOConfirmSalesInvoice model = new DTOConfirmSalesInvoice();
+
+    protected override void OnInitialized()
+    {
+        this.model.SalesInvoice = this.salesInvoice;
+
+        this.GetSecurity();
+    }
+
+    public async Task onCancel()
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Esta seguro que desea dar de baja la factura {this.model.SalesInvoice.InvoiceNum}"))
+                return;
+
+            this.salesInvoice = await this.electronicBillingService.CancelAsync(this.model);
+
+            this.dialogService.Close();
+
+            this.callView.onRefreshForm(this.salesInvoice);
+
+            if (this.salesInvoice.Status.Equals(SalesInvoiceStatus.Cancelled))
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "La factura ha sido confirmada.", Duration = 5000 });
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+        
+    }
+
+    void OnInputFileChange(IFileListEntry[] files)
+    {
+        try
+        {
+            this.model.Files = files;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var userApp = await securityService.GetUserAppByTooken(tooken);
+        if (!(userApp is null))
+            this.model.UserName = userApp.Username;
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+    }
+}
+
+
+<RadzenTemplateForm TItem="DTOConfirmSalesInvoice" Data=@model Submit=@onCancel InvalidSubmit=@OnInvalidSubmit>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="form-row mb-4">
+                <div class="col-sm-6">
+                    <div class="form-group ">
+                        <label for="orderId">Observación</label>
+                        <RadzenTextArea @bind-Value="model.Note" Name="Note" class="form-control w-100" MaxLength="250"></RadzenTextArea>
+                        <RadzenRequiredValidator Component="Note" Text="La nota es requerida" Popup="true" />
+                    </div>
+                </div>
+                <div class="col-sm-1"></div>
+                <div class="col-sm-5">
+                    <div class="form-group">
+                        <label for="inputfileDocument">Document adjunto</label>
+                        <InputFile OnChange="@(args => { OnInputFileChange(args); })" multiple="false" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 text-right">                    
+                    <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Text="Cancelar" Style="width: 150px, height: 33.5px" />
+                    <RadzenButton ButtonType="ButtonType.Submit" Variant="Variant.Text" ButtonStyle="ButtonStyle.Primary" Text="Guardar" Style="width: 150px, height: 33.5px"></RadzenButton>
+                </div>
+            </div>
+        </div>
+    </div>
+</RadzenTemplateForm>

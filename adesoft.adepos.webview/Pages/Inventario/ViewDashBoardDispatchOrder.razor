@@ -1,0 +1,502 @@
+﻿@page "/viewdashboarddispatchorder"
+@using System.Globalization
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject WarehouseService warehouseService
+@inject TransactionGenericService transactionservice
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@implements IDisposable
+@code {
+    DTOViewDashBoardDistpatch model = new DTOViewDashBoardDistpatch();
+    public bool CanWrite;
+
+    public void Dispose()
+    {
+        manager.UnRegisterView(this);
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        model.Warehouses = await warehouseService.selectAll(new Warehouse() { TransOption = 2 });
+        manager.RegisterViews(this);
+
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        ActionApp actionapp = await securityService.ValidatePermissionByTooken(tooken, "ViewDashBoardDispatchOrder", "Edit");
+        CanWrite = actionapp.TransactionIsOk;
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (CanWrite)
+        {
+            JSRuntime.InvokeVoidAsync("$.fn.delegateToDash");//delego el evento ondragover en javascript para el div del drap and drop
+        }
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    public async void draggrid(DragEventArgs ev, DTOCardDistpatch cre)
+    {
+        ev.DataTransfer.Items = new DataTransferItem[1] { new DataTransferItem() { Kind = "2" } };
+        CardDistpatchSelector = cre;
+    }
+
+    DTOCardDistpatch CardDistpatchSelector = null;
+    int TurnSelector = 0;
+
+    public async void dropgrid(DragEventArgs ev, DateTime dateDispatch)
+    {
+        if (CardDistpatchSelector != null)
+        {
+            if (dateDispatch != CardDistpatchSelector.DateDistpatch || TurnSelector != CardDistpatchSelector.TurnOrder)
+            {
+                //eliminar
+                DTOColumnsDistpatch columTodelete = model.DTOColumnsDistpatch.Where(x => x.DateDistpatch == CardDistpatchSelector.DateDistpatch).FirstOrDefault();
+                columTodelete.DTOCardDistpatchs.Remove(CardDistpatchSelector);
+
+                //agregar
+                DTOColumnsDistpatch columToAdd = model.DTOColumnsDistpatch.Where(x => x.DateDistpatch == dateDispatch).FirstOrDefault();
+
+                if (TurnSelector == 0)
+                {
+                    if (columToAdd.DTOCardDistpatchs.Count > 0)
+                    {
+                        TurnSelector = (int)columToAdd.DTOCardDistpatchs.Max(x => x.TurnOrder) + 1; //el ultimo de la coolumna + 1
+                    }
+                    else
+                    {//esto solo pasa con los aplazados
+                        if (model.CopyAllCardDistpatchs.Count > 0)
+                            TurnSelector = (int)model.CopyAllCardDistpatchs.Max(x => x.TurnOrder) + 1;
+                        else
+                            TurnSelector = 1;
+                    }
+                }
+                int auxturnacum = TurnSelector;
+                if (CardDistpatchSelector.TurnOrder > TurnSelector)
+                {
+                    int auxcount = (int)TurnSelector + 1;
+                    //si es mayor el selccionado debe escogerse lo masyores e igual a turnSelector hasta CardDistpatchSelector.TurnOrder + 1
+                    List<DTOCardDistpatch> list = model.CopyAllCardDistpatchs.Where(x => x.TurnOrder >= auxturnacum && x.TurnOrder < (CardDistpatchSelector.TurnOrder)).OrderBy(t => t.TurnOrder).ToList();
+                    list.ForEach(x =>
+                    {
+                        x.TurnOrder = auxcount++;
+                    });
+                    CardDistpatchSelector.TurnOrder = TurnSelector;
+                }
+                else if (CardDistpatchSelector.TurnOrder < TurnSelector)
+                {
+                    int auxcount = (int)CardDistpatchSelector.TurnOrder;
+                    model.CopyAllCardDistpatchs.Where(x => x.TurnOrder >= (CardDistpatchSelector.TurnOrder + 1) && x.TurnOrder < auxturnacum).OrderBy(t => t.TurnOrder).ToList().ForEach(x => x.TurnOrder = auxcount++);
+                    CardDistpatchSelector.TurnOrder = TurnSelector - 1;
+                }
+                CardDistpatchSelector.DateDistpatch = dateDispatch;
+                columToAdd.DTOCardDistpatchs.Add(CardDistpatchSelector);
+
+                //evaluo si la columna se queda sin registros y la elimino
+                if (columTodelete.DTOCardDistpatchs.Count == 0 && columTodelete.DateDistpatch != TransactionGeneric.DateAplazados)
+                {
+                    model.DTOColumnsDistpatch.Remove(columTodelete);
+                }
+            }
+            TurnSelector = 0;
+            CardDistpatchSelector = null;
+            OrganizarColumnas();
+            dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Reserva" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+            Task.Run(async () =>
+            {
+                await transactionservice.Update(model.CopyAllCardDistpatchs, 1);
+
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    StateHasChanged();
+
+                    manager.NotifyToAllViews(this, model);
+                });
+            });
+
+        }
+        //if ((companyCurrent.CompanyId == 1)
+        //        || (companyCurrent.CompanyId != 1 && stateid == 1 && CreditSelectedDragDrop.StateCreditId == 5))
+        //{//si compania es 1  .. o si  compania es diferenete de 1  , se va activar y el estado anterior es aprobado
+        //    CreditSelectedDragDrop.StateCreditId = stateid;
+        //    StateCredit st = liststate.Where(x => x.StateCreditId == stateid).First();
+        //    CreditSelectedDragDrop.StateCredit = st;
+
+        //    Credit clone = CreditSelectedDragDrop.GetCloneWithNativePropertys<Credit>();
+        //    creditService.Update(clone);
+
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se actualizo el estado del credito " + CreditSelectedDragDrop.ConsecutiveChar, Duration = 1000 });
+        //    this.StateHasChanged();
+        //}
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    public DTOCardDistpatch CreateCard(TransactionGeneric trans)
+    {
+        DTOCardDistpatch card = new DTOCardDistpatch();
+        card.TurnOrder = trans.TurnId; card.DateDistpatch = trans.DateEnd;
+        card.OrdenNum = trans.DocumentExtern; card.TransactionDistpatch = trans;
+        return card;
+    }
+
+
+    public void AddCard(DTOCardDistpatch newcard)
+    {
+        DTOColumnsDistpatch columnadd = model.DTOColumnsDistpatch.Where(x => x.DateDistpatch == newcard.DateDistpatch).FirstOrDefault();
+        if (columnadd == null)
+        {
+            columnadd = new DTOColumnsDistpatch();
+            columnadd.DateDistpatch = newcard.DateDistpatch;
+            model.DTOColumnsDistpatch.Add(columnadd);
+        }
+        columnadd.DTOCardDistpatchs.Add(newcard);
+        model.CopyAllCardDistpatchs.Add(newcard);
+    }
+
+
+    public void OrganizarColumnas()
+    {
+        bool flag = false;//organizar colores
+        foreach (DTOColumnsDistpatch colm in model.DTOColumnsDistpatch.OrderBy(x => x.DateDistpatch).ToList())
+        {
+            if (!flag)
+            {
+                flag = true;
+                colm.ColorCode = "linear-gradient(180deg, rgb(0, 71, 177) 0%, #758ba2 70%)";
+            }
+            else
+            {
+                flag = false;
+                colm.ColorCode = "linear-gradient(180deg, rgb(0, 0, 0) 0%, #4a4a4a 70%)";
+            }
+        }
+    }
+
+    public void OrganizarTurnos()
+    {
+        int turnorder = 1;
+        List<DateTime> listdate = model.CopyAllCardDistpatchs.Select(x => x.DateDistpatch).Distinct().ToList();
+        foreach (DateTime date in listdate.OrderBy(x => x).ToList())
+        {
+            List<DTOCardDistpatch> listdto = model.CopyAllCardDistpatchs.Where(x => x.TurnOrder != 0 && x.DateDistpatch == date).ToList();
+            if (listdto.Count > 0)
+            {
+                foreach (DTOCardDistpatch card in listdto.OrderBy(x => x.TurnOrder))
+                {
+                    card.TurnOrder = turnorder++;
+                }
+            }
+            List<DTOCardDistpatch> listdtocero = model.CopyAllCardDistpatchs.Where(x => x.TurnOrder == 0 && x.DateDistpatch == date).ToList();
+            if (listdtocero.Count > 0)
+            {
+                foreach (DTOCardDistpatch card in listdtocero)
+                {
+                    card.TurnOrder = turnorder++;
+                }
+            }
+        }
+    }
+
+    //dentro del recuadro del turno
+    public async void dropDivTurn(DragEventArgs ev, int turnid)
+    {
+        TurnSelector = turnid;
+    }
+    //este llamado viene del detalle de una tarjeta
+    public async void DeleteCardByDispatch(TransactionGeneric tra)
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            tra.TransOption = 1;
+            await transactionservice.Delete(tra);
+            await selectWarehouse(tra.WarehouseOriginId);
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+
+                manager.NotifyToAllViews(this, model);
+            });
+        });
+    }
+
+    //este llamado viene del detalle de una tarjeta - eliminar sin descontar de inventario
+    public async void DeleteCardByDispatch2(TransactionGeneric tra)
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            tra.TransOption = 2;
+            tra.Details.ForEach(x => x.Item = null);
+            await transactionservice.Delete(tra);
+            await selectWarehouse(tra.WarehouseOriginId);
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+
+                manager.NotifyToAllViews(this, model);
+            });
+        });
+    }
+
+    //este llamado viene del detalle de una tarjeta
+    public async void UpdateCardByDispatch(TransactionGeneric tra)
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            tra.TransOption = 3;
+            await transactionservice.Update(tra);
+            await selectWarehouse(tra.WarehouseOriginId);
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+
+                manager.NotifyToAllViews(this, model);
+            });
+        });
+    }
+
+    async Task selectWarehouse(long warehouseid)
+    {
+        model.CopyAllCardDistpatchs.Clear();
+        model.DTOColumnsDistpatch.Clear();
+        model.WarehouseId = warehouseid;
+        List<TransactionGeneric> list = await transactionservice.selectAll(new TransactionGeneric() { TransOption = 7, WarehouseOriginId = warehouseid, TypeTransactionId = CodTypeTransaction.ORDENDESPACHO });
+        foreach (TransactionGeneric tra in list)
+        {
+            DTOCardDistpatch card = CreateCard(tra);
+            AddCard(card);
+        }
+        //aplazados
+        if (model.DTOColumnsDistpatch.Count > 0)
+            model.DTOColumnsDistpatch.Add(new DTOColumnsDistpatch() { DateDistpatch = TransactionGeneric.DateAplazados });
+
+        if (list.Count > 0)
+        {
+            OrganizarColumnas();
+            OrganizarTurnos();
+            await transactionservice.Update(model.CopyAllCardDistpatchs, 1);
+        }
+
+    }
+
+    public async void SaveImport(TransactionGeneric trans)
+    {
+        dialogService.Close();
+        trans.DateEnd = trans.DateEnd.Date;
+        trans.WarehouseOriginId = model.WarehouseId;
+        trans.TypeTransactionId = CodTypeTransaction.ORDENDESPACHO;//ordenes
+        trans.TransOption = 6;
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Importacion" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            TransactionGeneric newtran = await transactionservice.Create(trans);
+            if (newtran.TransactionIsOk)
+            {
+                DTOCardDistpatch card = CreateCard(newtran);
+                AddCard(card);
+                OrganizarColumnas();
+                OrganizarTurnos();
+                //aqui revisar para tomar los cambios de transaction distpatch
+                await transactionservice.Update(model.CopyAllCardDistpatchs, 1);
+
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                    manager.NotifyToAllViews(this, model);
+                });
+            }
+            else
+            {
+                dialogService.Close();
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = newtran.MessageResponse, Duration = 4000 });
+                return;
+            }
+        });
+    }
+
+
+    public void CancelImport()
+    {
+        dialogService.Close();
+    }
+
+    void ClickBtnImportar()
+    {
+        if (model.WarehouseId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe seleccionar una bodega.", Duration = 4000 });
+            return;
+        }
+
+        dialogService.Open<ViewImportOrderDispatch>("Importar Orden de despacho"
+            , new Dictionary<string, object>() { { "objectView", this }, { "WarehouseId", model.WarehouseId } }
+            , new DialogOptions() { Width = "60%", Height = "580px"});
+    }
+
+    void GenerateReportGlobal()
+    {
+        dialogService.Open<ViewRptDispatchItem>("Reporte Global", new Dictionary<string, object>() { { "transactionGeneric", new TransactionGeneric() { WarehouseOriginId = model.WarehouseId } }, { "ItemId", "0" }, { "FilterOnlyPendient", true } }, new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+
+    void GenerateReportByDate(DateTime dateEnd)
+    {
+        dialogService.Open<ViewRptDispatchItem>("Reporte hasta la fecha " + dateEnd.ToString("dd MMM yyyy", CultureInfo.GetCultureInfo("ES-co")), new Dictionary<string, object>() { { "transactionGeneric", new TransactionGeneric() { WarehouseOriginId = model.WarehouseId } }, { "ItemId", "0" }, { "FilterOnlyPendient", true } ,
+        { "DateEnd", dateEnd }}, new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+
+    public void NotifyChangedModel(DTOViewDashBoardDistpatch mod)
+    {
+        this.InvokeAsync(() =>
+        {
+            if (model.WarehouseId == mod.WarehouseId)
+            {
+                model = (DTOViewDashBoardDistpatch)mod.Clone();
+                StateHasChanged();
+            }
+        });
+    }
+    bool ControlFlag = false;
+    void ClickCardDetail(DTOCardDistpatch card)
+    {
+        if (!ControlFlag)
+        {
+            ControlFlag = true;
+            dialogService.Open<ViewDetailDispatch>("Detalle de Orden de despacho", new Dictionary<string, object>() { { "model", card.TransactionDistpatch }, { "view", this }, { "CanWrite", CanWrite } }
+            , new DialogOptions() { Width = "70%", Height = "90%" });
+            ControlFlag = false;
+        }
+    }
+
+    void GenerateRequisition()
+    {
+        if (!ControlFlag)
+        {
+            ControlFlag = true;
+
+            List<TransactionGeneric> listTrans = model.CopyAllCardDistpatchs.Select(x => x.TransactionDistpatch).Where(t => t.StateTransactionGenericId == 11).ToList();
+            dialogService.Open<ViewPendingDispatchOrder>("Generar Requisición", new Dictionary<string, object>() { { "TransOrders", listTrans } }, new DialogOptions() { Width = "1000px", Height = "660px", Left = "calc(50% - 500px)", Top = "40px" });
+            ControlFlag = false;
+        }
+    }
+
+}
+
+<div class="card" style="height:calc(100% - 20px);position:fixed;width:calc(100% - 290px);">
+    <div class="h-100">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="selectWatehouse">Bodega</label>
+                <RadzenDropDown Name="selectCompany" TValue="long" class="form-control" Change="@(args=>selectWarehouse((long)args))" AllowClear="false" @bind-Value="model.WarehouseId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@model.Warehouses" TextProperty="Name" ValueProperty="WarehouseId" />
+            </div>
+
+            <div class="form-group col-md-8">
+                <label class="d-block">&nbsp;</label>
+                @if (CanWrite)
+                {
+                    <input Name="BtnLoadOrder" class="btn btn-success btn-sm" @onclick="ClickBtnImportar" type="button" value="Importar Orden de despacho" />
+                }
+                <input Name="BtnGenerateReport" class="btn btn-primary btn-sm" @onclick="GenerateReportGlobal" type="button" value="Generar Reporte Global" />
+                <input Name="BtnGenerateRequisition" class="btn btn-primary btn-sm" @onclick="GenerateRequisition" type="button" value="Generar Requisición" />
+            </div>
+
+
+        </div>
+        <div class="h-100" style="display:flex;">
+            <div style="overflow:auto;white-space:nowrap;height: calc(100% - 60px);">
+                @foreach (DTOColumnsDistpatch colm in model.DTOColumnsDistpatch.OrderBy(t => t.DateDistpatch).ToList())
+                {
+                    if (colm.DateDistpatch == TransactionGeneric.DateAplazados)
+                        continue;
+                    <!--col-sm -->
+                    <div class="DIVdrapanddrop" @ondrop="(args => dropgrid(args, colm.DateDistpatch))" style="padding:10px 2px 2px 2px; border:solid;width:150px;border-color:white;background-image:@colm.ColorCode;display:inline-block;min-height:100%;height:auto;">
+                        <div class="row d-block">
+                            <a @ondblclick="@(args=> { GenerateReportByDate(colm.DateDistpatch); })" href="javascript:void(0)"><h3 style="margin:auto;color:white;font-weight:bold;text-align:center;">@(colm.DateDistpatchLabel)</h3></a>
+                            @*<p style="color:white;font-size:10px;width:100%;text-align:center;">@st.DescriptionState</p>*@
+                        </div>
+                        <div class="list-group" style="margin-top:10px;">
+                            @foreach (DTOCardDistpatch card in colm.DTOCardDistpatchs.OrderBy(x => x.TurnOrder).ToList())
+                            {
+
+                                <div class="DIVdrapanddrop" style="width:auto;height:8px;" @ondrop="(args => dropDivTurn(args,(int)card.TurnOrder))">
+
+                                </div>
+                                <a draggable="true" @ondblclick="@(args=>{ ClickCardDetail(card); })" @ondragstart="(args => draggrid(args, card))" @ondrop="(args => dropDivTurn(args,(int)card.TurnOrder))" href="javascript:void(0)" class="DIVdrapanddrop list-group-item list-group-item-action" style="padding:3px;line-height:12px;color:white;margin-top:1px;background-color:@card.CardColor">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small style="font-size:11px;">@("T-" + card.TurnOrder.ToString())</small>
+                                        <label style="margin-bottom:0px;font-size:10px;">@("" + card.OrdenNum)</label>
+                                    </div>
+                                    <label class="text-wrap" style="margin-bottom:0px;font-size:9px;">@("" + card.TransactionDistpatch.NameWork)</label>
+                                    @*<small>Ranking.</small>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>*@
+                                    @* <p class="mb-1">Orden # @(card.OrdenNum)</p>*@
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <div style="white-space: nowrap; height: calc(100% - 60px);overflow-y: auto; overflow-x: hidden; min-width:180px;">
+                @if (model.DTOColumnsDistpatch.Count() > 0)
+                {
+                    <div class="DIVdrapanddrop" @ondrop="(args => dropgrid(args, TransactionGeneric.DateAplazados))" style="padding: 10px 2px 2px 2px;
+        border: solid;
+        min-width: 140px;
+        border-color: white;
+        background-image:linear-gradient(180deg, rgb(255 141 0) 0%, #ff9f5b 70%);
+        display: inline-block;
+        min-height: 100%;
+        height: auto;">
+                        <div class="row d-block">
+                            <h3 style="margin:auto;color:white;font-weight:bold;text-align:center;">APLAZADOS</h3>
+                            @*<p style="color:white;font-size:10px;width:100%;text-align:center;">@st.DescriptionState</p>*@
+                        </div>
+                        <div class="list-group" style="margin-top:10px;">
+                            @foreach (DTOCardDistpatch card in model.DTOColumnsDistpatch.Where(x => x.DateDistpatch == TransactionGeneric.DateAplazados).First().DTOCardDistpatchs.OrderBy(x => x.TurnOrder).ToList())
+                            {
+
+                                <div class="DIVdrapanddrop" style="width:auto;height:8px;" @ondrop="(args => dropDivTurn(args, (int)card.TurnOrder))">
+
+                                </div>
+                                <a draggable="true" @ondblclick="@(args => { ClickCardDetail(card); })" @ondragstart="(args => draggrid(args, card))" @ondrop="(args => dropDivTurn(args, (int)card.TurnOrder))" href="javascript:void(0)" class="DIVdrapanddrop list-group-item list-group-item-action" style="padding:3px;line-height:12px;color:white;margin-top:1px;background-color:@card.CardColor">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small style="font-size:11px;">@("T-" + card.TurnOrder.ToString())</small>
+                                        <label style="margin-bottom:0px;font-size:10px;">@("" + card.OrdenNum)</label>
+                                    </div>
+                                    <label style="margin-bottom:0px;font-size:9px;">@("" + card.TransactionDistpatch.NameWork)</label>
+                                    @*<small>Ranking.</small>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>
+                                        <span class="fat fa-star text-warning checked"></span>*@
+                                    @* <p class="mb-1">Orden # @(card.OrdenNum)</p>*@
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

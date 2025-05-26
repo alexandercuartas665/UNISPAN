@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.home.DetailProductionFragment"
+    android:orientation="vertical"
+    android:id="@+id/detail_production_fragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginRight="20dp"
+        android:orientation="vertical"
+        >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MEDICION"
+            android:textSize="30dp"
+            android:gravity="center"
+            android:textColor="#000000"/>
+
+    </LinearLayout>
+
+
+
+    <LinearLayout
+
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="100"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp">
+
+        <!-- col 1 -->
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="30"
+            android:orientation="vertical" >
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="left"
+                    android:fontWeight="700"
+                    android:text="FECHA"
+                    android:background="#CDCDCD"
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+
+                <TextView
+                    android:id="@+id/lblDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="left"
+                    android:textColor="#808080"
+                    android:textSize="18dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="left"
+                android:text="ACTIVIDAD"
+                android:fontWeight="700"
+                android:background="#CDCDCD"
+                android:textColor="#000000"
+                android:textSize="20dp" />
+
+            <TextView
+                android:id="@+id/lblNameActivity"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+
+
+        </LinearLayout>
+        <!-- col 1 end -->
+
+        <!-- col 2 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="70"
+            android:layout_marginLeft="10dp"
+            android:orientation="vertical" >
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#CDCDCD">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:gravity="left"
+                    android:fontWeight="700"
+                    android:text="OPERARIOS"
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+                <ImageButton
+                    android:id="@+id/bntEditOperator"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+
+                    android:background="@null"
+                    android:fontFamily="@font/poppins_medium"
+                    android:src="@drawable/baseline_edit_24"
+                    android:textColor="#ffffff"
+                    android:textSize="12sp"
+                    android:foregroundGravity="center"
+                    />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/lbloperators"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#CDCDCD">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:gravity="left"
+                    android:fontWeight="700"
+                    android:text="FOTO GENERAL"
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+                <ImageButton
+                    android:id="@+id/btnOpenCameraProduction"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="@null"
+                    android:fontFamily="@font/poppins_medium"
+                    android:gravity="center"
+                    android:src="@drawable/ic_menu_camera"
+                    android:textColor="#ffffff"
+                    android:textSize="12sp"
+                    android:foregroundGravity="center"
+                    />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_marginTop="5dp"
+                        android:id="@+id/imgGlobal"
+                        android:layout_gravity="left"
+                        android:foregroundGravity="left"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"/>
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- col 2 end -->
+        <!-- col 3 -->
+
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="200dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="200dp"
+        android:orientation="vertical">
+    </RelativeLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:background="#CDCDCD"
+        android:orientation="horizontal"
+        android:paddingRight="5dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        >
+
+        <TextView
+
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="TABLA PRODUCTOS"
+            android:textSize="25dp"
+            android:textAlignment="center"
+          android:layout_gravity="center"
+            android:textColor="#000000"/>
+
+        <Button
+            android:id="@+id/btnAddProduct"
+            android:layout_width="200dp"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/blue_fill__rounded_color"
+            android:fontFamily="@font/poppins_medium"
+            android:gravity="center"
+            android:text="+ Agregar Producto"
+            android:textColor="#ffffff"
+            android:textSize="12sp"
+            />
+
+    </LinearLayout>
+
+    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="25dp"
+        android:stretchColumns="1"
+        android:orientation="vertical"
+        android:background="#1566E0">
+        <TableRow>
+            <TextView
+                android:text="Producto"
+                android:padding="3dip"
+                android:textColor="#FFFFFF"/>
+            <TextView
+                android:text="Cantidad"
+ android:layout_gravity="end"
+
+                android:padding="3dip"
+                android:textColor="#FFFFFF"/>
+            <TextView
+                android:text="Opciones"
+                android:layout_gravity="end"
+                android:padding="3dip"
+                android:textColor="#FFFFFF"/>
+        </TableRow>
+
+    </TableLayout>
+
+
+    <ListView
+        android:id="@+id/litViewItems"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+</LinearLayout>

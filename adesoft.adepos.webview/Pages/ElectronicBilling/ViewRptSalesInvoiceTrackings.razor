@@ -1,0 +1,210 @@
+﻿@page "/ViewRptSalesInvoiceTrackings"
+
+@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+@using Newtonsoft.Json
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IElectronicBillingService electronicBillingService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+@inject IHttpContextAccessor httpContextAccessor
+
+@code {
+
+    ConnectionDB connectionDB;
+    DTOElectronicBillingFilter filter;
+    List<CommonData> GroupBy;
+    List<CommonData> Months;
+
+    protected override void OnInitialized()
+    {
+        this.GroupBy = new List<CommonData>()
+        {
+            new CommonData()
+            {
+                IdStr = "AdminId",
+                Description = "Administrador"
+            },
+            new CommonData()
+            {
+                IdStr = "ZoneParentId",
+                Description = "Zona"
+            },
+            new CommonData()
+            {
+                IdStr = "WorkNo",
+                Description = "Obra"
+            },
+            new CommonData()
+            {
+                IdStr = "CustomerNum",
+                Description = "Cliente"
+            }
+        };
+
+        this.Months = new List<CommonData>()
+            {
+                new CommonData()
+                {
+                    Id = 1,
+                    Description = "Enero"
+                },
+                new CommonData()
+                {
+                    Id = 2,
+                    Description = "Febrero"
+                },
+                new CommonData()
+                {
+                    Id = 3,
+                    Description = "Marzo"
+                },
+                new CommonData()
+                {
+                    Id = 4,
+                    Description = "Abril"
+                },
+                new CommonData()
+                {
+                    Id = 5,
+                    Description = "Mayo"
+                },
+                new CommonData()
+                {
+                    Id = 6,
+                    Description = "Junio"
+                },
+                new CommonData()
+                {
+                    Id = 7,
+                    Description = "Julio"
+                },
+                new CommonData()
+                {
+                    Id = 8,
+                    Description = "Agosto"
+                },
+                new CommonData()
+                {
+                    Id = 9,
+                    Description = "Septiembre"
+                },
+                new CommonData()
+                {
+                    Id = 10,
+                    Description = "Octubre"
+                },
+                new CommonData()
+                {
+                    Id = 11,
+                    Description = "Noviembre"
+                },
+                new CommonData()
+                {
+                    Id = 12,
+                    Description = "Diciembre"
+                }
+            };
+
+        filter = new DTOElectronicBillingFilter();
+        this.filter.GroupBy = new List<string> { "AdminId" };
+        this.filter.ShowBalance = true;
+
+        var today = electronicBillingService.GetLastPeriod(1);
+        this.filter.Year = today.Year;
+        this.filter.MonthSelected = today.Month;    
+
+        var diff = ((DateTime.Now.Year - today.Year) * 12) + DateTime.Now.Month - today.Month;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await GenerateRpt();
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async Task GenerateRpt()
+    {
+        try
+        {
+            string guidfilter = Guid.NewGuid().ToString();
+            filter.GuidFilter = guidfilter;
+            electronicBillingService.AddReportFilter(filter);
+
+            var diff = ((DateTime.Now.Year - filter.Year) * 12) + DateTime.Now.Month - filter.MonthSelected;
+            if (diff > 24)
+                throw new Exception("El rango de fecha seleccionado para seguimiento es invalido, por favor seleccione un periodo menor o igual a 24 meses.");
+
+            string paramurl = "RptSalesInvoiceTrackings.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + this.filter.GroupBy.Count();
+            await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 10000 });
+        }
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                SEGUIMIENTO DE FACTURACION
+            </div>
+        </div>
+    </div>
+    <div class="card-body pt-0">
+        <div class="form-row">
+            <div class="col-md-10">                
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Agrupar por</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.GroupBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@GroupBy" TextProperty="Description" ValueProperty="IdStr" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Año</label>
+                                    <RadzenNumeric id="year" class="form-control" @bind-Value="filter.Year" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Meses</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.MonthSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@this.Months" TextProperty="Description" ValueProperty="Id" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label class="d-block">&nbsp;</label>
+                                    <input class="btn btn-success btn-sm" @onclick="GenerateRpt" value="Generar Reporte" type="button" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height: calc(100vh - 200px); width: 100%; padding: 0px;"></iframe>
+        </div>
+    </div>
+</div>

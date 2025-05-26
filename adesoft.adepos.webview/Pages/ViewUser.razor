@@ -1,0 +1,127 @@
+﻿@page "/viewuser/{UserAppId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data.DTO.PL
+@using adesoft.adepos.webview.Data.Interfaces
+
+@inject UserAppService userAppService
+@inject RoleAppService roleAppService
+@inject NotificationService notificationService
+@inject IElectronicBillingService electronicBillingService
+@inject IPlantService plantService;
+
+<div class="card">
+    <div class="card-header">
+        Usuario
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formuserapp" id="formuserapp" class="col-md-6" TItem="UserApp" Data="@model" Submit="@OnSubmit">
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="inputUsername">Usuario</label>
+                    <RadzenTextBox Name="inputUsername" @bind-Value="model.Username" class="form-control" id="inputUsername" placeholder="Usuario" />
+                    <RadzenRequiredValidator Component="inputUsername" Text="Usuario es requerido" Popup="true" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="inputUserPassword">Password</label>
+                    <RadzenTextBox Name="inputUserPassword" @bind-Value="model.PassworNotCry" class="form-control" id="inputUserPassword" placeholder="Usuario" />
+                    <RadzenRequiredValidator Component="inputUserPassword" Text="Password es requerido" Popup="true" />
+                </div>
+
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="selectRol">Rol</label>
+                    <RadzenDropDown Name="selectRol" class="form-control" AllowClear="false" @bind-Value="model.RoleAppId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@listroles" TextProperty="Name" ValueProperty="RoleAppId" Change="@(args => Change(args, "DropDown"))" />
+                    <RadzenRequiredValidator Component="selectRol" Text="Rol es requerido" Popup="true" />
+                </div>                
+                <div class="form-group col-md-6">
+                    <label for="zoneproductid">zona</label>
+                    <RadzenDropDown Name="selectRol" class="form-control" AllowClear="false" @bind-Value="model.ZoneProductId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@zoneProducts" TextProperty="Name" ValueProperty="ZoneProductId" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="AdminId">Administrador</label>
+                    <RadzenDropDown AllowFiltering="true" Name="AdminId"
+                                    class="form-control" @bind-Value="model.AdminId" Multiple="false"
+                                    Data="@administrators" TextProperty="Description" ValueProperty="IdStr"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <input class="btn btn-success" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-3">
+                    <a class="btn btn-success" href="/ViewSearchUsuario">Buscar</a>
+                </div>
+            </div>
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string UserAppId { get; set; }
+
+    UserApp model = new UserApp();
+
+    List<CommonData> administrators = new List<CommonData>();
+
+
+    List<RoleApp> listroles = new List<RoleApp>();
+
+    List<DTOZoneProduct> zoneProducts = new List<DTOZoneProduct>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listroles = await roleAppService.selectAll(new RoleApp());
+        zoneProducts = plantService.GetZoneProducts();
+
+        if (long.Parse(UserAppId) != 0)
+        {
+            model = await userAppService.SelectById(new UserApp() { UserAppId = long.Parse(UserAppId) });
+        }
+
+        administrators = electronicBillingService.GetAdministrators(null, null);
+    }
+
+    async void OnSubmit(UserApp para)
+    {
+        if (model.UserAppId != 0)
+        {
+            UserApp u = await userAppService.Update(model);
+            model.UserAppId = u.UserAppId;
+        }
+        else
+        {
+            UserApp u = await userAppService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el usuario correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+    void Change(object value, string name)
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        //events.Add(DateTime.Now, $"{name} value changed to {str}");
+        //StateHasChanged();
+    }
+
+}

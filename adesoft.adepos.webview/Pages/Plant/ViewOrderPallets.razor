@@ -1,0 +1,200 @@
+﻿@page "/ViewOrderPallets/{strFromDate}/{strToDate}/{orderType:int}/{orderId:long}"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+@using Microsoft.JSInterop;
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IPlantService plantService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+
+<style>
+    .list-group-pallets {
+        max-height: calc(100vh - 190px);
+        overflow: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .navbar-pallets {
+        background: #e6ecef;
+        margin-right: 15px;
+        padding: 0px;
+    }
+</style>
+
+@code {
+
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    [Parameter]
+    public long orderId { get; set; }
+
+    public DTOOrder model = new DTOOrder();
+    public List<DTOOrderPallet> pallets = new List<DTOOrderPallet>();
+    DTOOrderPallet orderPalletSelected = null;
+
+    RadzenGrid<DTOOrderPallet> grid;
+
+    protected override void OnInitialized()
+    {
+        this.GetOrder();
+        this.GetOrderPallets();
+
+        this.dialogService.OnClose += Close;
+    }
+
+    public async void Cancel()
+    {
+        navigationManager.NavigateTo(string.Format("EnlistmentEquipmentPlant/{0}/{1}", strFromDate, strToDate));
+    }
+
+    public void GetOrder()
+    {
+        this.model = this.plantService.GetOrder((OrderType)this.orderType, this.orderId);
+
+    }
+
+    public void GetOrderPallets()
+    {
+        this.pallets = this.plantService.GetOrderPallets(this.orderId);
+    }
+
+    public void NewOrderPallet()
+    {
+        dialogService.Open<EditOrderPallet>($"Nueva Estiba",
+            new Dictionary<string, object>() { { "orderType", this.model.OrderType }, { "orderId", this.model.OrderId } },
+            new DialogOptions() { Width = "500px", Height = "260px", });
+    }
+
+    public void ViewOrderPalletProducts()
+    {
+        dialogService.Open<ViewOrderPalletProducts>($"Productos: Estiba No. {this.orderPalletSelected.PalletNo}",
+            new Dictionary<string, object>() { { "orderPalletId", this.orderPalletSelected.OrderPalletId } },
+            new DialogOptions() { Width = "90%", Height = "90%", });
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void selectRow(DTOOrderPallet orderPallet)
+    {
+        orderPalletSelected = orderPallet;
+    }
+
+    void Close(dynamic result)
+    {
+        if (result != null)
+        {
+            this.OnRefresh();
+        }
+    }
+
+    public void OnRefresh()
+    {
+        this.GetOrderPallets();
+        this.grid.Reload();
+        this.StateHasChanged();
+    }
+
+    //public async void CancelOrderPallet()
+    //{
+    //    try
+    //    {
+    //        if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format($"Esta seguro de cancelar la estiba No. {this.orderPalletSelected.PalletNo}")))
+    //        {
+    //            return;
+    //        }
+
+    //        this.orderPalletSelected.Status = OrderPalletStatus.Canceled;
+    //        var orderPallet = this.plantService.CreateOrUpdate(this.orderPalletSelected);
+    //        if (orderPallet.Status.Equals(OrderPalletStatus.Canceled))
+    //        {
+    //            this.OnRefresh();
+    //            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = $"La estiba No. {orderPallet.PalletNo} ha sido cancela.", Duration = 5000 });
+    //        }
+    //        else
+    //            throw new Exception($"Ha ocurrido un error mientras se cancelaba la estiba No. {this.orderPalletSelected.PalletNo}");
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+    //        throw;
+    //    }
+    //}
+
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <nav class="navbar navbar-light bg-transparent justify-content-between">
+            <h3>Estibas: @(this.model.Works)</h3>
+            <div class="form-inline">
+                <button class="btn btn-light" @onclick="@(args => { Cancel(); })">Regresar</button>
+                @*<button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })">Guardar</button>*@
+            </div>
+        </nav>
+    </div>
+</div>
+<div class="row mb-1">
+    <div class="col-sm-12">
+        <div class="bg-light d-flex">
+            <div style="display: inline-block">
+                <RadzenButton Text="Nueva" Icon="add" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@NewOrderPallet />
+                @*<RadzenButton Text="Cancelar" Icon="cancel" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@CancelOrderPallet Disabled=@((this.orderPalletSelected is null) || (!(this.orderPalletSelected is null) && this.orderPalletSelected.Status.Equals(OrderPalletStatus.Canceled)))  />*@
+                <RadzenButton Text="Productos" Icon="widgets" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@ViewOrderPalletProducts Disabled=@(this.orderPalletSelected is null) />
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <RadzenGrid @ref="grid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50"
+                    AllowSorting="true" Data="@pallets" TItem="DTOOrderPallet" 
+                    Style="height: calc(100vh - 120px)" RowSelect=@(args => this.selectRow(args))>
+            <Columns>
+                <RadzenGridColumn TItem="DTOOrderPallet" Title="Zona" Width="100px">
+                    <Template Context="data">
+                        @(data.ZoneProduct.Name)
+                    </Template>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="DTOOrderPallet" Property="PalletNo" Title="No. Estiba" Width="80px">
+                    <Template Context="data">
+                        @(data.PalletNo)
+                    </Template>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="DTOOrderPallet" Property="Status" Title="Estado" Width="80px">
+                    <Template Context="data">
+                        @{
+                            switch (data.Status)
+                            {
+                                case OrderPalletStatus.Syncronized:
+                                    <span>Sincronizada</span>
+                                    break;
+
+                                case OrderPalletStatus.Closed:
+                                    <span>Completado</span>
+                                    break;
+                            }
+                        }
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+</div>

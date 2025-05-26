@@ -1,0 +1,43 @@
+﻿@page "/viewsearchusuario"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject UserAppService userAppService
+@code {
+
+}
+@if (users == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <a href="/ViewUser/0" class="btn btn-primary">Nuevo usuario</a>
+    </div>
+
+    <div class="row">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="4" AllowSorting="true" Data="@users" TItem="UserApp" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="UserApp" Property="Username" Title="Usuario" />
+
+                <RadzenGridColumn TItem="UserApp" Property="RoleApp.Name" Title="Rol" />
+
+                <RadzenGridColumn TItem="UserApp"  Property="UserAppId" Title="Editar">
+                    <Template Context="data">
+                        <NavLink href="@("/ViewUser/"+data.UserAppId)">Editar</NavLink>
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+
+@code {
+    IEnumerable<UserApp> users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await userAppService.selectAll(new UserApp());
+    }
+}

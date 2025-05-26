@@ -1,0 +1,55 @@
+﻿@using adesoft.adepos.webview.Data.Model.PL;
+@using adesoft.adepos.webview.Data.DTO.PL;
+@using adesoft.adepos.webview.Data.Interfaces;
+
+@inject IHttpContextAccessor httpContextAccessor
+@inject Data.Interfaces.IPlantService plantService
+@inject IJSRuntime JSRuntime
+
+@code {
+    ConnectionDB connectionDB;
+    DTOPlantFilter plantFilter = new DTOPlantFilter();
+
+    [Parameter]
+    public DTOOrderPallet OrderPalletSelected { get; set; }
+
+    [Parameter]
+    public DTOOrder OrderSelected { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateRpt();
+        }
+    }
+
+    async Task BtnGenerateRpt()
+    {
+        string guidfilter = Guid.NewGuid().ToString();
+        plantFilter.FilterId = guidfilter;
+        plantFilter.OrderPalletSelected = this.OrderPalletSelected;
+        plantFilter.OrderSelected = this.OrderSelected;
+        plantService.AddPlantFilter(plantFilter);
+
+        string paramurl = $"RptPlantReport.aspx?CuentaN={connectionDB.CuentaN}&filterObj={guidfilter}&rptOpt={2}";
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+}
+
+
+<div class="container-fluid">
+    <div class="form-row">
+        <iframe id="iframeReport" frameborder="0" style="height:61vh; width: 100%; padding: 0px;"></iframe>
+    </div>
+</div>
+

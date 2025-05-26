@@ -1,0 +1,76 @@
+﻿@page "/ViewObservationModify"
+@inject NotificationService notificationService
+@inject DialogService dialogService
+
+@code {
+    [Parameter]
+    public DetailTransactionGeneric objItem { get; set; }
+
+    [Parameter]
+    public object objViewCall { get; set; }
+
+    [Parameter]
+    public decimal CantAnterior { get; set; }
+
+    string ObservationAuditory;
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    void Savechangue()
+    {
+        if (string.IsNullOrEmpty(ObservationAuditory))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Por favor ingrese un motivo por el ajuste realizado.", Duration = 2000 });
+            return;
+        }
+        UserApp userp = ((ViewDetailDispatch)objViewCall).userapp;
+        objItem.ObservationAuditory += userp.Username.ToUpper() + ";" + CantAnterior + ";" + objItem.Cant + ";" + ObservationAuditory.ToUpper() + "|";
+        objItem.TransactionState = "C";
+        dialogService.Close();
+        //if (objViewCall is ViewDetailDispatch)
+        //{
+        //    ((ViewDetailDispatch)objViewCall).RefreshView();
+        //}
+    }
+
+
+}
+
+<div class="card">
+    <div class="card-header">
+        OBSERVACION DE CAMBIO
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <input class="btn btn-success btn-sm" @onclick="Savechangue" value="Confirmar" type="button" />
+                @*<input class="btn btn-danger btn-sm" @onclick="CancelChangue" value="Cancelar" type="button" />*@
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="inputNameProduct">Producto</label>
+                <RadzenTextBox Value="@objItem.Item.DescriptionShow" Name="inputNameProduct" class="form-control " />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="inputCant">Cant Anterior</label>
+                <RadzenNumeric Name="inputCant" Placeholder="Cantidad" Disabled="true" Value="CantAnterior" class="form-control" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="inputCant">Nueva Cantidad</label>
+                <RadzenNumeric Name="inputCant" Placeholder="Cantidad" Disabled="true" Value="objItem.Cant" class="form-control" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label for="TextNote">Motivo de ajuste</label>
+                <RadzenTextArea @bind-Value="ObservationAuditory" Name="TextNote" Rows="3" MaxLength="200" class="form-control text-uppercase" placeholder="Motivo de ajuste" />
+            </div>
+        </div>
+    </div>
+</div>

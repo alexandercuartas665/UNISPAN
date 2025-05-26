@@ -1,0 +1,471 @@
+@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+}
+
+a, .btn-link {
+    color: #0366d6;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2 !important;
+    border-color: #1861ac !important;
+}
+
+app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.top-row {
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.main {
+    flex: 1;
+}
+
+    .main .top-row {
+        background-color: #f7f7f7;
+        border-bottom: 1px solid #d6d5d5;
+        justify-content: flex-end;
+    }
+
+        .main .top-row > a, .main .top-row .btn-link {
+            white-space: nowrap;
+            margin-left: 1.5rem;
+        }
+
+        .main .top-row a:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+.sidebar {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+    .sidebar .top-row {
+        /*  background-color: rgba(0,0,0,0.4);*/
+    }
+
+    .sidebar .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .sidebar .oi {
+        width: 2rem;
+        font-size: 1.1rem;
+        vertical-align: text-top;
+        top: -2px;
+    }
+
+    .sidebar .nav-item {
+        font-size: 0.9rem;
+        padding-bottom: 0.5rem;
+    }
+
+        .sidebar .nav-item:first-of-type {
+            padding-top: 1rem;
+        }
+
+        .sidebar .nav-item:last-of-type {
+            padding-bottom: 1rem;
+        }
+
+        .sidebar .nav-item a {
+            color: #d7d7d7 !important;
+            border-radius: 4px;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            line-height: 1rem; /*Editado estaba en 3 .. se edito por la distancia entre textos en el menu*/
+        }
+
+            .sidebar .nav-item a.active {
+                background-color: rgba(255,255,255,0.25);
+                color: white;
+            }
+
+            .sidebar .nav-item a:hover {
+                background-color: rgba(255,255,255,0.1);
+                color: white;
+            }
+
+.content {
+    padding-top: 1.1rem;
+}
+
+.navbar-toggler {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+@media (max-width: 767.98px) {
+    .main .top-row:not(.auth) {
+        display: none;
+    }
+
+    .main .top-row.auth {
+        justify-content: space-between;
+    }
+
+    .main .top-row a, .main .top-row .btn-link {
+        margin-left: 0;
+    }
+}
+
+@media (min-width: 768px) {
+
+
+    app {
+        flex-direction: row;
+    }
+
+    .sidebar {
+        width: 250px;
+        height: 100vh !important; /*importante por lo del scroll*/
+        position: sticky;
+        top: 0;
+        max-height: 100vh;
+    }
+
+    .main .top-row {
+        position: sticky;
+        top: 0;
+    }
+
+    .main > div {
+        padding-left: 2rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    /*.navbar-toggler {
+        display: none;
+    }*/
+    /* Never collapse the sidebar for wide screens */
+    /*.sidebar .collapse {
+      
+        display: block;
+    }*/
+    /* .sidebar #navprincipal {
+        display: block;
+    }*/
+
+
+
+}
+
+
+/*
+    CUSTOM
+*/
+
+.card {
+    padding: 0px !important;
+}
+
+
+
+fieldset.scheduler-border {
+    border: solid 1px #DDD !important;
+    padding: 0 10px 10px 10px;
+    border-bottom: none;
+}
+
+legend.scheduler-border {
+    width: auto !important;
+    border: none;
+    font-size: 12px;
+}
+
+
+.form-group {
+    margin-bottom: 2px !important;
+}
+
+.form-control {
+    display: block !important;
+}
+
+
+/*Control de compania en el login*/
+
+.ui-autocomplete-input {
+    width: 300px !important;
+    height: 40px !important;
+}
+
+
+
+.navbar-toggler .navbar-toggler-icon {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+
+
+/*ESTILO RESUMEN TOTALES FACTURA, COMPRA */
+
+.ResumTotal {
+    position: fixed;
+    bottom: 0px;
+    width: calc(100% - 250px);
+    background-color: white;
+    justify-content: flex-end;
+    right: 0px;
+}
+
+    .ResumTotal .list-unstyled {
+        margin: 0px;
+    }
+
+        .ResumTotal .list-unstyled .ResC1 {
+            width: 150px;
+            display: inline-block;
+            line-height: 0px;
+        }
+
+
+        .ResumTotal .list-unstyled .ResC2 {
+            width: 100px;
+            display: inline-block;
+            line-height: 0px;
+        }
+
+
+.tableGridTrans td, .tableGridTrans th {
+    padding: 3px !important;
+}
+
+
+.tableGridTrans tr {
+    cursor: pointer !important;
+}
+
+html {
+    font-size: 14px !important;
+}
+
+
+/*lo quite x el scroll del dashboard de despachos*/
+.sidebar ::-webkit-scrollbar {
+    width: 12px;
+    display: none;
+}
+
+.tablemedicion td, .tablemedicion th {
+    padding: 3px !important;
+    font-size: 12px !important;
+}
+
+.panel-menu {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%) !important;
+}
+
+#radzensearc > div > div.ui-fileupload-content.ui-widget-content.ui-corner-bottom {
+    display: none;
+}
+
+#radzensearc > div > div.ui-fileupload-buttonbar.ui-widget-header.ui-corner-top {
+    padding: 0px !important;
+}
+
+/*TreeView*/
+.ui-treenode-children {
+    padding: 0 0 0 3rem !important;
+}
+
+.ui-accordion-content .ui-widget-content {
+    padding: 0px;
+}
+
+/*.ui-progressbar-value {
+    background-color: #56ba70 !important;
+}
+
+.ui-progressbar-label {
+    color: #1b4a28 !important;
+}
+
+.ui-widget-content :hover {
+    color: #1b4a28 !important;
+}*/
+
+/*card-version-change*/
+
+.card-version-change {
+    background: #ffc409 !important;
+}
+    .card-version-change h4, .card-version-change h4:hover {
+        color: black !important;
+    }
+
+    .card-version-change h5, .card-version-change h5:hover, .card-warning h5 i:hover, .card-version-change h5 i span:hover {
+        color: black !important;
+    }
+
+    .card-version-change .btn-group {
+        background: #ffc409 !important;
+    }
+
+        .card-version-change .btn-group button {
+            background: #ffc409 !important;
+            border: 0px;
+            color: black !important;
+            padding: 0px !important;
+        }
+
+    .card-version-change div .ui-accordion-content-wrapper .ui-accordion-content {
+        padding: 0px !important;
+    }
+
+    .card-version-change .ui-accordion-header {
+        background: #f4f5f8 !important;
+        height: 48px !important;
+        color: black;
+    }
+
+        .card-version-change .ui-accordion-header a {
+            height: 100%;
+        }
+
+    .card-version-change .ui-state-active a[role='tab'] {
+        color: black !important;
+        font-size: 14px;
+    }
+
+        .card-version-change .ui-state-active a[role='tab'] .material-icons-label {
+            font-weight: 100;
+        }
+
+/*card-closed*/
+
+.card-closed {
+    background: #2dd36f !important;
+}
+
+    .card-closed h4, .card-closed h4:hover {
+        color: white !important;
+    }
+
+    .card-closed h5, .card-closed h5:hover, .card-closed h5 i:hover, .card-closed h5 i span:hover {
+        color: white !important;
+    }
+
+    .card-closed .btn-group {
+        background: #2dd36f !important;
+    }
+
+        .card-closed .btn-group button {
+            background: #2dd36f !important;
+            border: 0px;
+            color: white !important;
+            padding: 0px !important;
+        }
+
+    .card-closed div .ui-accordion-content-wrapper .ui-accordion-content {
+        padding: 0px !important;
+    }
+
+    .card-closed .ui-accordion-header {
+        background: #f4f5f8 !important;
+        height: 48px !important;
+        color: black;
+    }
+
+        .card-closed .ui-accordion-header a {
+            height: 100%;
+        }
+
+    .card-closed .ui-state-active a[role='tab'] {
+        color: black !important;
+        font-size: 14px;
+    }
+
+        .card-closed .ui-state-active a[role='tab'] .material-icons-label {
+            font-weight: 100;
+        }
+
+/*card-pending*/
+
+.card-pending {
+    background: #3880ff !important;
+}
+
+    .card-pending h4, .card-pending h4:hover {
+        color: white !important;
+    }
+
+    .card-pending h5, .card-pending h5:hover, .card-pending h5 i:hover, .card-pending h5 i span:hover {
+        color: white !important;
+    }
+
+    .card-pending .btn-group {
+        background: #3880ff !important;
+    }
+
+        .card-pending .btn-group button {
+            background: #3880ff !important;
+            border: 0px;
+            color: white !important;
+            padding: 0px !important;
+        }
+
+    .card-pending div .ui-accordion-content-wrapper .ui-accordion-content {
+        padding: 0px !important;
+    }
+
+    .card-pending .ui-accordion-header {
+        background: #f4f5f8 !important;
+        height: 48px !important;
+        color: black;
+    }
+
+        .card-pending .ui-accordion-header a {
+            height: 100%;
+        }
+
+    .card-pending .ui-state-active a[role='tab'] {
+        color: black !important;
+        font-size: 14px;
+    }
+
+        .card-pending .ui-state-active a[role='tab'] .material-icons-label {
+            font-weight: 100;
+        }

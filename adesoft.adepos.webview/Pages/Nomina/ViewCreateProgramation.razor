@@ -1,0 +1,141 @@
+﻿@page "/viewcreateprogramation/{NominaProgramationId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject NominaService nominaService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+<div class="card">
+    <div class="card-header">
+        Periodo de Nomina
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formcategory" id="formcategory" class="col-md-12" TItem="NominaProgramation" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <input class="btn btn-success" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-2">
+                    <a class="btn btn-success" href="/ViewSearchNominaDates">Buscar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="inputName">Descripcion</label>
+                    <RadzenTextBox Name="inputName" @bind-Value="model.Description" class="form-control text-uppercase" id="inputName" placeholder="Descripcion Periodo" />
+                    <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="true" />
+                </div>
+                @*<div class="form-group col-md-4">
+                        <label for="selectCategoria">Categoria</label>
+                        <RadzenDropDown Name="selectCategoria" class="form-control" AllowClear="false" @bind-Value="model.CategoryId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId" />
+                        <RadzenRequiredValidator Component="selectCategoria" Text="Categoria es requerida" Popup="true" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="inputBarcode">Codigo de barras</label>
+                        <RadzenTextBox Name="inputBarcode" @bind-Value="model.Barcode" class="form-control" id="inputBarcode" placeholder="Barra" />
+                        <RadzenRequiredValidator Component="inputBarcode" Text="Codigo de barras es requerido" Popup="true" />
+                    </div>*@
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="inputDateInit">Fecha Inicio</label>
+                    <RadzenDatePicker Name="inputDateInit" @bind-Value="model.DayInit" DateFormat="MM/dd/yyyy" class="d-block" id="inputDateInit" />
+                    <RadzenRequiredValidator Component="inputDateInit" Text="Fecha Inicio es requerido" Popup="true" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="inputDateEnd">Fecha Fin</label>
+                    <RadzenDatePicker Name="inputDateEnd" @bind-Value="model.DayEnd" DateFormat="MM/dd/yyyy" class="d-block" id="inputDateEnd" />
+                    <RadzenRequiredValidator Component="inputDateEnd" Text="Fecha Fin es requerido" Popup="true" />
+                </div>
+                @*<div class="form-group col-md-3">
+                        <label for="inputUniMed">Unidad Medida</label>
+                        <RadzenDropDown Name="inputUniMed" class="form-control" AllowClear="false" @bind-Value="model.UnitMeasurementId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@UnitMeasurements" TextProperty="Name" ValueProperty="UnitMeasurementId" />
+                        <RadzenRequiredValidator Component="inputUniMed" Text="Unidad de medida es requerida" Popup="true" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="CheckHasInventory1">Maneja Inventario?</label>
+                        <RadzenCheckBox Name="CheckHasInventory1" class="form-control" @bind-Value="model.HasIventory"></RadzenCheckBox>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="CheckHasInventory2">Es Combo o Compuesto?</label>
+                        <RadzenCheckBox Name="CheckHasInventory2" @onchange="@(args=>{ StateHasChanged(); } )" class="form-control" @bind-Value="model.IsCompuesto"></RadzenCheckBox>
+                    </div>*@
+            </div>
+
+        </RadzenTemplateForm>
+
+
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string NominaProgramationId { get; set; }
+    NominaProgramation model = new NominaProgramation();
+    protected override async Task OnInitializedAsync()
+    {
+
+        //categorys = await categoryService.selectAll(new Category());
+        //UnitMeasurements = await itemService.SelectAllUnitMeasurement(new UnitMeasurement());
+
+        // listimpues=
+        if (long.Parse(NominaProgramationId) != 0)
+        {
+            model = await nominaService.SelectById(new NominaProgramation() { NominaProgramationId = long.Parse(NominaProgramationId) });
+        }
+
+    }
+
+
+    /// <summary>
+    /// Guardado de formulario
+    /// </summary>
+    /// <param name="para"></param>
+    async void OnSubmit(NominaProgramation para)
+    {
+        //if (model.CategoryId == 0)
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la categoria.", Duration = 4000 });
+        //    return;
+        //}
+        //else if (model.UnitMeasurementId == 0)
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la unidad de medida.", Duration = 4000 });
+        //    return;
+        //}
+        para.DayClose = para.DayEnd;
+        if (model.NominaProgramationId != 0)
+        {
+
+            NominaProgramation nomin = await nominaService.Update(model);
+            model.NominaProgramationId = nomin.NominaProgramationId;
+        }
+        else
+        {
+            NominaProgramation u = await nominaService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el periodo correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+
+
+
+
+}

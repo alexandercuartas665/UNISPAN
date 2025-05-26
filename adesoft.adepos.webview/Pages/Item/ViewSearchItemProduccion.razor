@@ -1,0 +1,107 @@
+﻿@page "/viewsearchitemproduccion"
+@inject DialogService dialogService
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject ItemService itemService
+@inject NotificationService notificationService
+@code {
+
+    public void SincronizarItems()
+    {
+        if (!string.IsNullOrEmpty(FileSyncItems) && FileSyncItems.Contains("sheet"))
+        {
+            dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Importacion" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+            Task.Run(async () =>
+            {
+                Item resul = await itemService.CreateItemsFromFile(FileSyncItems);
+                dialogService.Close();
+                if (resul.TransactionIsOk == true)
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "OK", Detail = resul.MessageResponse, Duration = 2000 });
+                }
+                else
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = resul.MessageResponse, Duration = 2000 });
+                }
+                FileSyncItems = null;
+                lists = await itemService.selectAll(new Item() { TransOption = 3 });
+
+                StateHasChanged();
+            });
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Adjunte un archivo correcto.", Duration = 2000 });
+
+        }
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void OnChange(string value, string name)
+    {
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "OK", Detail = "Archivo adjuntado de click en sincronizar", Duration = 1000 });
+
+    }
+}
+@if (lists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Productos
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <a href="/ViewItemProduccion/0" class="btn btn-primary btn-sm">Nuevo Producto</a>
+                </div>
+                <div class="form-group col-md-2">
+                    @*<label class="d-block" for="inputfileDocument">Sincronizar Items</label>*@
+                    <label class="d-block">&nbsp;</label>
+                    <div class="row " id="radzensearc" style="display:inline;">
+                        <RadzenFileInput @bind-Value="@FileSyncItems" Accept="*"  Change=@(args => OnChange(args, "FileInput")) ChooseText="Documento" TValue="string" />
+                    </div>
+                </div>
+                <div class="form-group col-md-1">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="SincronizarItems" value="Sincronizar" type="button" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="20" AllowSorting="true" Data="@lists" TItem="Item" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="Item" Property="Description" Title="Nombre" />
+                        <RadzenGridColumn TItem="Item" Property="Barcode" Title="Codigo" />
+                        <RadzenGridColumn TItem="Item" Property="CategoryMedicion.Name" Title="Tipo de Medicion" />
+                        <RadzenGridColumn TItem="Item" Property="ZoneProduct.Name" Title="Zona" />
+                        <RadzenGridColumn TItem="Item" Property="ItemId" Title="Editar">
+                            <Template Context="data">
+                                <NavLink href="@("/ViewItemProduccion/"+data.ItemId)">Editar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    IEnumerable<Item> lists;
+
+    public string FileSyncItems { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        lists = await itemService.selectAll(new Item() { TransOption = 3 });
+    }
+}

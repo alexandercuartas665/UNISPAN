@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:orientation="horizontal"
+    android:padding="5dp"
+    >
+
+    <TextView
+        android:id="@+id/lblItemName"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Enter Random Number"
+        android:gravity="center_vertical"
+        android:layout_weight="0.5" />
+
+    <EditText
+
+        android:id="@+id/tbxCount"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:inputType="phone"
+        android:layout_weight="1.0"
+         />
+
+        <Button
+            android:id="@+id/bntAddItem"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/blue_fill__rounded_color"
+            android:fontFamily="@font/poppins_medium"
+            android:gravity="center"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Agregar"
+            android:textColor="#ffffff"
+            android:textSize="12sp"
+            />
+</LinearLayout>

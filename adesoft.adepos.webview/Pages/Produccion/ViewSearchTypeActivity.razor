@@ -1,0 +1,56 @@
+﻿@page "/ViewSearchTypeActivity"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject ProduccionService produccionService
+@code {
+
+}
+@if (actvidades == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Tipos de Actividad
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <a href="/ViewTypeActivity/0" class="btn btn-primary btn-sm">Nueva Actividad</a>
+            </div>
+            <div class="row">
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="4" AllowSorting="true" Data="@actvidades" TItem="TypeActivity" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="TypeActivity"  Property="CategoryName"  Title="Categoria">
+                            <Template Context="data">
+                                @data.CategoryName
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="TypeActivity" Property="Name" Title="Actividad" />
+                        <RadzenGridColumn TItem="TypeActivity" Title="Estado">
+                            <Template Context="data">
+                                @(data.IsActive?"ACTIVO":"INACTIVO")
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="TypeActivity" Property="TypeActivityId" Title="Editar">
+                            <Template Context="data">
+                                <NavLink href="@("/ViewTypeActivity/"+data.TypeActivityId)">Editar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    IEnumerable<TypeActivity> actvidades;
+
+    protected override async Task OnInitializedAsync()
+    {
+        actvidades = await produccionService.selectAll(new TypeActivity());
+    }
+}

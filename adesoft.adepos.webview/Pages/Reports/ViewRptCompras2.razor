@@ -1,0 +1,134 @@
+﻿
+@page "/viewrptcompras2"
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Util
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject BiableService biableService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        model = new DTOViewRptCompra();
+        model.Proveedores = await biableService.selectAll(new DTOTercero());
+        model.ListYears = await biableService.SelectAnosCompras();
+        filter = new DTOFiltersCompras();
+
+
+        //await JSRuntime.InvokeVoidAsync("$.fn.atachdatepicker");
+    }
+
+    DTOFiltersCompras filter;
+    public DTOViewRptCompra model { get; set; }
+    ConnectionDB connectionDB;
+    bool AddFieldDynam = false;
+    async Task BtnGenerateRpt()
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+        if (filter.Proveedores.Count() == 0 || filter.Sedes.Count() == 0 || filter.COs.Count() == 0 || filter.multipleValuesYear.Count() == 0
+            || filter.multipleValuesMonth.Count() == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+        //events.Add(DateTime.Now, $"{name} value changed to {str}");
+        //string filterobj = JsonConvert.SerializeObject(filter);
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        filter.TypeReportId = 2;
+        filter.AddDynamicField = AddFieldDynam;
+        await biableService.AddFilterCompras(filter);
+        string bodegas = string.Empty;
+        foreach(DtoBiableCO co in model.COs)
+        {
+            if (filter.COs.Where(x => x == co.Code).Count() > 0)
+            {
+                bodegas += co.CO + ",";
+            }
+        }
+        bodegas = bodegas.Substring(0, bodegas.Length - 1);
+        //byte[] zipfilter = CompressString.Zip(filterobj);
+        //string base64 = Convert.ToBase64String(zipfilter);
+        // connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+        string paramurl = "RptCompras.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + 2 + "&AddFieldDynam=" + AddFieldDynam.ToString()
+            + "&Bodega=" + bodegas;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+            ((IList<string>)filter.Sedes).Add("001");
+            ((IList<long>)filter.multipleValuesYear).Add(model.ListYears.OrderByDescending(x => x.IdYear).Select(x => x.IdYear).First());
+            model.ListMonths.Select(x => x.IdMonth).ToList().ForEach(t => ((IList<long>)filter.multipleValuesMonth).Add(t));
+            ((IList<string>)filter.COs).Add("00101");
+            model.Proveedores.Select(x => x.CodeEnterprise).ToList().ForEach(t => ((IList<string>)filter.Proveedores).Add(t));
+            await BtnGenerateRpt();
+        }
+    }
+}
+@*<div class="row">
+        <label for="Filter4">Fechas</label>
+        <div class="input-daterange input-group" id="datepicker">
+            <input type="text" class="input-sm form-control" name="start" />
+            <span class="input-group-addon">to</span>
+            <input type="text" class="input-sm form-control" name="end" />
+        </div>
+    </div>*@
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        REPORTE COMPRAS X PROVEEDOR MENSUAL
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+
+            <div class="form-group col-md-2">
+                <label for="Filter1">Sede</label>
+                <RadzenDropDown Name="Filter1" class="form-control" AllowClear="false" Multiple="true" Data="@model.Sedes" @bind-Value="filter.Sedes" TValue="IEnumerable<string>" TextProperty="Sede" ValueProperty="CodeSede" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />
+            </div>
+            <div class="form-group col-md-2">
+                <label for="Filter2">Bodega</label>
+                <RadzenDropDown Name="Filter2" class="form-control" Multiple="true" Data="@model.COs" AllowClear="false" TValue="IEnumerable<string>" @bind-Value="filter.COs" TextProperty="CO" ValueProperty="Code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter3">Proveedor</label>
+                <RadzenDropDown Name="Filter3" class="form-control" TextProperty="FirstName" ValueProperty="CodeEnterprise" Multiple="true" Data="@model.Proveedores" @bind-Value="filter.Proveedores" AllowClear="false" TValue="IEnumerable<string>" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />
+            </div>
+            <div class="form-group col-md-1">
+                <label for="Filter4">Año</label>
+                <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.multipleValuesYear" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@model.ListYears" TextProperty="Name" ValueProperty="IdYear" />
+                @*<RadzenDropDown Name="Filter4" class="form-control" AllowClear="false" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />*@
+            </div>
+
+            <div class="form-group col-md-2">
+                <label for="Filter4">Meses</label>
+                <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.multipleValuesMonth" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@model.ListMonths" TextProperty="Name" ValueProperty="IdMonth" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" />
+            </div>
+
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <RadzenCheckBox @bind-Value="AddFieldDynam" />
+                <label for="Filter4">Adicionar columna item</label>
+            </div>
+        </div>
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+        </div>
+    </div>
+</div>

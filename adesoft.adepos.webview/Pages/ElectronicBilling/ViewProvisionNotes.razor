@@ -1,0 +1,69 @@
+﻿@page "/ViewProvisionNotes"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Pages.ElectronicBilling
+@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IElectronicBillingService electronicBillingService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+
+@code {
+    DTOSalesInvoice model;
+    DTOSalesInvoiceNote salesInvoiceNoteSelected = null;
+
+    [Parameter]
+    public string SalesInvoiceId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        this.GetSalesInvoice();
+    }
+
+    void selectRow(DTOSalesInvoiceNote salesInvoiceNote)
+    {
+        salesInvoiceNoteSelected = salesInvoiceNote;
+    }
+
+    void GetSalesInvoice()
+    {
+        this.model = electronicBillingService.GetSalesInvoice(this.SalesInvoiceId);
+    }
+
+    public void EditNote(DTOSalesInvoiceNote model)
+    {
+        dialogService.Open<EditSalesInvoice>($"{((model is null) ? "Nueva" : "Editar")} Observación",
+            new Dictionary<string, object>() { { "model", model }, { "callView", this } },
+            new DialogOptions() { Width = "1224px", Height = "650px" });
+    }
+}
+
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="bg-light d-flex">
+                <div style="display: inline-block">
+                    <RadzenButton Text="Nueva" Icon="add" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Style="height: 33.5px" Click=@(args => { this.EditNote(null); }) />
+                </div>
+            </div>
+        </div>
+    </div>
+    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50"
+                AllowSorting="true" Data="@model.SalesInvoiceNotes" TItem="DTOSalesInvoiceNote" RowSelect=@(args => this.selectRow(args))>
+        <Columns>
+            <RadzenGridColumn TItem="DTOSalesInvoiceNote" Property="CreatedAt" Title="Creación" Width="20px">
+                <Template Context="data">
+                    @(data.CreatedAt.ToString("dd/MM/yyyy"))
+                </Template>
+            </RadzenGridColumn>
+            <RadzenGridColumn TItem="DTOSalesInvoiceNote" Property="Note" Title="Observación" Width="200px"></RadzenGridColumn>
+            <RadzenGridColumn TItem="DTOSalesInvoiceNote" Property="UserId" Title="Usuario"></RadzenGridColumn>
+        </Columns>
+    </RadzenGrid>        
+</div>

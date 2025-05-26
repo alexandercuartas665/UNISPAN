@@ -1,0 +1,83 @@
+﻿@page "/permission2"
+
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject SecurityService securityService
+@inject IJSRuntime JSRuntime
+<h3>Permisos</h3>
+
+
+<select class="form-control col-md-2" @onchange="OnSelectRole">
+    <option value=""></option>
+    @foreach (var cnt in listRoles)
+    {
+        <option value="@cnt.RoleAppId">@cnt.Name</option>
+    }
+</select>
+
+
+<div class="col-md-8 m-t-10">
+<TreePermission listactions="@listactions"></TreePermission>
+</div>
+
+<NavLink class="btn-lg btn-success btn-block" @onclick="SavePermission">Ingresa</NavLink>
+
+
+@code {
+
+    long RoleId = 0; string temp = "";
+    List<ActionApp> listactions = new List<ActionApp>();
+    List<RoleApp> listRoles = new List<RoleApp>();
+    protected override async Task OnInitializedAsync()
+    {
+        listRoles = await securityService.GetRoles();
+
+    }
+
+    void OnSelectRole(ChangeEventArgs e)
+    {
+       // this.InvokeAsync(() => { JSRuntime.InvokeVoidAsync("$.fn.DestrooyTree"); });
+          
+        if (!string.IsNullOrEmpty(e.Value.ToString()))
+        {
+            RoleId = long.Parse(e.Value.ToString());
+            listactions = securityService.GetActionsPermissionByRole(RoleId).Result;
+        }
+        else
+        {
+            RoleId = 0;
+            listactions = new List<ActionApp>();
+        }
+
+    }
+    //despues de renderizar
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        //{
+        //    try
+        //    {
+        //        await Task.Delay(TimeSpan.FromMilliseconds(300));
+        //        await JSRuntime.InvokeVoidAsync("Fnjstreepermission");
+        //        await JSRuntime.InvokeVoidAsync("Fnjstreepermission");
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+        // await Task.Delay(TimeSpan.FromMilliseconds(300));DestrooyTree
+        await JSRuntime.InvokeVoidAsync("$.fn.Fnjstreepermission");
+
+    }
+
+
+    async void SavePermission()
+    {
+        string permiss = await JSRuntime.InvokeAsync<string>("$.fn.GetPermissions");
+    }
+}
+
+
+

@@ -1,0 +1,202 @@
+﻿@page "/viewinventarioxwarehouse"
+
+@using Newtonsoft.Json
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject MovementInventoryService movementInventoryService
+@inject NotificationService notificationService
+@inject WarehouseService warehouseService
+@inject ParameterService parameterService
+@inject SecurityService securityService
+@inject IJSRuntime JSRuntime
+@inject IConfiguration configuration
+<div class="card">
+    <div class="card-header">
+        INVENTARIO
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="selectWarehouse">Bodega</label>
+                <RadzenDropDown Name="selectWarehouse" TValue="long" class="form-control" Change="@(args=>selectWarehouseChanged((long)args))" AllowClear="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Warehouses" TextProperty="Name" ValueProperty="WarehouseId" />
+            </div>
+            <div class="form-group">
+                <label class="d-block">&nbsp;</label>
+                <input type="button" class="btn btn-success btn-sm" value="Generar Reporte" @onclick="GenerateReport" />
+                <input type="button" class="btn btn-success btn-sm ml-1" value="Cargar Equivalencias 8.5" @onclick="DialogSync85" />
+            </div>
+
+            <div class="form-group col-md-6">
+                @if (!CanSync)
+                {
+                    <label class="d-block">&nbsp;</label>
+                }
+                <label class="d-block">@(LastHourSync)&nbsp;</label>
+                @if (CanSync)
+                {
+                    <input type="button" class="btn btn-success btn-sm" value="Sincronizar Bodegas" @onclick="SincronizarItems" />
+                }
+            </div>
+
+            @*<div class="form-row col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <RadzenUpload @ref="upload" Auto="false" ChooseText="Archivo" Url="@("api/Item/UploadFileToInventary")" Complete="@Completed" />
+                </div>*@
+
+            @*<div class="form-group col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <input type="button" name="BtnInv" value="Cargar Inventario" @onclick="@(args => upload.Upload())" class="btn btn-success btn-sm" />
+                </div>*@
+        </div>
+        <div class="row">
+            <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="30" AllowSorting="true" Data="@lists" TItem="DTOInventary">
+                <Columns>
+                    <RadzenGridColumn TItem="DTOInventary" Property="Barcode" Width="100px" Title="Codigo" />
+                    <RadzenGridColumn TItem="DTOInventary" Property="ItemName" Width="300px" Title="Descripcion" />
+                    @* <RadzenGridColumn TItem="DTOInventary" Property="Cost" Title="Costo" />*@
+                    @*  <RadzenGridColumn TItem="DTOInventary" Property="PriceUnd" Title="Precio Venta" />*@
+                    <RadzenGridColumn TItem="DTOInventary" Property="CantInv" Width="100px" Title="Existencias">
+                        <Template Context="data">
+                            <label>@((long)data.CantInv)</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DTOInventary" Property="CantReservada" Width="100px" Title="Reservadas">
+                        <Template Context="data">
+                            <label>@((long)data.CantReservada)</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DTOInventary" Property="Saldo" Width="80px" Title="Saldo">
+                        <Template Context="data">
+                            <label>@((long)data.Saldo)</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DTOInventary" Property="CantFabricacion" Width="80px" Title="Fabricacion">
+                        <Template Context="data">
+                            <RadzenLink @onclick="@(args=> { clickOrdersManufacturing(data); })" Path="javascript:void(0)" Text="@(((long)data.CantFabricacion).ToString())"></RadzenLink>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DTOInventary" Property="CantPendienteFabricacion" Width="80px" Title="Pend. Fabricacion">
+                        <Template Context="data">
+                            <RadzenLink @onclick="@(args=> { clickOrdersManufacturing(data); })" Path="javascript:void(0)" Text="@(((long)data.CantPendienteFabricacion).ToString())"></RadzenLink>
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    //RadzenUpload upload;
+    //void Completed(UploadCompleteEventArgs args)
+    //{
+    //    // events.Add(DateTime.Now, $"Server response: {args.RawResponse}");
+    //}
+    List<DTOInventary> lists = new List<DTOInventary>();
+    List<Warehouse> Warehouses = new List<Warehouse>();
+    long Warehouseid = 0;
+    bool CanSync = false;
+    public string LastHourSync = string.Empty;
+    //string urlUploadfile = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        //urlUploadfile = configuration.GetSection("UrlBaseReports").Value.ToString();
+        Warehouses = await warehouseService.selectAll(new Warehouse() { TransOption = 2 });
+
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        ActionApp actionapp = await securityService.ValidatePermissionByTooken(tooken, "viewinventarioxwarehouse", "Sync");
+        CanSync = actionapp.TransactionIsOk;
+
+        await SetHourSync();
+    }
+
+    void clickOrdersManufacturing(DTOInventary detail)
+    {
+        dialogService.Open<ViewListOrderManufacturing>("Ordenes de Fabricacion", new Dictionary<string, object>() { { "ItemId", detail.ItemId }, { "NameItem", detail.ItemName }
+        ,{ "warehouseId", detail.Warehouseid }}, new DialogOptions() { Width = "1024px", Height = "350px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+    async Task selectWarehouseChanged(long Warehouseid)
+    {
+        this.Warehouseid = Warehouseid;
+        lists = await movementInventoryService.selectAll(new DTOInventary() { TransOption = 2, Warehouseid = Warehouseid });
+
+    }
+
+    async Task SetHourSync()
+    {
+        Parameter param = await parameterService.SelectById(new Parameter() { TransOption = 3, NameIdentify = "ParametrosQuantify" });
+        DTOParamInventaryQuanty paramDesencypt = JsonConvert.DeserializeObject<DTOParamInventaryQuanty>(param.Value2);
+        if (!string.IsNullOrEmpty(paramDesencypt.LastSyncText))
+            LastHourSync = "Ultima Sincronización : " + paramDesencypt.LastSyncText;
+        else
+        {
+            LastHourSync = "";
+        }
+    }
+
+    async void GenerateReport()
+    {
+        if (lists.Count > 0)
+        {
+            dialogService.Open<ViewRptInventary>("REPORTE DE INVENTARIO", new Dictionary<string, object>() { { "Warehouseid", lists.First().Warehouseid } },
+                new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+        }
+    }
+
+    public async void SincronizarItems()
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Sincronizacion" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            await warehouseService.SincronizarBodegas();
+            dialogService.Close();
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Sincronizacion Ejecutada", Duration = 2000 });
+            if (Warehouseid != 0)
+            {
+                await selectWarehouseChanged(Warehouseid);
+                await SetHourSync();
+                this.InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                });
+            }
+        //  lists = await itemService.selectAll(new Item() { TransOption = 3 });
+    });
+        LastHourSync = string.Empty;
+        lists = new List<DTOInventary>();
+    }
+
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void DialogSync85()
+    {
+        dialogService.Open<DialogLoadFile>("Subir Archivo", new Dictionary<string, object>() { { "ViewObject", this } }, new DialogOptions() { ShowTitle = true, Width = "300px", Height = "250px", Left = "calc(50% - 150px)", Top = "40px" });
+    }
+
+    public async void Sincronizar85(string FileSincronice)
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Sincronizacion" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+
+        Task.Run(async () =>
+        {
+            await itemService.ReadEquivalence85(FileSincronice);
+            dialogService.Close();
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Sincronizacion Ejecutada", Duration = 2000 });
+        });
+    }
+
+    //void OnProgress(UploadProgressArgs args, string name)
+    //{
+
+
+    //}
+}

@@ -1,0 +1,11 @@
+﻿@page "/extradzentreelevel"
+@using adesoft.adepos.webview.Data.Model
+
+<RadzenCheckBox @bind-Value="@model.HavePermission"></RadzenCheckBox>
+            &nbsp;
+<RadzenLabel Text=""></RadzenLabel>
+@code {
+    [Parameter]
+    public ActionApp model { get; set; }
+}
+

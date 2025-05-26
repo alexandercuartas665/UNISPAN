@@ -1,0 +1,116 @@
+﻿@page "/EditOrderPallet/{orderType:int}/{orderId:long}"
+@page "/EditOrderPallet/{orderType:int}/{orderId:long}/{orderPalletId}"
+
+@using System.Globalization
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@inject Data.Interfaces.IPlantService plantService
+@inject NotificationService notificationService
+@inject SecurityService securityService
+@inject NavigationManagerViewControl manager
+@inject NavigationManager navigationManager;
+
+@code {
+    [Parameter]
+    public int orderType { get; set; }
+
+    [Parameter]
+    public long orderId { get; set; }
+
+    [Parameter]
+    public string orderPalletId { get; set; }
+
+    DTOOrder order = new DTOOrder();
+    DTOOrderPallet model;
+
+    List<DTOZoneProduct> zoneProducts;
+
+    protected override void OnInitialized()
+    {
+        this.GetOrder();
+        this.GetOrderPallet();
+        this.GetZoneProducts();
+    }
+
+    public void GetZoneProducts()
+    {
+        this.zoneProducts = plantService.GetZoneProducts();
+    }
+
+    public void GetOrder()
+    {
+        this.order = this.plantService.GetOrder((OrderType)this.orderType, this.orderId);
+    }
+
+    public void GetOrderPallet()
+    {
+        if(!string.IsNullOrEmpty(this.orderPalletId))
+        {
+            this.model = this.plantService.GetOrderPallet(this.orderPalletId).ToModel();
+        }
+        else
+        {
+            this.model = new DTOOrderPallet();
+            this.model.OrderId = this.order.OrderId;
+            this.model.PalletNo = this.plantService.GetPalletNo(this.orderId);
+        }
+    }
+
+    void CreateOrUpdate(DTOOrderPallet model)
+    {
+        try
+        {
+            this.model = this.plantService.CreateOrUpdate(model);
+            dialogService.Close(this.model);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+}
+
+<RadzenTemplateForm TItem="DTOOrderPallet" Data=@model Submit=@CreateOrUpdate InvalidSubmit=@OnInvalidSubmit>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="row mb-4">
+                <div class="col-md-4 align-items-center d-flex">
+                    <RadzenLabel Text="No. Estiba" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenNumeric @bind-Value="model.PalletNo" Placeholder="Entre el No. de la estiba" style="display: block" class="w-100" Name="PalletNo" Disabled="true"></RadzenNumeric>
+                    <RadzenRequiredValidator Component="PalletNo" Text="El No. de la estiba es obligatorio" Style="position: absolute" DefaultValue="0" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4 align-items-center d-flex">
+                    <RadzenLabel Text="Zona" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenDropDown AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data=@zoneProducts @bind-Value=@model.ZoneProductId
+                                    TextProperty="Name" ValueProperty="ZoneProductId" style="display: block" Class="w-100" Name="ZoneProductId"/>
+                    <RadzenRequiredValidator Component="ZoneProductId" Text="La zona es obligatoria" Style="position: absolute" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-12 text-right">
+            <RadzenButton Click="@((args) => dialogService.Close(false))" Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light" Text="Cancel" Style="width: 120px" Class="me-1" />
+            <RadzenButton ButtonType="ButtonType.Submit" Variant="Variant.Flat" Text="Save" Style="width: 120px"></RadzenButton>
+        </div>
+    </div>
+</RadzenTemplateForm>
+
+
+
+
+
+

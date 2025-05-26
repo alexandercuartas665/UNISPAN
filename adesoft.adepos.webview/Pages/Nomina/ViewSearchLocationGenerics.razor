@@ -1,0 +1,52 @@
+﻿@page "/ViewSearchLocationGenerics"
+@inject NotificationService notificationService
+@inject LocationGenericService locationService
+@inject DialogService dialogService
+
+@code {
+
+    List<LocationGeneric> lists = new List<LocationGeneric>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        LocationGeneric filter = new LocationGeneric();
+        filter.TransOption = 2;
+        lists = await locationService.selectAll(filter);
+
+    }
+
+
+}
+
+
+<div class="card">
+    <div class="card-header">
+        CARGOS
+    </div>
+    <div class="card-body">
+ 
+        <div class="form-row">
+            <RadzenGrid   AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="15" AllowSorting="true" Data="@lists" TItem="LocationGeneric">
+                <Columns>
+                    <RadzenGridColumn TItem="LocationGeneric" Property="Description" Title="Cargo 8.5">
+                        <Template Context="data">
+                            <strong> @(data.Description)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="LocationGeneric" Property="LongDescription" Title="Descripcion">
+                        <Template Context="data">
+                            <strong> @(data.LongDescription)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="LocationGeneric" Property="LocationGenericId" Title="Abrir" Filterable="false">
+                        <Template Context="data">
+                            <NavLink href="@("/ViewLocationGenerics/"+data.LocationGenericId)">Ver</NavLink>
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+    </div>
+</div>

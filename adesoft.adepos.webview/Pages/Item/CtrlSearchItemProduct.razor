@@ -1,0 +1,188 @@
+﻿@page "/CtrlSearchItemProduct/{lists}"
+@inject NotificationService notificationService
+@inject ParameterService parameterService
+@inject DialogService dialogService
+@using  Newtonsoft.Json
+@code {
+    [Parameter]
+    public List<Item> lists { get; set; }
+
+    public List<Item> listsFilter { get; set; }
+
+
+    public List<string> Altos { get; set; }
+    public List<string> Anchos1 { get; set; }
+    public List<string> Anchos2 { get; set; }
+
+    [Parameter]
+    public object viewItem { get; set; }
+    List<DTOParamMedidas> Listparams;
+    public bool IsViewMedicion { get; set; }
+    public bool IsViewSearch = false;
+    protected override async Task OnInitializedAsync()
+    {
+        Altos = new List<string>();
+        Anchos1 = new List<string>();
+        Anchos2 = new List<string>();
+
+        Parameter parammodel = await parameterService.SelectById(new Parameter() { TransOption = 3, NameIdentify = "ParametrosMedida" });
+        if (!string.IsNullOrEmpty(parammodel.Value2))
+        {
+            Listparams = JsonConvert.DeserializeObject<List<DTOParamMedidas>>(parammodel.Value2);
+            Altos.Add("NA"); Anchos1.Add("NA"); Anchos2.Add("NA");
+            Listparams.Where(x => x.TipoMedida == "ALTO").ToList().ForEach(x => { Altos.Add(((long)x.Valor).ToString()); });
+            Listparams.Where(x => x.TipoMedida == "ANCHO1").ToList().ForEach(x => { Anchos1.Add(((long)x.Valor).ToString()); });
+            Listparams.Where(x => x.TipoMedida == "ANCHO2").ToList().ForEach(x => { Anchos2.Add(((long)x.Valor).ToString()); });
+        }
+
+
+        listsFilter = lists;
+        IsViewMedicion = true;
+        //if (viewItem is ViewMedicion )
+        //{
+        //    IsViewMedicion = true;
+        //}
+        //else
+        //{
+        //    IsViewMedicion = false;
+        //}
+
+        if (viewItem is ViewRptMovEquipoDetallItemFecha)
+        {
+            IsViewSearch = true;
+        }
+    }
+
+    void GridClickSelect(EventArgs e, object obj)
+    {
+        if (((Item)obj).Cant <= 0 && (viewItem is ViewMedicion || viewItem is ViewDetailDispatch))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "La cantidad debe ser mayor a 0.", Duration = 2000 });
+            return;
+        }
+
+        if (viewItem is ViewMedicion)
+            ((ViewMedicion)viewItem).SelectSearchItem((Item)obj);
+        if (viewItem is ViewRptMovEquipoDetallItemFecha)
+            ((ViewRptMovEquipoDetallItemFecha)viewItem).SelectSearchItem((Item)obj);
+        if (viewItem is ViewDetailDispatch)
+            ((ViewDetailDispatch)viewItem).SelectSearchItem((Item)obj);
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    public string Filtro1 { get; set; }
+
+    public string Filtro2 { get; set; }
+
+    public string Filtro3Alto { get; set; }
+
+    public string Filtro4Ancho1 { get; set; }
+
+    public string Filtro5Ancho2 { get; set; }
+
+    async void SearchFilters()
+    {
+        listsFilter = lists;
+
+
+        if (!string.IsNullOrEmpty(Filtro1))
+        {
+            Filtro1 = Filtro1.ToUpper();
+            listsFilter = listsFilter.Where(x => x.Description.ToUpper().Contains(Filtro1)).ToList();
+        }
+        if (!string.IsNullOrEmpty(Filtro2))
+        {
+            Filtro2 = Filtro2.ToUpper();
+            listsFilter = listsFilter.Where(x => x.Description.ToUpper().Contains(Filtro2)).ToList();
+        }
+        if (!string.IsNullOrEmpty(Filtro3Alto) && Filtro3Alto.Trim() != "NA")
+        {
+            listsFilter = listsFilter.Where(x => x.Description.ToUpper().Contains(Filtro3Alto)).ToList();
+        }
+        if (!string.IsNullOrEmpty(Filtro4Ancho1) && Filtro4Ancho1.Trim() != "NA")
+        {
+            listsFilter = listsFilter.Where(x => x.Description.ToUpper().Contains(Filtro4Ancho1)).ToList();
+        }
+        if (!string.IsNullOrEmpty(Filtro5Ancho2) && Filtro5Ancho2.Trim() != "NA")
+        {
+            listsFilter = listsFilter.Where(x => x.Description.ToUpper().Contains(Filtro5Ancho2)).ToList();
+        }
+        StateHasChanged();
+    }
+}
+
+@if (IsViewMedicion)
+{
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label for="inputFiltro1">Filtro 1</label>
+            <RadzenTextBox Name="inputFiltro1" @bind-Value="Filtro1"  Change="SearchFilters" class="form-control text-uppercase" />
+        </div>
+        <div class="form-group col-md-6">
+            <label for="inputFiltro2">Filtro 2</label>
+            <RadzenTextBox Name="inputFiltro2" @bind-Value="Filtro2"  Change="SearchFilters" class="form-control text-uppercase" />
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-3">
+            <label for="selectAlto">Alto</label>
+            <RadzenDropDown Name="selectAlto" class="form-control"  Change="SearchFilters" AllowClear="false" @bind-Value="Filtro3Alto" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Altos" />
+        </div>
+        <div class="form-group col-md-3">
+            <label for="selectAlto">Ancho1</label>
+            <RadzenDropDown Name="selectancho" class="form-control"  Change="SearchFilters" AllowClear="false" @bind-Value="Filtro4Ancho1" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Anchos1" />
+        </div>
+        <div class="form-group col-md-3">
+            <label for="selectAlto">Ancho2</label>
+            <RadzenDropDown Name="selectancho2" class="form-control"  Change="SearchFilters" AllowClear="false" @bind-Value="Filtro5Ancho2" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Anchos2" />
+        </div>
+        <div class="form-group col-md-3">
+            <label class="d-block">&nbsp;</label>
+            <input class="btn btn-success btn-sm" @onclick="SearchFilters" value="Buscar" type="button" />
+        </div>
+    </div>
+}
+@if (listsFilter.Count > 0)
+{
+    <div class="row">
+        <RadzenGrid AllowFiltering="false" Count="@listsFilter.Count"   FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"  AllowPaging="true" PageSize="20" AllowSorting="true" Data="@listsFilter" TItem="Item">
+            <Columns>
+                <RadzenGridColumn TItem="Item" Width="55px" Property="Description" Title="Nombre" />
+                <RadzenGridColumn TItem="Item" Width="10px" Property="Area" Title="Area">
+                    <Template Context="data">
+                        @(data.Weight + " M2")
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Item" Width="10px" Property="Weight" Title="Peso">
+                    <Template Context="data">
+                        @(data.Weight + " KG")
+                    </Template>
+                </RadzenGridColumn>
+                @if (!IsViewSearch)
+                {
+                    <RadzenGridColumn TItem="Item" Width="13px" Title="Cant">
+                        <Template Context="data">
+                            <RadzenNumeric Name="InputCant" Placeholder="Cant" @bind-Value="data.Cant" Style="width:80px;" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="Item" Width="12px" Filterable="false" Property="" Title="">
+                        <Template Context="data">
+                            <a href="javascript:void(0)" @onclick="@(args => GridClickSelect(args, data))">Adicionar</a>
+                        </Template>
+                    </RadzenGridColumn>
+                }
+                else
+                {
+                    <RadzenGridColumn TItem="Item" Width="12px" Filterable="false" Property="" Title="">
+                        <Template Context="data">
+                            <a href="javascript:void(0)" @onclick="@(args => GridClickSelect(args, data))">Seleccionar</a>
+                        </Template>
+                    </RadzenGridColumn>
+                }
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+

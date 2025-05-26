@@ -1,0 +1,340 @@
+﻿@page "/viewsearchparameter/{ParameterModule}"
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Pages.Logistica
+@using adesoft.adepos.webview.Pages.Comercial
+@using adesoft.adepos.webview.Data.Interfaces;
+@using  Newtonsoft.Json
+@using System.IO;
+@using BlazorInputFile
+
+@inject DialogService dialogService
+@inject IHttpContextAccessor httpContextAccessor
+@inject BiableService biableService
+@inject NotificationService notificationService
+@inject ParameterService parameterService
+@inject SimexService simexService;
+@inject NominaService nominaService;
+@inject IElectronicBillingService electronicBillingService;
+@inject IJSRuntime JSRuntime
+@code {
+    [Parameter]
+    public string ParameterModule { get; set; }
+
+    List<Parameter> listsData = new List<Parameter>();
+    public string ParamAux { get; set; }
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (ParamAux != ParameterModule)
+        {
+            ParamAux = ParameterModule;
+            listsData = await parameterService.selectAll(new Parameter() { Module = ParameterModule, TransOption = 2 });
+            StateHasChanged();
+        }
+        // return base.OnAfterRenderAsync(firstRender);
+    }
+
+    async void ShowVentanaEmergente(Parameter data)
+    {
+        if (data.Value == "viewpricedolar")
+        {
+            dialogService.Open<ViewPriceDolar>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "350px", Left = "calc(50% - 612px)", Top = "calc(50% - 300px)" });
+        }
+        else if (data.Value == "viewm2")
+        {
+            dialogService.Open<ViewParamLimitMetas>(null, new Dictionary<string, object>() { { "ParameterModule", data.NameIdentify } }, new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "viewkg")
+        {
+            dialogService.Open<ViewParamLimitMetas>(null, new Dictionary<string, object>() { { "ParameterModule", data.NameIdentify } }, new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "viewausentismo")
+        {
+            dialogService.Open<ViewParamLimitMetas>(null, new Dictionary<string, object>() { { "ParameterModule", data.NameIdentify } }, new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewParamMedidas")
+        {
+            dialogService.Open<ViewParamMedidas>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "700px", Height = "650px", Left = "calc(50% - 350px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewParamMetaMinima")
+        {
+            dialogService.Open<ViewParamMetaMinima>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewSimexPresupuesto")
+        {
+            dialogService.Open<Simex.ViewSimexPresupuesto>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewSimexQtyMinimum")
+        {
+            dialogService.Open<Simex.ViewSimexQtyMinimum>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewHRMasters")
+        {
+            dialogService.Open<ViewHRMasters>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewCustomers")
+        {
+            dialogService.Open<ViewCustomers>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewVendors")
+        {
+            dialogService.Open<ViewVendors>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewLogisticMasterData")
+        {
+            dialogService.Open<ViewLogisticMasterData>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewBudgetRent")
+        {
+            dialogService.Open<ViewBudgetRent>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewLedgerEstimate")
+        {
+            dialogService.Open<ViewLedgerEstimate>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+        else if (data.Value == "ViewAdministrators")
+        {
+            dialogService.Open<ViewAdministrators>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    async void HandleFileSelected(IFileListEntry[] files, Parameter param)
+    {
+        if (files.Count() > 0)
+        {
+            param.FileEntry = files[0];
+            // param.PathDocumentoAdjunto = null;
+            param.NameFile = param.FileEntry.Name;
+            // param.Value = param.FileEntry.Name;
+            MemoryStream ms = new MemoryStream();
+            var reader = new System.IO.StreamReader(param.FileEntry.Data);
+            await reader.BaseStream.CopyToAsync(ms);
+            param.FileBuffer = ms.ToArray();
+
+            dialogService.Close();
+            dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+            Task.Run(async () =>
+            {
+                //await transactionservice.Delete(tra);
+                //await selectWarehouse(tra.WarehouseOriginId);
+                param = await parameterService.Create(param);
+                switch (param.Module)
+                {
+                    case "SIMEX":
+                        {
+                            switch (param.NameIdentify)
+                            {
+                                case "VentasSimex":
+                                    try
+                                    {
+                                        await simexService.UploadSalesAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                case "CarteraSimex":
+                                    try
+                                    {
+                                        await simexService.UploadCarteraAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                case "InventSumSimex":
+                                    try
+                                    {
+                                        await simexService.UploadInventSumAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                case "PedidosSimex":
+                                    try
+                                    {
+                                        await simexService.UploadSalesOrderAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                case "PedidoPreciosSimex":
+                                    try
+                                    {
+                                        await simexService.UploadSalesOrderPriceAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                default:
+                                    break;
+                            }
+
+                            break;
+                        }
+
+                    case "HR":
+                        {
+                            switch (param.NameIdentify)
+                            {
+                                case "HREmployes":
+                                    try
+                                    {
+                                        await nominaService.UploadEmployesAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                case "HRExternalEmployes":
+                                    try
+                                    {
+                                        await nominaService.UploadExternalEmployesAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                case "HRNewness":
+                                    try
+                                    {
+                                        await nominaService.UploadNewnessAsync(param);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                                        throw;
+                                    }
+
+                                default:
+                                    break;
+                            }
+                            break;
+                        }
+
+                    case "EBILLING":
+                        try
+                        {
+                            this.electronicBillingService.UploadFiles(param, param.NameIdentify);
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            dialogService.Close();
+                            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                            throw;
+                        }
+
+                    default:
+                        break;
+                }
+
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Info, Summary = "Ok", Detail = "Parametro actualizado correctamente.", Duration = 2000 });
+                    StateHasChanged();
+                });
+            });
+        }
+    }
+
+    async void ValueNumericChangued(Parameter param, decimal value)
+    {
+        param.Value2 = value.ToString();
+        this.InvokeAsync(() =>
+        {
+            parameterService.Create(param);
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Info, Summary = "Ok", Detail = "Parametro actualizado correctamente.", Duration = 2000 });
+            StateHasChanged();
+        });
+    }
+}
+
+
+<div class="card">
+    <div class="card-header">
+        PARAMETROS
+    </div>
+    <div class="card-body">
+        @*<div class="form-row @(companyCurrent.CompanyId!=1?"collapse":"")">
+                <div class="form-group col-md-4 ">
+                    <label for="selectCompany">Sede</label>
+                    <RadzenDropDown Name="selectCompany" TValue="long" class="form-control" Change="@(args=>SelectCompany((long)args))" AllowClear="false" @bind-Value="model.CompanyId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Companys" TextProperty="Name" ValueProperty="CompanyId" />
+                </div>
+            </div>*@
+        <div class="form-row">
+            <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@listsData" TItem="Parameter">
+                <Columns>
+                    <RadzenGridColumn TItem="Parameter" Title="Parametro" Width="280">
+                        <Template Context="data">
+                            <strong> @(data.Description)</strong>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="Parameter" Title="Valor">
+                        <Template Context="data">
+                            @if (data.ValueType == "Archivo" && data.Value != null)
+                            {
+                                <NavLink href="@data.Value" target="_blank" download>
+                                    <span class="fat fa-paperclip" aria-hidden="true"></span>&nbsp;&nbsp;@(Path.GetFileName(data.Value))
+                                </NavLink>
+                            }
+                            else if (data.ValueType == "Ventana" && data.Value != null)
+                            {
+                                <NavLink href="javascript:void(0)" @onclick="@(args=>{ ShowVentanaEmergente(data);})">
+                                    Abrir Configuración
+                                </NavLink>
+                            }
+                            else if (data.ValueType == "Numerico" && data.Value != null)
+                            {
+                                <RadzenNumeric TValue="decimal" Value="@(decimal.Parse((data.Value2==null?"0":data.Value2)))" ValueChanged="@(args=> { ValueNumericChangued(data, args); })" class="col-2 form-control" />
+                            }
+                            else
+                            {
+                                @(data.Value)
+                            }
+                            @if (data.ValueType == "Archivo")
+                            {
+                                <InputFile OnChange="@(args => { HandleFileSelected(args, data); })" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+    </div>
+</div>

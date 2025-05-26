@@ -1,0 +1,226 @@
+﻿@page "/ViewSimexPresupuesto"
+@using  Newtonsoft.Json
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.DTO.Simex
+@using adesoft.adepos.webview.Data.Model.Simex
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject SimexService simexService
+@inject IJSRuntime JSRuntime
+@code {
+
+    List<DTOMonth> months;
+    List<DTOZone> zones;
+    List<string> categories;
+    List<Presupuesto> presupuestos;
+
+    public long YearId { get; set; }
+    public long MonthId { get; set; }
+    public string CategoryId { get; set; }
+    public Presupuesto model { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        months = DTOViewRptCompra.GetMonths();
+        categories = new List<string>()
+        {
+            "CANTIDAD",
+            "PESOS"
+        };
+        zones = await simexService.GetZones();
+        presupuestos = new List<Presupuesto>();
+        model = new Presupuesto();
+    }
+
+    async void ChangeYear(long yearId)
+    {
+        this.YearId = yearId;
+        await SetModel();
+    }
+
+    async void ChangeMonth(long monthId)
+    {
+        this.MonthId = monthId;
+        await SetModel();
+    }
+
+    async void ChangeCategory(string categoryId)
+    {
+        this.CategoryId = categoryId;
+        await SetModel();
+    }
+
+    async Task SetModel()
+    {
+        if (YearId != 0 && MonthId != 0 && CategoryId != "")
+        {
+            if (YearId != model.YearId || MonthId != model.MonthId || CategoryId != model.CategoryId)
+            {
+                presupuestos = await simexService.GetPresupuestos(YearId, MonthId, CategoryId);
+                Presupuesto presupuesto = presupuestos.Where(x => x.YearId == YearId && x.MonthId == MonthId && x.CategoryId == CategoryId && x.ZoneId == model.ZoneId).FirstOrDefault();
+                if (presupuesto == null)
+                {
+                    model = new Presupuesto();
+                    model.YearId = YearId;
+                    model.MonthId = MonthId;
+                    model.CategoryId = CategoryId;
+                }
+                else
+                {
+                    model = presupuesto;
+                }
+            }
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void ReplicarMesAnterior()
+    {
+        if (YearId == 0 || MonthId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+        long yearIdAnt = YearId;
+        long monthIdAnt = MonthId - 1;
+        if (monthIdAnt == 0)
+        {
+            yearIdAnt = yearIdAnt - 1;
+            monthIdAnt = 12;
+        }
+
+        var presupuestosFilter = await this.simexService.GetPresupuestos(yearIdAnt, monthIdAnt, CategoryId);
+        foreach (var presupuesto in presupuestosFilter)
+        {
+            presupuesto.YearId = YearId;
+            presupuesto.MonthId = MonthId;
+            await this.simexService.SavePresupuesto(presupuesto);
+        }
+
+        presupuestos = await simexService.GetPresupuestos(YearId, MonthId, CategoryId);
+    }
+
+    async void AddPresupuesto()
+    {
+        if (model.YearId == 0 || model.MonthId == 0 || model.CategoryId == "" || model.ZoneId == "" || model.Value == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+            return;
+        }
+
+        if (presupuestos.Where(x => x.YearId == model.YearId &&  x.MonthId == model.MonthId && x.CategoryId == model.CategoryId && x.ZoneId == model.ZoneId).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El presupuesto ingresado ya existe.", Duration = 4000 });
+            return;
+        }
+
+        model = await simexService.SavePresupuesto(model);
+
+        presupuestos = await simexService.GetPresupuestos(YearId, MonthId, CategoryId);
+
+        model = new Presupuesto();
+        model.YearId = YearId;
+        model.MonthId = MonthId;
+        model.CategoryId = CategoryId;
+    }
+
+    async void RemovePresupuesto(Presupuesto presupuesto)
+    {
+        try
+        {
+            var isRemove = await simexService.RemovePresupuesto(presupuesto);
+            if (isRemove)
+            {
+                presupuestos.Remove(presupuesto);
+            }
+            else
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El presupuesto no pudo ser eliminado, por favor intenta de nuevo.", Duration = 4000 });
+                return;
+            }
+        }
+        catch(Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El presupuesto no pudo ser eliminado, por favor intenta de nuevo.", Duration = 4000 });
+            return;
+        }
+
+    }
+
+}
+
+<div class="card">
+    <div class="card-header">
+        PRESUPUESTO
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="Filter4">Año</label>
+                <RadzenNumeric TValue="long" class="form-control" ValueChanged="ChangeYear" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter4">Meses</label>
+                <RadzenDropDown AllowFiltering="true" TValue="long" ValueChanged="ChangeMonth" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" TextProperty="Name" Data="@months" ValueProperty="IdMonth" />
+            </div>    
+            <div class="form-group col-md-3">
+                <label for="Filter4">Categorias</label>
+                <RadzenDropDown AllowFiltering="true" TValue="string" ValueChanged="ChangeCategory" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@categories"/>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-danger btn-sm" @onclick="ReplicarMesAnterior" value="Replicar datos mes anterior" type="button" />
+                </div>
+            </div>
+        </div>
+        <RadzenFieldset Text="Presupuestos">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="Filter4">Zona</label>
+                    <RadzenDropDown class="form-control" @bind-Value="model.ZoneId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@zones" TextProperty="Description" ValueProperty="ZoneId" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Presupuesto</label>
+                    <RadzenNumeric Name="value" TValue="decimal" Format="c2" Currency="USD" @bind-Value="model.Value" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="AddPresupuesto" value="+ Adicionar" type="button" />
+                </div>
+            </div>
+            <div class="form-row">
+
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@presupuestos" TItem="Presupuesto" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="Presupuesto" Property="ZoneId" Title="Zona">
+                            <Template Context="data">
+                                @(data.ZoneId)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="Presupuesto" Property="Value" Title="Valor">
+                            <Template Context="data">
+                                @(string.Format("{0:C}", data.Value))
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="Presupuesto" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { RemovePresupuesto(data); })">Eliminar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

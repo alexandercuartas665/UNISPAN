@@ -1,0 +1,65 @@
+﻿@page "/ViewPendingInvoices/{Option:int}";
+
+@using adesoft.adepos.webview.Pages.ElectronicBilling
+
+@inject NavigationManagerViewControl manager;
+@inject NavigationManager navigationManager;
+
+@implements IDisposable
+@code {
+
+    [Parameter]
+    public int Option { get; set; }
+
+    protected override void OnInitialized()
+    {
+        this.selectedPage = this.Option;
+    }
+
+    public int selectedPage = 1;
+
+    public void Dispose()
+    {
+        manager.UnRegisterView(this);
+    }
+
+    void changeOption(int option)
+    {
+        this.navigationManager.NavigateTo($"/ViewPendingInvoices/{option}");
+    }
+
+}
+
+<div class="content-scroll">
+    <div class="row">
+        <div class="col-sm-12">
+            <nav class="navbar navbar-light bg-transparent justify-content-between">
+                <div class="rz-p-12 ">
+                    <RadzenRadioButtonList @bind-Value=@selectedPage TValue="int" Change="@(args => this.changeOption(args) )">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Arriendos" Value="1" />
+                            <RadzenRadioButtonListItem Text="Cierres" Value="2" />
+                            <RadzenRadioButtonListItem Text="Ordenes de Producción" Value="3" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </div>
+            </nav>
+        </div>        
+    </div>
+    @{
+        if(this.selectedPage.Equals(1))
+        {
+            <ViewSalesInvoices></ViewSalesInvoices>
+        }
+        else if(this.selectedPage.Equals(2))
+        {
+            <ViewClosingsInvoiced></ViewClosingsInvoiced>
+        }
+        else
+        {
+            <ViewOPsInvoiced></ViewOPsInvoiced>
+        }
+    }       
+</div>
+
+

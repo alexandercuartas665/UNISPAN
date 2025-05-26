@@ -1,0 +1,504 @@
+﻿@page "/ViewTransportOrders/{subModule}/{orderType:int}"
+@page "/ViewTransportOrders/{subModule}/{strFromDate}/{strToDate}/{orderType:int}/{filterId:int}"
+@page "/ViewTransportOrders/{subModule}/{reportFilterId}"
+@using System.Globalization;
+@using Microsoft.JSInterop;
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject LogisticsService logisticsService;
+@inject Data.Interfaces.ILogisticsCoreService logisticsCoreService;
+@inject ParameterService parameterService;
+@inject DialogService dialogService;
+@inject NotificationService notificationService;
+@inject NavigationManager navigationManager;
+@inject IHttpContextAccessor httpContextAccessor
+
+@inject SecurityService securityService
+@inject IJSRuntime JSRuntime
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject CompanyService companyService
+
+@code {
+
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    [Parameter]
+    public string subModule { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    [Parameter]
+    public int filterId { get; set; }
+
+    [Parameter]
+    public string reportFilterId { get; set; }
+
+    public string searchBy;
+
+    private DTOViewScheduleDispRet scheduleDisRet;
+    private List<DTOOrder> orders;
+    public List<DTOLogisticMasterData> transports;
+
+    private bool reportTransportOrders = false;
+    private bool searchTransportOrder = false;
+    private bool editTransportOrder = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+
+        var user = httpContextAccessor.HttpContext.User.Identity;
+        if (!string.IsNullOrEmpty(this.reportFilterId))
+        {
+            var reportFilter = logisticsCoreService.GetReportFilter(this.reportFilterId);
+            this.scheduleDisRet = new DTOViewScheduleDispRet()
+                {
+                    ModuleId = reportFilter.OrderType,
+                    FromDate = reportFilter.FromDate,
+                    ToDate = reportFilter.ToDate,
+                    FilterById = reportFilter.FilterId,
+                    ReponsableTransIds = reportFilter.ReponsableTransIds
+                };
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(this.strFromDate) && !string.IsNullOrEmpty(this.strToDate))
+                this.scheduleDisRet = new DTOViewScheduleDispRet(DateTime.ParseExact(strFromDate, "dd-MM-yyyy", null), DateTime.ParseExact(strToDate, "dd-MM-yyyy", null), filterId);
+            else
+                this.scheduleDisRet = new DTOViewScheduleDispRet();
+
+            this.scheduleDisRet.ModuleId = orderType;
+        }
+
+        if (string.IsNullOrEmpty(this.reportFilterId))
+        {
+            if (this.subModule.Equals("Transport"))
+                this.scheduleDisRet.ReponsableTransIds = new List<int> { 157, 158 }; // { UNISPAN, CLIENTE }
+            else
+                this.scheduleDisRet.ReponsableTransIds = new List<int> { 159 }; // { UNIS-CLIENTE }
+
+            this.scheduleDisRet.ModuleId = orderType;
+        }
+
+        await this.GetSecurity();
+
+        //this.SearchOrder();
+    }
+
+    protected override async void OnParametersSet()
+    {
+        if (string.IsNullOrEmpty(this.reportFilterId))
+        {
+            if (this.subModule.Equals("Transport"))
+                this.scheduleDisRet.ReponsableTransIds = new List<int> { 157, 158 }; // { UNISPAN, CLIENTE }
+            else
+                this.scheduleDisRet.ReponsableTransIds = new List<int> { 159 }; // { UNIS-CLIENTE }
+        }
+
+        this.SearchOrder();
+
+        base.OnParametersSet();
+    }
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void SearchOrder()
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            try
+            {
+                this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, string.Format("{0}|Filter:{1}", searchBy, scheduleDisRet.FilterById), true, scheduleDisRet.ReponsableTransIds);
+                dialogService.Close();
+            }
+            catch (Exception ex)
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                dialogService.Close();
+            }
+
+            this.InvokeAsync(() =>
+            {
+                dialogService.Close();
+                StateHasChanged();
+            });
+        });
+    }
+
+    async void keySearchBy(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            this.SearchOrder();
+        }
+    }
+
+    public void EditOrder(OrderType orderType, long orderId)
+    {
+        //navigationManager.NavigateTo(string.Format("EditTransportOrder/{0}/{1}/{2}/{3}/{4}/{5}", this.subModule, this.scheduleDisRet.FromDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ToDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ModuleId, orderId, this.scheduleDisRet.FilterById));
+        var reportFilterId = this.SaveFilterReport(orderId);
+
+        navigationManager.NavigateTo(string.Format("EditTransportOrder/{0}/{1}", this.subModule, reportFilterId));
+    }
+
+    private string SaveFilterReport(long orderId = 0)
+    {
+        string guidfilter = Guid.NewGuid().ToString();
+
+        var reportFilter = new DTOOrderReportFilter();
+        reportFilter.GuidFilter = guidfilter;
+        reportFilter.OrderType = this.scheduleDisRet.ModuleId;
+        reportFilter.FromDate = this.scheduleDisRet.FromDate;
+        reportFilter.ToDate = this.scheduleDisRet.ToDate;
+        reportFilter.FilterId = this.scheduleDisRet.FilterById;
+        reportFilter.OrderId = orderId;
+        reportFilter.ReponsableTransIds = this.scheduleDisRet.ReponsableTransIds;
+
+        var count = this.scheduleDisRet.ReponsableTransIds.Count();
+
+        this.logisticsCoreService.AddOrderReportFilter(reportFilter);
+
+        return guidfilter;
+    }
+
+    void ExportToExcel()
+    {
+        var reportFilterId = this.SaveFilterReport();
+
+        navigationManager.NavigateTo(string.Format("ViewRptTransportOrders/{0}/{1}", this.subModule, reportFilterId));
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        switch (subModule)
+        {
+            case "Transport":
+                {
+                    ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("SearchTransportOrder")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.searchTransportOrder = opt.IsActive;
+                    }
+
+                    opt = listactionapp.Where(ac => ac.NameAction.Equals("EditTransportOrder")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.editTransportOrder = opt.IsActive;
+                    }
+
+                    opt = listactionapp.Where(ac => ac.NameAction.Equals("ReportTransportOrders")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.reportTransportOrders = opt.IsActive;
+                    }
+
+                    break;
+                }
+
+            case "Billing":
+                {
+                    ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("SearchFVTransportOrder")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.searchTransportOrder = opt.IsActive;
+                    }
+
+                    opt = listactionapp.Where(ac => ac.NameAction.Equals("EditFVTransportOrder")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.editTransportOrder = opt.IsActive;
+                    }
+
+                    opt = listactionapp.Where(ac => ac.NameAction.Equals("ReportFVTransportOrders")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.reportTransportOrders = opt.IsActive;
+                    }
+
+                    break;
+                }
+        }
+    }
+}
+
+<nav class="navbar navbar-light bg-transparent justify-content-between">
+    @{
+        if (this.subModule.Equals("Billing"))
+        {
+            <h4>FACTURACIÓN</h4>
+        }
+        else
+        {
+            <h4>ORDENES DE TRANSPORTE</h4>
+        }
+    }
+    <div class="form-inline">
+        @{
+            if (this.reportTransportOrders)
+            {
+                <button type="button" @onclick="@(args => { ExportToExcel(); })" class="btn btn-primary">Generar reporte</button>
+            }
+        }
+    </div>
+</nav>
+
+<div class="row">
+    <div class="col-sm-8">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="row pt-2">
+                    @{
+                        if (this.subModule.Equals("Billing"))
+                        {
+                            <div class="form-group col-sm-3">
+                                <label>Modulo</label>
+                                <RadzenDropDown class="form-control" @bind-Value="scheduleDisRet.ModuleId" Change="@SearchOrder" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@scheduleDisRet.Modules" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group col-sm-3">
+                                <label>Desde</label>
+                                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@scheduleDisRet.FromDate" class="d-block" />
+                            </div>
+                            <div class="form-group col-sm-3">
+                                <label>Hasta</label>
+                                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@scheduleDisRet.ToDate" class="d-block" />
+                            </div>
+                            <div class="form-group col-sm-3">
+                                <label>Filtrar por</label>
+                                <RadzenDropDown Name="filterBy" class="form-control" @bind-Value="scheduleDisRet.FilterById" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@scheduleDisRet.FilterBy" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-group col-sm-2">
+                                <label>Modulo</label>
+                                <RadzenDropDown class="form-control" @bind-Value="scheduleDisRet.ModuleId" Change="@SearchOrder" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@scheduleDisRet.Modules" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group col-sm-2">
+                                <label>Desde</label>
+                                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@scheduleDisRet.FromDate" class="d-block" />
+                            </div>
+                            <div class="form-group col-sm-2">
+                                <label>Hasta</label>
+                                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@scheduleDisRet.ToDate" class="d-block" />
+                            </div>
+                            <div class="form-group col-sm-3">
+                                <label for="exampleInputEmail1">Transporte a cargo de</label>
+                                <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="scheduleDisRet.ReponsableTransIds" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@transports" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group col-sm-3">
+                                <label>Filtrar por</label>
+                                <RadzenDropDown Name="filterBy" class="form-control" @bind-Value="scheduleDisRet.FilterById" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@scheduleDisRet.FilterBy" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="row pt-1">
+                    <div class="form-group col-sm-12">
+                        <div class="input-group input-group-lg">
+                            <input type="text" @bind-value="searchBy" class="form-control" placeholder="Filtrar ordenes" @onkeyup="@(args => { keySearchBy(args); })">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="button-addon1" @onclick="@(args => { SearchOrder(); })">Buscar</button>
+                                @*<button type="button" @onclick="@(args => { ExportToExcel(); })" class="btn btn-success">Exportar a excel</button>*@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="order-table-scroll fixed-content-grid-transport ">
+    <div class="order-table-wrap">
+        <table>
+            <thead>
+                <tr class="thead-title-bold thead-transport row-fixed-1">
+                    <th class="col-W300">OBRA</th>
+                    <th class="col-W200">CLIENTE</th>
+                    <th class="col-W200">COMERCIAL</th>
+                    <th class="col-W200"><span>TRANSPORTE A</span><br /><span>CARGO DE</span></th>
+                    @{
+                        if (this.scheduleDisRet.ModuleId.Equals((int)OrderType.Dispatch))
+                        {
+                            <th class="col-W150"><span>No. ORDEN DE</span> <br /><span>DESPACHO</span></th>
+                            <th class="col-W70">No. OP</th>
+                        }
+                    }
+                    <th class="col-W100"><span>No. DE NO</span><br /><span>CONFORME</span></th>
+                    @{
+                        if (this.scheduleDisRet.ModuleId.Equals((int)OrderType.Dispatch))
+                        {
+                            <th class="col-W120"><span>FECHA</span><br /><span>DESPACHO</span></th>
+                        }
+                        else
+                        {
+                            <th class="col-W120"><span>FECHA</span><br /><span>DEVOLUCIÓN</span></th>
+                        }
+                    }
+                    <th class="col-W100">CUIDAD</th>
+                    <th class="col-W100">PESO(Ton)</th>
+                    <th class="col-W100">TIPO VEHICULO</th>
+                    <th class="col-W200">PROVEEDOR</th>
+                    <th class="col-W70">PLACA</th>
+                    <th class="col-W300">CONDUCTOR</th>
+                    <th class="col-W120">VALOR</th>
+                    <th class="col-W100"><span>SOLICITADO</span> <br /> <span>POR</span></th>
+                    <th class="col-W100">No. FACTURA</th>
+                    <th class="col-W120">FECHA FACTURA</th>
+                    @{
+                        if (this.subModule.Equals("Billing"))
+                        {
+                            <th class="col-W100"><span>FV-UNISPAN</span><br /> <span>TRANSPORTES</span></th>
+                            <th class="col-W120">PERIODO</th>
+                        }
+                    }
+                    <th class="col-W300">OBSERVACIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (!(orders is null))
+                    {
+                        foreach (var order in orders)
+                        {
+                            <tr style="background: @(string.IsNullOrEmpty(order.InvoiceNum) ? "#ffffff" : "#27d652")">
+                                <td>
+                                    @{
+                                        if (this.scheduleDisRet.ModuleId == (int)OrderType.Return)
+                                        {
+                                            if (order.DispatchParent)
+                                            {
+                                                <span style="color: red; font-weight:bold; font-size: 12px">*</span>
+                                            }
+                                            if (this.searchTransportOrder || this.editTransportOrder)
+                                            {
+                                                <a href="" @onclick="@(args => { this.EditOrder(OrderType.Dispatch, order.OrderId); })">@order.Works</a>
+                                            }
+                                            else
+                                            {
+                                                <span>@order.Works</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span>@order.Works</span>
+                                        }
+                                    }
+                                </td>
+                                <td>@order.CustomerName</td>
+                                <td>@order.SalesPerson</td>
+                                <td>@order.ReponsableTrans</td>
+                                @{
+                                    if (this.scheduleDisRet.ModuleId.Equals((int)OrderType.Dispatch))
+                                    {
+                                        <td>
+                                            @{
+                                                if (this.searchTransportOrder || this.editTransportOrder)
+                                                {
+                                                    <a href="" @onclick="@(args => { this.EditOrder(OrderType.Dispatch, order.OrderId); })">
+                                                        @{
+                                                            if (order.DispatchParent)
+                                                            {
+                                                                <span style="color: red; font-weight:bold; font-size: 12px">*</span>
+                                                            }
+                                                            if (!string.IsNullOrEmpty(order.OrderNum))
+                                                            {
+                                                                var orderNumList = order.OrderNum.Split(',');
+                                                                foreach (var orderNum in orderNumList)
+                                                                {
+                                                                    <span>@orderNum</span>
+
+                                                                    <br />
+                                                                }
+                                                            }
+                                                        }
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span>@order.OrderNum</span>
+                                                }
+                                            }
+                                        </td>
+                                        <td class="text-center">@order.OPNum</td>
+
+                                    }
+                                }
+
+
+
+                                <td>@order.NoConform</td>
+                                @{
+                                    if (order.OrderType.Equals(OrderType.Dispatch))
+                                    {
+                                        <td class="text-center">@(order.DispatchDateTime.Equals(DateTime.MinValue) ? "" : order.DispatchDateTime.Value.ToString("d-MM-yyyy").ToUpper())</td>
+                                    }
+                                    else
+                                    {
+                                        <td class="text-center">@(order.ReturnDateTime.Equals(DateTime.MinValue) ? "" : order.ReturnDateTime.Value.ToString("d-MM-yyyy").ToUpper())</td>
+                                    }
+                                }
+                                <td>@order.City</td>
+                                @{
+                                    if (order.DispatchParent || (order.OrderId != order.DispatchId))
+                                    {
+                                        <td class="text-center" style="background: yellow;">@order.Wight</td>
+
+                                    }
+                                    else
+                                    {
+                                        <td class="text-center">@order.Wight</td>
+                                    }
+                                }
+                                <td>@order.VehicleType</td>
+                                <td>@order.VendorName</td>
+                                <td>@order.PlateNum</td>
+                                <td>@order.DriverName</td>
+                                <td class="text-right">@order.InvoiceAmount.ToString("C2", CultureInfo.GetCultureInfo("Es-co"))</td>
+                                <td>@order.SalesPerson</td>
+                                <td>@order.InvoiceNum</td>
+                                <td class="text-center">@(order.InvoiceDate.Equals(DateTime.MinValue) ? "" : order.InvoiceDate.ToString("d-MM-yyyy").ToUpper())</td>
+                                @{
+                                    if (this.subModule.Equals("Billing"))
+                                    {
+                                        <td>@order.FVTransport</td>
+                                        <td class="text-center">@(order.Period == null ? "" : (order.Period.Value.Equals(DateTime.MinValue) ? "" : order.Period.Value.ToString("d-MM-yyyy").ToUpper()))</td>
+                                    }
+                                }
+                                <td>
+                                    @{
+                                        if ((order.Comments != null) && (order.Comments.Count != 0))
+                                        {
+                                            var comment = order.Comments.OrderByDescending(c => c.CreatedDatetTime).FirstOrDefault();
+                                            <span>@comment.Comment</span>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

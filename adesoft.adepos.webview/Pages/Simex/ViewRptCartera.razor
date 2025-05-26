@@ -1,0 +1,256 @@
+﻿@page "/Simex/ViewRptCartera"
+@using adesoft.adepos.webview.Data.DTO.Simex
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject SimexService simexService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@code {
+    DTOSimexCarteraFilter filter;
+    ConnectionDB connectionDB;
+    List<DTOGroupBy> FilterBy { get; set; }
+    List<DTOGroupBy> GroupBy { get; set; }
+    List<DTORangeBy> RangeBy { get; set; }
+    public string LastUpdateModule { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOSimexCarteraFilter();
+        await this.initComponents();
+    }
+
+    private async Task initComponents()
+    {
+        var lum = await simexService.GetLastUpdateModule("Cartera");
+        if (lum is null)
+            LastUpdateModule = "No registrada...";
+        else
+            LastUpdateModule = lum.LastUpdateModule_At.ToString();
+
+        this.FilterBy = new List<DTOGroupBy>()
+        {
+            new DTOGroupBy
+            {
+                GroupById = "Range",
+                Description = "Rango"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "Customer",
+                Description = "Cliente"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "Invoice",
+                Description = "Factura"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "SalesPerson",
+                Description = "Comercial"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "Operation2",
+                Description = "Obra"
+            }
+        };
+
+        this.GroupBy = new List<DTOGroupBy>()
+        {
+            new DTOGroupBy
+            {
+                GroupById = "Range",
+                Description = "Rango"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "Operation4",
+                Description = "Zona"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "VendorName",
+                Description = "Comercial"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "ThirdName",
+                Description = "Cliente"
+            }
+        };
+
+        this.RangeBy = new List<DTORangeBy>()
+        {            
+            new DTORangeBy
+            {
+                RangeById = "Current",
+                Description = "Corriente"
+            },
+            new DTORangeBy
+            {
+                RangeById = "1-30",
+                Description = "1 - 30 Dias"
+            },
+            new DTORangeBy
+            {
+                RangeById = "31-60",
+                Description = "31 - 60 Dias"
+            },
+            new DTORangeBy
+            {
+                RangeById = "61-90",
+                Description = "61 - 90 Dias"
+            },
+            new DTORangeBy
+            {
+                RangeById = "+90",
+                Description = "Mas de 90 Dias"
+            }
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateRpt();
+        }
+    }
+
+    void ChangueTypeReport(long value)
+    {
+        filter = new DTOSimexCarteraFilter();
+        filter.TypeReportId = value;
+    }
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async Task BtnGenerateRpt()
+    {
+
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await simexService.AddCarteraFilter(filter);
+
+        string RptOpt = "1";
+        if (filter.TypeReportId == 2)
+        {
+            RptOpt = "2" + filter.GroupBy.Count().ToString();
+
+            if ((filter.GroupBy.Count() > 1) && filter.GroupBy.Contains("Range"))
+                RptOpt = RptOpt + "R";
+        }
+        else if(filter.TypeReportId == 3)
+        {
+            RptOpt = "3";
+        }
+
+        string paramurl = "RptSimexCartera.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + RptOpt;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                REPORTE CARTERA
+            </div>
+            <div class="col-4">
+                <label>Última actualización:</label>
+                <span>@LastUpdateModule</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label for="Filter1">Tipo Reporte</label>
+                                <RadzenRadioButtonList @bind-Value="@filter.TypeReportId" TValue="long" Change="@ChangueTypeReport">
+                                    <Items>
+                                        <RadzenRadioButtonListItem Text="Detallado" TValue="long" Value="1" />
+                                        <RadzenRadioButtonListItem Text="Resumen" TValue="long" Value="2" />
+                                        <RadzenRadioButtonListItem Text="Resumen por Factura" TValue="long" Value="3" />
+                                    </Items>
+                                </RadzenRadioButtonList>
+                            </div>
+                            @if (filter.TypeReportId == 1)
+                            {
+                                <div class="col-sm-4">
+                                    <label>Filtrar por:</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.FilterById" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@FilterBy" TextProperty="Description" ValueProperty="GroupById" />
+                                </div>
+                                @if (filter.FilterById.Equals("Range"))
+                                {
+                                    <div class="col-sm-4 pr-5">
+                                        <label for="RangeById" class="d-block">&nbsp;</label>
+                                        <RadzenDropDown Name="RangeById" class="form-control" @bind-Value="filter.RangeBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@RangeBy" TextProperty="Description" ValueProperty="RangeById" />
+                                    </div>
+                                }
+                                else if (filter.FilterById.Equals("Days"))
+                                {
+                                    <div class="col-sm-4">
+                                        <div class="form-group">
+                                            <label for="btnGenerate" class="d-block">&nbsp;</label>
+                                            <RadzenNumeric id="days" class="form-control" @bind-Value="filter.Days" />
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="col-sm-4">
+                                        <div class="form-group">
+                                            <label for="searchBy">Buscar por:</label>
+                                            <RadzenTextBox id="searchBy" class="form-control" @bind-Value="filter.SearchBy" />
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else if (filter.TypeReportId == 2)
+                            {
+                                <div class="col-sm-4">
+                                    <label>Agrupar por:</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="filter.GroupBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@GroupBy" TextProperty="Description" ValueProperty="GroupById" />
+                                </div>
+                            }
+                            else if (filter.TypeReportId == 3)
+                            {
+                                <div class="col-sm-4 pr-5">
+                                    <label for="RangeById">Filtrar por:</label>
+                                    <RadzenDropDown Name="RangeById" class="form-control" @bind-Value="filter.RangeBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@RangeBy" TextProperty="Description" ValueProperty="RangeById" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>            
+            <div class="form-group col-md-2">
+                <label for="ToDate">Fecha</label>
+                <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@filter.ToDate" />
+            </div>
+            <div class="form-group col-md-2">                
+                <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" />
+            </div>
+        </div>
+
+        <div class="form-row">
+
+            <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
+
+        </div>
+    </div>
+</div>

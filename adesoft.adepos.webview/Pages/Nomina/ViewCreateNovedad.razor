@@ -1,0 +1,293 @@
+﻿@page "/viewcreatenovedad/{NominaNovedadId}"
+@using BlazorInputFile
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using System.IO
+@inject DialogService dialogService
+@inject NominaService nominaService
+@inject TerceroService terceroService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+<div class="card">
+    <div class="card-header">
+        REGISTRAR NOVEDAD
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formcat" id="formcat" Method="post" class="col-md-12" TItem="NominaNovedad" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <input class="btn btn-primary btn-sm" value="Guardar" type="submit" />
+                
+                    @if (model.StateNovedad == 1 && model.NominaNovedadId != 0)
+                    {
+
+                        <button type="button" data-toggle="tooltip" data-placement="top" title="Aprobar" class="btn btn-success btn-sm" @onclick="@(args => { ChangueState(2); })">
+                            <i class="fat fa-check-double"></i>
+                        </button>
+
+                    }
+                    else if (model.StateNovedad == 2 && model.NominaNovedadId != 0)
+                    {
+
+                        <button type="button" data-toggle="tooltip" data-placement="top" title="Desaprobar" class="btn btn-warning btn-sm" @onclick="@(args => { ChangueState(1); })">
+                            <i class="fat fa-ban"></i>
+                        </button>
+
+                    }
+                    @if (model.NominaNovedadId != 0)
+                    {
+
+                        <button class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Anular" @onclick="@(args => { ChangueState(3); })">
+                            <i class="fat fa-trash-alt"></i>
+                        </button>
+
+                    }
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <label for="selectCodeNovedad">Tipo de Novedad</label>
+                    <RadzenDropDown Name="selectCodeNovedad" class="form-control" AllowClear="false" @bind-Value="model.CodeNovedadId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@listCodes" TextProperty="NovedadName" ValueProperty="CodeNovedadId" />
+                    <RadzenRequiredValidator Component="selectCodeNovedad" Text="Tipo de novedad es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="TxtEstado">Estado</label>
+                    <label style="color:white;background:@model.ColorStateNovedad;" for="TxtEstado">@model.StateNovedadLabel</label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="TextNumberEmp">Identificacion</label>
+                    <RadzenTextBox Name="TextNumberEmp" @bind-Value="model.Tercero.NumDocument" AutoComplete="false" Change="@(args=>DocumentChange(args))" class="form-control" placeholder="# Documento" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="inputName">Empleado</label>
+                    <RadzenTextBox Name="inputName" Value="@model.Tercero.FullName" ReadOnly="true" class="form-control" placeholder="Nombre" />
+                    @* <RadzenRequiredValidator Component="inputName" Text="El empleado es requerido para el reporte de la novedad" Popup="true" />*@
+                </div>
+            </div>
+
+            <div class="form-row">
+
+                <div class="form-group col-md-3">
+                    <label for="DtpDayInitNovedad">Fecha Inicio</label>
+                    <RadzenDatePicker TValue="DateTime" Name="DtpDayInitNovedad" DateFormat="MM/dd/yyyy" @bind-Value="@DayInitNovedad" />
+
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="DtpDayEndNovedad">Fecha Fin</label>
+                    <RadzenDatePicker TValue="DateTime" Name="DtpDayEndNovedad" DateFormat="MM/dd/yyyy" @bind-Value="@DayEndNovedad" />
+                </div>
+                @*<div class="form-group col-md-2">
+                        <label for="inputDayComplete" class="d-block">Dia completo ?</label>
+                        <RadzenCheckBox Name="inputDayComplete" TValue="bool" Change="FullDayChange" @bind-Value="model.FullDay" />
+                    </div>*@
+                @if (DayInitNovedad.Date == DayEndNovedad.Date && (DayInitNovedad != DateTime.MinValue && DayEndNovedad != DateTime.MinValue))
+                {
+                    <div class="form-group col-md-3">
+                        <label for="DtpHourNovedad">Hora Inicio</label>
+                        <RadzenDatePicker TValue="DateTime" Name="DtpHourNovedad" ShowTime="true" TimeOnly="true" DateFormat="hh:mm tt" @bind-Value="HourInitNovedad" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="DtpHourNovedad">Hora Fin</label>
+                        <RadzenDatePicker TValue="DateTime" Name="DtpHourNovedad" ShowTime="true" TimeOnly="true" DateFormat="hh:mm tt" @bind-Value="HourEndNovedad" />
+                    </div>
+                }
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label for="TextNote">Observaciones</label>
+                    <RadzenTextArea @bind-Value="model.Observation" Name="TextNote" Rows="2" class="form-control" placeholder="" />
+                    <RadzenRequiredValidator Component="TextNote" Text="Debe ingresar una observacion" Popup="true" />
+                </div>
+            </div>
+
+            <RadzenFieldset Text="Adjuntar Documentacion">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        @if (model.PathDocumentoAdjunto != null)
+                        {
+                            <NavLink href="@model.PathDocumentoAdjunto" target="_blank" download>
+                                <span class="fat fa-paperclip" aria-hidden="true"></span>&nbsp;&nbsp;@model.NameFile
+                            </NavLink>
+                        }
+                        else
+                        {
+                            <label>@model.NameFile</label>
+                        }
+                        <InputFile  OnChange="HandleFileSelected" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+
+        </RadzenTemplateForm>
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string NominaNovedadId { get; set; }
+
+    [Parameter]
+    public object objectView { get; set; }
+
+    [Parameter]
+    public long NominaProgramationId { get; set; }
+
+    DateTime TimeHoursNovedad { get; set; }
+
+    DateTime DayInitNovedad { get; set; }
+
+    DateTime DayEndNovedad { get; set; }
+
+    DateTime HourInitNovedad { get; set; }
+
+    DateTime HourEndNovedad { get; set; }
+
+
+    NominaNovedad model = new NominaNovedad();
+    List<CodeNovedad> listCodes = new List<CodeNovedad>();
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        model.Tercero = new Tercero();
+        model.NominaProgramationId = NominaProgramationId;
+        listCodes = await nominaService.selectAll(new CodeNovedad());
+        TimeHoursNovedad = DateTime.Now.Date;
+        model.FullDay = true;
+        //DayInitNovedad = DateTime.Now.Date;
+        //categorys = await categoryService.selectAll(new Category());
+        //UnitMeasurements = await itemService.SelectAllUnitMeasurement(new UnitMeasurement());
+
+        // listimpues=
+        if (!string.IsNullOrEmpty(NominaNovedadId) && long.Parse(NominaNovedadId) != 0)
+        {
+            model = await nominaService.SelectById(new NominaNovedad() { NominaNovedadId = long.Parse(NominaNovedadId) });
+            DayInitNovedad = model.DayInit;
+            DayEndNovedad = model.DayEnd;
+            HourInitNovedad = model.DayInit;
+            HourEndNovedad = model.DayEnd;
+            TimeHoursNovedad = DateTime.Now.Date.Add(model.HoursNovedad);
+        }
+
+    }
+
+    async void HandleFileSelected(IFileListEntry[] files)
+    {
+        if (files.Count() > 0)
+        {
+            model.FileEntry = files[0];
+            model.PathDocumentoAdjunto = null;
+            model.NameFile = model.FileEntry.Name;
+
+            MemoryStream ms = new MemoryStream();
+            var reader = new System.IO.StreamReader(model.FileEntry.Data);
+            await reader.BaseStream.CopyToAsync(ms);
+            model.FileBuffer = ms.ToArray();
+        }
+    }
+
+
+    public void FullDayChange(bool fullDay)
+    {
+
+    }
+
+    async void ChangueState(long stateid)
+    {
+        model.StateNovedad = stateid;
+        await nominaService.Update(model);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se actualizo el estado correctamente.", Duration = 4000 });
+    }
+
+    /// <summary>
+    /// Guardado de formulario
+    /// </summary>
+    /// <param name="para"></param>
+    async void OnSubmit(NominaNovedad para)
+    {
+
+        if (model.Tercero == null || model.Tercero.TerceroId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "El empleado es obligatorio.", Duration = 4000 });
+            return;
+        }
+        else if (DayInitNovedad == null || DayInitNovedad == DateTime.MinValue)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "La fecha incial de la novedad es obligatoria.", Duration = 4000 });
+            return;
+        }
+        else if (DayEndNovedad == null || DayEndNovedad == DateTime.MinValue)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "La fecha final de la novedad es obligatoria.", Duration = 4000 });
+            return;
+        }
+
+        para.DayInit = DayInitNovedad;
+        model.DayEnd = DayEndNovedad;
+        TimeHoursNovedad = new DateTime(HourEndNovedad.TimeOfDay.Subtract(HourInitNovedad.TimeOfDay).Ticks);
+        model.HoursNovedad = TimeHoursNovedad.TimeOfDay;
+
+        if (!model.FullDay && TimeHoursNovedad.TimeOfDay.Hours == 0 && TimeHoursNovedad.TimeOfDay.Minutes == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Si la novedad no es de mas de un dia , debe indicar una cantidad de horas.", Duration = 4000 });
+            return;
+        }
+        para.DayInit = DayInitNovedad.Date.Add(HourInitNovedad.TimeOfDay);
+        model.DayEnd = DayEndNovedad.Date.Add(HourEndNovedad.TimeOfDay);
+
+
+        if (para.DayInit.Date < ((ViewPreliquidation)objectView).model.DayInit || para.DayInit.Date > ((ViewPreliquidation)objectView).model.DayEnd)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "La novedad a registrar esta por fuera de los dias del periodo de nomina.", Duration = 4000 });
+            return;
+        }
+        else if (para.DayEnd.Date < ((ViewPreliquidation)objectView).model.DayInit || para.DayEnd.Date > ((ViewPreliquidation)objectView).model.DayEnd)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "La novedad a registrar esta por fuera de los dias del periodo de nomina.", Duration = 4000 });
+            return;
+        }
+
+        model.TypeNovedadName = listCodes.Where(x => x.CodeNovedadId == model.CodeNovedadId).First().TypeNovedadName;
+        model.TerceroId = model.Tercero.TerceroId;
+        if (model.NominaNovedadId != 0)
+        {
+            NominaNovedad nomin = await nominaService.Update(model);
+            model.NominaNovedadId = nomin.NominaNovedadId;
+        }
+        else
+        {
+            model.StateNovedad = 1;
+            NominaNovedad u = await nominaService.Create(model);
+            model.NominaNovedadId = u.NominaNovedadId;
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se registro la novedad correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+        ((ViewPreliquidation)objectView).SaveRegisterNovedad();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+
+    public async void DocumentChange(string value)
+    {
+        Tercero terc = await terceroService.SelectById(new Tercero() { NumDocument = value, TransOption = 2 });
+        if (terc == null)
+            model.Tercero = new Tercero();
+        else
+        {
+            model.Tercero = terc;
+        }
+    }
+
+
+}

@@ -1,0 +1,41 @@
+﻿@page "/viewsearchrole"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject RoleAppService roleAppService
+@code {
+
+}
+@if (roles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <a href="/ViewRole/0" class="btn btn-primary">Nuevo Rol</a>
+    </div>
+
+    <div class="row">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="4" AllowSorting="true" Data="@roles" TItem="RoleApp" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="RoleApp" Property="Name" Title="Rol" />
+
+                <RadzenGridColumn TItem="RoleApp" Property="RoleAppId" Title="Editar">
+                    <Template Context="data">
+                        <NavLink href="@("/ViewRole/"+data.RoleAppId)">Editar</NavLink>
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+
+@code {
+    IEnumerable<RoleApp> roles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        roles = await roleAppService.selectAll(new RoleApp());
+    }
+}

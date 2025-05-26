@@ -1,0 +1,131 @@
+﻿@page "/ViewParamMedidas"
+@using  Newtonsoft.Json
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ProduccionService produccionService
+@inject NotificationService notificationService
+@inject ParameterService parameterService
+@inject IJSRuntime JSRuntime
+@code {
+
+    Parameter parammodel;
+
+    public DTOParamMedidas Mdetail { get; set; }
+    List<DTOParamMedidas> Listparams;
+    string ParameterModule = "ParametrosMedida";
+    string medidaselect = string.Empty;
+    List<string> TipoMedidas = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Listparams = new List<DTOParamMedidas>();
+        TipoMedidas = GetMedidasFilter();
+        //ListMonths = DTOViewRptCompra.GetMonths();
+        //TypeActivitys = await produccionService.selectAllTypeActivitys();
+        Mdetail = new DTOParamMedidas();
+        parammodel = await parameterService.SelectById(new Parameter() { TransOption = 3, NameIdentify = ParameterModule });
+        if (!string.IsNullOrEmpty(parammodel.Value2))
+        {
+            Listparams = JsonConvert.DeserializeObject<List<DTOParamMedidas>>(parammodel.Value2);
+        }
+    }
+
+
+
+    async void ChangueMedida(string medidaselect)
+    {
+        this.medidaselect = medidaselect;
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void ClickAddRange()
+    {
+        if (Mdetail.Valor == 0 || string.IsNullOrEmpty(medidaselect))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+            return;
+        }
+        if (Listparams.Where(x => x.TipoMedida == medidaselect && x.Valor == Mdetail.Valor).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La medida ya existe.", Duration = 4000 });
+            return;
+        }
+        Mdetail.TipoMedida = medidaselect;
+        Listparams.Add(Mdetail);
+        Mdetail = new DTOParamMedidas();
+        Save();
+    }
+
+    public List<string> GetMedidasFilter()
+    {
+        List<string> filter = new List<string>();
+        filter.Add("ALTO");
+        filter.Add("ANCHO1");
+        filter.Add("ANCHO2");
+        return filter;
+    }
+    async void DeleteRang(DTOParamMedidas rangdelete)
+    {
+        Listparams.Remove(rangdelete);
+        Save();
+    }
+    async void Save()
+    {
+        string par = JsonConvert.SerializeObject(Listparams);
+        parammodel.Value2 = par;
+        await parameterService.Create(parammodel);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Cambios guardados correctamente.", Duration = 1000 });
+        this.StateHasChanged();
+        //dialogService.Close();
+    }
+
+}
+<div class="card">
+    <div class="card-header">
+        PARAMETROS MEDIDAS ITEMS ENCONFRADO
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="Filter4">Tipo Medida</label>
+                <RadzenDropDown AllowFiltering="true" TValue="string" ValueChanged="ChangueMedida" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@TipoMedidas"></RadzenDropDown>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="LblMedida">Valor</label>
+                <RadzenNumeric Name="LblMedida" TValue="decimal" @bind-Value="Mdetail.Valor" class="form-control" />
+            </div>
+            <div class="form-group col-md-3">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" @onclick="ClickAddRange" value="+ Adicionar" type="button" />
+            </div>
+        </div>
+        <RadzenFieldset Text="Medidas">
+            <div class="form-row">
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@Listparams.Where(x=>x.TipoMedida==medidaselect).OrderByDescending(x=>x.Valor).ToList()" TItem="DTOParamMedidas" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="DTOParamMedidas" Property="Valor" Title="Medida">
+                            <Template Context="data">
+                                @(data.Valor)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOParamMedidas" Property="Valor" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { DeleteRang(data); })">Eliminar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

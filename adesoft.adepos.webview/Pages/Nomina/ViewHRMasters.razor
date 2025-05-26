@@ -1,0 +1,147 @@
+﻿@page "/ViewHRMasters"
+@using  Newtonsoft.Json
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject LocationGenericService locationGenericService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@code {
+
+    List<LocationGeneric> locationTypes;
+    List<LocationGeneric> masters;
+    public string MasterId { get; set; }
+    public LocationGeneric model { get; set; }
+
+    async void ChangeMaster(string masterId)
+    {
+        this.MasterId = masterId;
+        await SetModel();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.locationTypes = new List<LocationGeneric>()
+        {
+            new LocationGeneric()
+            {
+                SyncCode = "CARGOHM",
+                Description = "Cargo homologado"
+            },
+            new LocationGeneric()
+            {
+                SyncCode = "AREAHM",
+                Description = "Areas homologada"
+            }
+        };
+        this.masters = new List<LocationGeneric>();
+        model = new LocationGeneric();
+    }
+
+    async Task SetModel()
+    {
+        if (MasterId != "")
+        {
+            if (MasterId != model.TypeLocation)
+            {
+                masters = await locationGenericService.GetLocations(MasterId);
+                LocationGeneric master = masters.Where(x => x.TypeLocation == model.TypeLocation).FirstOrDefault();
+                if (master == null)
+                {
+                    model = new LocationGeneric();
+                    model.TypeLocation = this.MasterId;
+                }
+                else
+                {
+                    model = master;
+                }
+            }
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void AddLocationGeneric()
+    {
+        if (model.SyncCode == "" || model.Description == "" || model.TypeLocation == "")
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+            return;
+        }
+
+        if (masters.Where(x => x.TypeLocation == model.TypeLocation && x.SyncCode == model.SyncCode).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El maestro ingresado ya existe.", Duration = 4000 });
+            return;
+        }
+
+        model = await locationGenericService.SaveLocation(model);
+
+        masters = await locationGenericService.GetLocations(MasterId);
+
+        model = new LocationGeneric();
+        model.TypeLocation = MasterId;
+    }
+}
+
+<div class="card">
+    <div class="card-header">
+        MAESTROS
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="Filter4">Maestros</label>
+                <RadzenDropDown AllowFiltering="true" TValue="string" ValueChanged="ChangeMaster" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@locationTypes" TextProperty="Description" ValueProperty="SyncCode" />
+            </div>
+        </div>
+        <RadzenFieldset Text="Maestros">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Codígo</label>
+                    <RadzenTextBox Name="syncCode" TValue="string" @bind-Value="model.SyncCode" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Descripción</label>
+                    <RadzenTextBox Name="description" TValue="string" @bind-Value="model.Description" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="AddLocationGeneric" value="+ Adicionar" type="button" />
+                </div>
+            </div>
+            <div class="form-row">
+
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@masters" TItem="LocationGeneric" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="LocationGeneric" Property="SyncCode" Title="Codígo">
+                            <Template Context="data">
+                                @(data.SyncCode)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="LocationGeneric" Property="Description" Title="Descripción">
+                            <Template Context="data">
+                                @(data.Description)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="LocationGeneric" Title="">
+                            <Template Context="data">
+                                
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

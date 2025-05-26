@@ -1,0 +1,570 @@
+﻿@page "/ViewSearchCaptures";
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.DTO.PL
+@using adesoft.adepos.webview.Data.Model.PL
+@using Microsoft.JSInterop;
+@using BlazorInputFile;
+@using Data.Interfaces;
+
+@implements IDisposable;
+
+@inject LogisticsService logisticsService;
+@inject Data.Interfaces.ILogisticsCoreService logisticsCoreService;
+@inject DialogService dialogService;
+@inject NotificationService notificationService;
+@inject NavigationManager navigationManager
+
+@inject SecurityService securityService
+@inject IJSRuntime JSRuntime
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject CompanyService companyService
+
+@inject IFileUpload fileUpload;
+
+@code {
+
+    private List<DTOOrder> searchOrders = new List<DTOOrder>();
+    private List<DTOOrder> changeOrderList = new List<DTOOrder>();
+    private List<DTOOrderPicture> pictures = new List<DTOOrderPicture>();
+    public string searchBy;
+    private DTOOrder selectedOrder = null;
+    private DateTime fromDate = DateTime.Today;
+    private DateTime toDate = DateTime.Today;
+
+    private List<DateTime> dateTimes = new List<DateTime>();
+
+    private DTOViewScheduleDispRet filter;
+
+    private int filterType = 0;
+
+    public int page = 1;
+
+    private bool deleteOrderPictures = false;
+    private bool changeOrderPictures = false;
+    private bool uploadPictures = false;
+
+    private long newOrderId = 0;
+
+    private bool lockUploadFileClose = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dialogService.OnClose += Close;
+
+        this.filter = new DTOViewScheduleDispRet();
+        this.filter.Modules = new List<Module>()
+{
+            new Module
+            {
+                Id = 0,
+                Description = "Todos"
+            },
+            new Module
+            {
+                Id = 1,
+                Description = "Despachos"
+            },
+            new Module
+            {
+                Id = 2,
+                Description = "Devoluciones"
+            }
+        };
+        this.filter.ModuleId = 0;
+
+        this.searchBy = "";
+        //this.searchOrders = await logisticsService.SearchOrders((OrderType)this.filter.ModuleId, this.filter.FromDate, this.filter.ToDate, searchBy);
+
+        await this.GetSecurity();
+    }
+
+
+    void GetOrdersForChange()
+    {
+        changeOrderList = logisticsCoreService.GetOrdersForChange(this.filter.FromDate, this.filter.ToDate, selectedOrder);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await this.btnSearchBy();
+        }
+    }
+
+    public void Dispose()
+    {
+        dialogService.OnClose -= Close;
+    }
+
+    async private Task loadPictures()
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            this.page += 1;
+            var pictures = await logisticsService.GetPictures((OrderType)this.selectedOrder.OrderType, this.selectedOrder.OrderId, page, 10);
+            this.pictures.AddRange(pictures);
+
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+    }
+
+    async Task selectFirstOrder()
+    {
+        var firstDate = this.dateTimes.OrderBy(o => o.Date).FirstOrDefault();
+        if (firstDate != null)
+        {
+            this.selectedOrder = this.searchOrders.Where(o => o.TransDate.Date.Equals(firstDate.Date)).OrderByDescending(o => o.OrderId).FirstOrDefault();
+            var pictures = await logisticsService.GetPictures((OrderType)this.selectedOrder.OrderType, this.selectedOrder.OrderId, page, 10);
+            this.pictures.AddRange(pictures);
+
+        }
+    }
+
+    async Task btnSearchBy()
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            this.searchOrders = await logisticsService.SearchOrders((OrderType)this.filter.ModuleId, this.filter.FromDate, this.filter.ToDate, searchBy);
+            if (this.searchOrders.Count != 0)
+            {
+                dateTimes = new List<DateTime>();
+
+                foreach (var searchOrder in this.searchOrders)
+                {
+                    var dt = dateTimes.Where(d => d.Date == searchOrder.TransDate.Date).FirstOrDefault();
+                    if (dt.Equals(DateTime.MinValue))
+                        dateTimes.Add(searchOrder.TransDate.Date);
+                }
+
+                await this.selectFirstOrder();
+            }
+            else
+            {
+                this.selectedOrder = null;
+                this.pictures = new List<DTOOrderPicture>();
+            }
+
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+    }
+
+    void viewPictures(DTOOrder order)
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+
+            this.pictures = new List<DTOOrderPicture>();
+            this.page = 1;
+            this.selectedOrder = order;
+            var pictures = logisticsCoreService.GetPictures((OrderType)this.selectedOrder.OrderType, this.selectedOrder.OrderId, page, 10);
+            this.pictures.AddRange(pictures);
+
+            dialogService.Close();
+            await this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    public async Task deletePictures()
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro de eliminar las imagenes de la orden de {0}?"
+                , this.selectedOrder.OrderType == OrderType.Dispatch ? "despacho No: " + this.selectedOrder.OrderNum : "devolución " + this.selectedOrder.Works)))
+            {
+                return;
+            }
+
+            var deleteOrder = this.logisticsCoreService.DeletePictures(this.selectedOrder);
+            if (deleteOrder)
+            {
+                this.viewPictures(selectedOrder);
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "La imagenes fueron eliminadas correctamente.", Duration = 5000 });
+            }
+            else
+                throw new Exception(string.Format("Ha ocurrido un error mientras se eliminaban las imagenes de la orden {0}", this.selectedOrder.OrderNum));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
+
+    public async Task deletePicture(DTOOrderPicture orderPicture)
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro de eliminar la imagen de la orden de {0}?"
+                , this.selectedOrder.OrderType == OrderType.Dispatch ? "despacho No: " + this.selectedOrder.OrderNum : "devolución " + this.selectedOrder.Works)))
+            {
+                return;
+            }
+
+            var deleteOrder = this.logisticsCoreService.DeletePicture(this.selectedOrder, orderPicture);
+            if (deleteOrder)
+            {
+                this.viewPictures(selectedOrder);
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "La imagen fue eliminada correctamente.", Duration = 5000 });
+            }
+            else
+                throw new Exception(string.Format("Ha ocurrido un error mientras se eliminaba la imagen de la orden de {0}?"
+                , this.selectedOrder.OrderType == OrderType.Dispatch ? "despacho No: " + this.selectedOrder.OrderNum : "devolución " + this.selectedOrder.Works));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
+
+    void Close(dynamic result)
+    {
+        if (result != null)
+        {
+            switch ((int)result)
+            {
+                case 1:
+                    var newOrder = this.logisticsCoreService.GetOrderForChange(this.newOrderId);
+                    if (newOrder != null)
+                    {
+                        this.selectedOrder = logisticsCoreService.ChangeOrder(selectedOrder, newOrder);
+
+                        this.viewPictures(selectedOrder);
+                        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "La imagenes fueron cambiadas de orden correctamente.", Duration = 5000 });
+                    }
+                    break;
+
+                case 2:
+                    this.viewPictures(selectedOrder);
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok", Detail = "Las imagenes subierón correctamente.", Duration = 5000 });
+                    break;
+
+                case 99:
+                    break;
+            }
+        }
+    }
+
+    public async Task changeOrder()
+    {
+        this.GetOrdersForChange();
+        var result = await dialogService.OpenAsync("Cambiar imagenes de orden", ds =>
+    @<div>
+        <div class="form-group">
+            <label>Obra</label>
+            <RadzenDropDown class="form-control" AllowFiltering="true" @bind-Value="newOrderId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@changeOrderList" TextProperty="Works" ValueProperty="OrderId" />
+        </div>
+        <div class="row pt-3">
+            <div class="col">
+                <RadzenButton Text="Aceptar" Click="() => ds.Close(1)" Class="me-1" Style="width: 80px;" />
+                <RadzenButton Text="Cancelar" Click="() => ds.Close(99)" ButtonStyle="ButtonStyle.Light" Class="me-1" />
+            </div>
+        </div>
+    </div>);
+    }
+
+    public async Task uploadOrderPictures()
+    {
+        lockUploadFileClose = false;
+        var result = await dialogService.OpenAsync("Subir imagenes", ds =>
+        @<div>
+            <InputFile OnChange="HandledSelection" multiple></InputFile>
+            <div class="row pt-3">
+                <div class="col">
+                    <RadzenButton Text="Cerrar" Click="() => ds.Close(2)" Class="me-1" Style="width: 80px;" Disabled="@lockUploadFileClose"/>
+                </div>
+            </div>
+        </div>);
+    }
+
+    async void keySearchBy(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            dialogService.Open<DialogProgressBar>
+                (null, new Dictionary<string, object>
+                    () { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+            Task.Run(async () =>
+            {
+                this.searchOrders = await logisticsService.SearchOrders((OrderType)this.filter.ModuleId, this.filter.FromDate, this.filter.ToDate, searchBy);
+                if (this.searchOrders.Count != 0)
+                {
+                    dateTimes = new List<DateTime>
+                        ();
+
+                    foreach (var searchOrder in this.searchOrders)
+                    {
+                        var dt = dateTimes.Where(d => d.Date == searchOrder.TransDate.Date).FirstOrDefault();
+                        if (dt.Equals(DateTime.MinValue))
+                            dateTimes.Add(searchOrder.TransDate.Date);
+                    }
+
+                    await this.selectFirstOrder();
+                }
+                else
+                {
+                    this.selectedOrder = null;
+                    this.pictures = new List<DTOOrderPicture>
+                        ();
+                }
+                dialogService.Close();
+                this.InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                });
+            });
+        }
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>
+        ("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsDeletePictures")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.deleteOrderPictures = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsChangeOrderPictures")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.changeOrderPictures = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsUploadPictures")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.uploadPictures = opt.IsActive;
+        }
+    }
+
+    IFileListEntry file;
+    async Task HandledSelection(IFileListEntry[] files)
+    {
+        lockUploadFileClose = true;
+        foreach (var file in files)
+        {
+            await fileUpload.UploadFile(file, this.selectedOrder);
+        }
+        dialogService.Close(2);        
+    }
+
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="row pt-3">
+                <div class="form-group col-md-2">
+                    <label>Modulo</label>
+                    <RadzenDropDown class="form-control" @bind-Value="filter.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter.Modules" TextProperty="Description" ValueProperty="Id" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label>Desde</label>
+                    <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@filter.FromDate" class="d-block" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label>Hasta</label>
+                    <RadzenDatePicker Name="ToDate" DateFormat="MM/dd/yyyy" @bind-Value="@filter.ToDate" class="d-block" />
+                </div>
+            </div>
+            <div class="row pt-3 ">
+                <div class="col-sm-12">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="input-group input-group-lg mb-3">
+                <input type="text" @bind-value="searchBy" class="form-control" placeholder="Buscar imagenes" @onkeyup="@(args => { keySearchBy(args); })">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="button-addon1" @onclick="@(args => { btnSearchBy(); })">Buscar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        @{
+            if (searchOrders.Count != 0)
+            {
+                <div class="col-sm-12">
+                    <p>Número de ordenes encontradas: @(@searchOrders.Count).</p>
+                </div>
+                <div class="col-3">
+                    <div class="list-group list-group-works">
+                        @{
+                            foreach (var dt in dateTimes.OrderBy(o => o.Date).ToList())
+                            {
+                                <span class="list-group-item list-group-item-secondary" aria-disabled="true">@dt.ToString("dd MMMMM yyyy")</span>
+                                foreach (var order in searchOrders.Where(o => o.TransDate.Date.Equals(dt)).OrderByDescending(o => o.OrderId).ToList())
+                                {
+                                    if (order.OrderType != OrderType.Dispatch)
+                                    {
+                                        <a class="list-group-item list-group-item-action @(order.OrderId == this.selectedOrder.OrderId ? "list-group-item-danger" : "")" @onclick="@(args => { viewPictures(order); })">
+                                            <h5 class="mb-1">DEVOLUCIÓN</h5>
+                                            <h5 class="mb-1" style="font-style: italic">@order.Works</h5>
+                                            <p class="mb-1">@order.City</p>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a class="list-group-item list-group-item-action @(order.OrderId == this.selectedOrder.OrderId ? "list-group-item-primary" : "")" @onclick="@(args => { viewPictures(order); })">
+                                            <h5 class="mb-1">DESPACHO</h5>
+                                            <h5 class="mb-1" style="font-style: italic">@order.Works</h5>
+                                            <p class="mb-1">@order.CustomerName</p>
+                                            <p class="mb-1">@order.OrderNum</p>
+                                        </a>
+                                    }
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="col-9">
+                    @{
+                        <nav class="navbar bg-light">
+                            <div class="container-fluid p-0">
+                                @{
+                                    <div>
+                                        @{
+                                            @if(this.uploadPictures)
+                                                {
+                                                    <button class="btn btn-outline-success" @onclick="@(args => { uploadOrderPictures(); })">Subir Imagenes</button>
+                                                }
+
+                                            if (this.pictures.Count != 0)
+                                            {
+                                                @if (this.changeOrderPictures)
+                                                {
+                                                    <button class="btn btn-outline-primary" @onclick="@(args => { changeOrder(); })">Cambiar de Orden</button>
+                                                }
+
+                                                @if (this.deleteOrderPictures)
+                                                {
+                                                    <button class="btn btn-outline-danger" @onclick="@(args => { deletePictures(); })">Eliminar Imagenes</button>
+                                                }
+
+                                                <a href="@string.Format("./api/logistics/downloadZip/{0}/{1}", this.selectedOrder.OrderId, this.selectedOrder.OrderNum)" class="btn btn-outline-secondary">Descargar ZIP</a>
+                                            }
+                                        }
+                                    </div>
+
+                                    if (this.selectedOrder.Sync)
+                                    {
+                                        <span class="navbar-text">
+                                            <b>Última fecha de sincronización: @this.selectedOrder.SyncDateTime.ToString()</b>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="navbar-text">
+                                            <b>Última fecha de sincronización: Ninguna</b>
+                                        </span>
+                                    }
+                                }
+                            </div>
+                        </nav>
+                    }
+                    <div class="d-flex flex-row flex-wrap justify-content-start pt-2 container-pictures">
+                        @{
+                            if (pictures.Count != 0)
+                            {
+                                foreach (var picture in pictures)
+                                {
+                                    <div class="d-flex flex-column" style="max-width: 260px; padding-right: 10px; padding-bottom: 10px;">
+                                        <div class="card text-right" style="width: 18rem;">
+                                            <img src="@picture.DataBase64" alt="Alternate Text" class="img-fluid" />
+                                            <div class="card-body">
+                                                @{
+                                                    if (this.deleteOrderPictures)
+                                                    {
+                                                        <a href="javascript:void(0);" @onclick="@(args => { deletePicture(picture); })" class="btn btn-outline-danger">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                                            </svg>
+                                                        </a>
+                                                    }
+                                                }
+                                                <a href="@string.Format("./api/logistics/download/{0}/{1}", picture.OrderId, picture.Name)" class="btn btn-outline-secondary">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
+                                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                if (!this.selectedOrder.CounterPictures.Equals(this.pictures.Count))
+                                {
+                                    <div class="w-100" style="text-align:center">
+                                        <button class="btn btn-primary" @onclick="@(args => { loadPictures(); })">Cargar mas imagenes</button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p>La orden no tiene images sincronizadas.</p>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="col-sm-12">
+                    @{
+                        if (this.searchBy.Length != 0)
+                        {
+                            <p>No se han encontrado resultados para tu búsqueda (@(this.searchBy)).</p>
+                        }
+                        else
+                        {
+                            <p>Ingresa un texto en campo de búsqueda.</p>
+                        }
+                        <p>Sugerencias:</p>
+                        <ul>
+                            <li>Asegúrate de que todas las palabras estén escritas correctamente.</li>
+                            <li>Intenta con el número de la orden o una parte de la misma.</li>
+                            <li>Intenta con el número de identificación del cliente o una parte del mismo.</li>
+                            <li>Intenta con el nombre del cliente o una parte del mismo.</li>
+                            <li>Intenta con el nombre de la obra o una parte de la misma.</li>
+                        </ul>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+

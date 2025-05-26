@@ -1,0 +1,170 @@
+﻿@page "/ViewTerceroCopy/{TerceroId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject TerceroService terceroService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject CompanyService companyService
+<div class="card">
+    <div class="card-header">
+        Empleado
+    </div>
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formcliente" id="formcliente" Method="post" class="col-md-12" TItem="Tercero" Data="@model" Submit="@OnSubmit">
+
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <input class="btn btn-success" value="Guardar" type="submit"   />
+                </div>
+                <div class="form-group col-md-3">
+                    <a class="btn btn-success" href="/ViewSearchTercero">Buscar</a>
+                </div>
+            </div>
+            <RadzenFieldset Text="Informacion Personal">
+
+
+                @*<RadzenAccordionItem Text="Employees" Icon="account_box">
+                        Details for Employees
+                    </RadzenAccordionItem>
+                    <RadzenAccordionItem Text="Customers" Icon="accessibility">
+                        Details for Customers
+                    </RadzenAccordionItem>*@
+
+                @*<div class="form-row">
+                    <div class="col-md-6">
+                        <RadzenRadioButtonList @bind-value="model.TypePersonId" Change="@Changed" TValue="int" >
+                            <Items>
+                                <RadzenRadioButtonListItem Text="Persona Natural" Value="1" />
+                                <RadzenRadioButtonListItem Text="Persona Juridica" Value="2" />
+                                <RadzenRadioButtonListItem Text="Ninguna" Value="3" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    </div>
+                </div>*@
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputName">Nombre</label>
+                        <RadzenTextBox Name="inputName" @bind-Value="model.FirstName" class="form-control" placeholder="Nombre"   />
+                        <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputLastName">Apellido</label>
+                        <RadzenTextBox Name="inputLastName" @bind-Value="model.LastName" class="form-control" placeholder="Apellido"   />
+                        <RadzenRequiredValidator Component="inputLastName" Text="Apellido es requerido" Popup="false" />
+                    </div>
+                    @*<div class="form-group col-md-4">
+                        <label for="inputComercialName">Razon social</label>
+                        <RadzenTextBox Name="inputComercialName" @bind-Value="model.ComercialName" class="form-control" placeholder="Razon social"   />
+                        <RadzenRequiredValidator Component="inputComercialName" Text="Razon social es requerido" Popup="false" />
+                    </div>*@
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputDocument">Cedula o Nit</label>
+                        <RadzenTextBox Name="inputRef" @bind-Value="model.NumDocument" class="form-control" />
+                        <RadzenRequiredValidator Component="inputRef" Text="Documento es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputState">Activo ?</label>
+                        <RadzenCheckBox Name="inputState" TValue="bool" @bind-Value="model.IsActive" class="form-control" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+            
+      
+            <RadzenFieldset Text="Documentacion">
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <RadzenFileInput Name="InputPhoto" @bind-Value="@model.PhotoBase64"   ChooseText="Fotografia" Style="width:150px;" TValue="string"   />
+                    </div>
+                    @*<div class="form-group col-md-3">
+                        <RadzenFileInput Name="InputPhoto" @bind-Value="@model.Photo1Base64" ChooseText="Cedula Frente" Style="width:150px;" TValue="string"  />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <RadzenFileInput Name="InputPhoto" @bind-Value="@model.Photo2Base64" ChooseText="Cedula Atras" Style="width:150px;" TValue="string" />
+                    </div>*@
+                </div>
+            </RadzenFieldset>
+
+
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    ElementReference Fileupload;
+    [Parameter]
+    public string TerceroId { get; set; }
+
+    Tercero model = new Tercero();
+    Company companyCurrent;
+    public int TabSelected = 0;
+    protected override async Task OnInitializedAsync()
+    {
+        model.TypePersonId = 1;
+        if (long.Parse(TerceroId) != 0)
+        {
+
+            model = await terceroService.SelectById(new Tercero() { TerceroId = long.Parse(TerceroId) , TransOption=3 });
+        }
+
+    }
+    public void SelectedChangeTab(int tabselected)
+    {
+        TabSelected = tabselected;
+    }
+    public void Changed()
+    {
+
+    }
+
+    public void ChangedFile()
+    {
+        Console.WriteLine(Fileupload.Id);
+        JSRuntime.InvokeAsync<string>("$.fn.GetFilesInput", Fileupload);
+
+
+        //string source = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABG4...YII=";
+        //string base64 = source.Substring(source.IndexOf(',') + 1);
+        //byte[] data = Convert.FromBase64String(base64);
+    }
+
+
+    async void OnSubmit(Tercero para)
+    {
+        model.TypeTerceroId = 4;
+
+        if (model.TerceroId != 0)
+        {
+            model.TransOption = 2;
+            Tercero u = await terceroService.Update(model);
+            model.TerceroId = u.TerceroId;
+        }
+        else
+        {
+            model.TransOption = 2;
+            Tercero u = await terceroService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el cliente correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+}

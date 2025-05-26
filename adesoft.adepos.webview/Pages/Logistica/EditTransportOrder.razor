@@ -1,0 +1,351 @@
+﻿@page "/EditTransportOrder/{subModule}/{strFromDate}/{strToDate}/{orderType:int}/{orderId:long}/{filterId:int}"
+@page "/EditTransportOrder/{subModule}/{reportFilterId}"
+@using Microsoft.JSInterop;
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject LogisticsService logisticsService;
+@inject Data.Interfaces.ILogisticsCoreService logisticsCoreService;
+@inject NotificationService notificationService;
+@inject NavigationManager navigationManager;
+
+@inject SecurityService securityService;
+@inject IJSRuntime JSRuntime;
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject CompanyService companyService
+
+@code {
+
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    [Parameter]
+    public string subModule { get; set; }
+
+    [Parameter]
+    public long orderId { get; set; }
+
+    [Parameter]
+    public int filterId { get; set; }
+
+    [Parameter]
+    public string reportFilterId { get; set; }
+
+    public DTOOrder model;
+    public List<DTOLogisticMasterData> customers;
+    public List<DTOLogisticMasterData> vendors;
+    public List<DTOLogisticMasterData> vehicleTypes;
+    public List<DTOLogisticMasterData> reponsableTrans;
+    public List<DTOLogisticMasterData> salesPersons;
+
+    public List<string> conform;
+
+    public int TabSelected = 0;
+
+    private bool searchTransportOrder = false;
+    private bool editTransportOrder = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var reportFilter = this.logisticsCoreService.GetReportFilter(this.reportFilterId);
+        this.model = await logisticsService.GetOrder((OrderType)reportFilter.OrderType, reportFilter.OrderId);
+        this.vendors = await logisticsService.GetVendors();
+        this.customers = await logisticsService.GetCustomers();
+        this.reponsableTrans = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+        this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+        this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+
+        conform = new List<string>
+{
+            "Sí",
+            "No"
+        };
+
+        await this.getSecurity();
+    }
+
+    public async void Cancel()
+    {
+        //navigationManager.NavigateTo(string.Format("ViewTransportOrders/{0}/{1}/{2}/{3}/{4}", subModule, strFromDate, strToDate, orderType, filterId));
+        navigationManager.NavigateTo(string.Format("ViewTransportOrders/{0}/{1}", subModule, reportFilterId));
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    public async void SaveOrder()
+    {
+        try
+        {
+            if (orderType == 1)
+            {
+                if (model.OrderNum == "" || model.CustomerAccount == "" || model.Works == "")
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+                    return;
+                }
+
+                if (model.IsConform.Equals("No") && string.IsNullOrEmpty(model.NoConform))
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El No. de No Conforme es obligatorio.", Duration = 4000 });
+                    return;
+                }
+            }
+            else
+            {
+                if (model.Works == "")
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+                    return;
+                }
+            }
+
+            this.model = await logisticsService.CreateOrUpdateOrder(model);
+
+            //navigationManager.NavigateTo(string.Format("ViewTransportOrders/{0}/{1}/{2}/{3}/{4}", subModule, strFromDate, strToDate, orderType, filterId));
+            navigationManager.NavigateTo(string.Format("ViewTransportOrders/{0}/{1}", subModule, reportFilterId));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+        }
+    }
+
+    public async void SelectedChangeTab(int tabselected)
+    {
+        TabSelected = tabselected;
+    }
+
+    private async Task getSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        switch (subModule)
+        {
+            case "Transport":
+                {
+                    ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("SearchTransportOrder")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.searchTransportOrder = opt.IsActive;
+                    }
+
+                    opt = listactionapp.Where(ac => ac.NameAction.Equals("EditTransportOrder")).FirstOrDefault();
+                    if (!(opt is null))
+                    {
+                        this.editTransportOrder = opt.IsActive;
+                    }
+                }
+                break;
+
+            case "Billing":
+                {
+                    {
+                        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("SearchFVTransportOrder")).FirstOrDefault();
+                        if (!(opt is null))
+                        {
+                            this.searchTransportOrder = opt.IsActive;
+                        }
+
+                        opt = listactionapp.Where(ac => ac.NameAction.Equals("EditFVTransportOrder")).FirstOrDefault();
+                        if (!(opt is null))
+                        {
+                            this.editTransportOrder = opt.IsActive;
+                        }
+                    }
+                    break;
+                }
+                break;
+        }
+    }
+}
+
+<nav class="navbar navbar-light bg-transparent justify-content-between">
+    @{
+        if (this.subModule.Equals("Billing"))
+        {
+            <h4>EDITAR INFORMACIÓN DE FACTURACIÓN</h4>
+        }
+        else
+        {
+            <h4>EDITAR ORDEN DE TRANSPORTE</h4>
+        }
+    }
+    <div class="form-inline">
+        <button class="btn btn-light mr-3" @onclick="@(args => { Cancel(); })">Regresar</button>
+        @{
+            if (this.editTransportOrder)
+            {
+                <button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })">Guardar</button>
+            }
+        }
+    </div>
+</nav>
+
+<RadzenTabs Change="SelectedChangeTab" SelectedIndex="TabSelected" Style="font-size:11px;">
+    <Tabs>
+        <RadzenTabsItem Text="Orden">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="orderId">No. Order</label>
+                            <RadzenTextBox Disabled="true" Name="orderId" @bind-Value="model.OrderNum" Placeholder="Ingrese el número de orden" class="form-control"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-12">
+                            <label for="works">Obra</label>
+                            <RadzenTextBox Disabled="true" Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-3">
+                            <label for="identificationNum">NIT</label>
+                            <RadzenTextBox Disabled="true" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
+                        </div>
+                        <div class="form-group col-sm-9">
+                            <label for="customerName">Nombre Cliente</label>
+                            <RadzenDropDown Disabled="true" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="DispatchDate">Fecha despacho</label>
+                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="true" />
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="DispatchTime">Hora despacho</label>
+                            <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="model.DispatchDateTime" id="DispatchTime" class="d-block" Disabled="true" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-3">
+                            <label for="customerName">Conforme</label>
+                            <RadzenDropDown Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" AllowFiltering="false" Name="isConform" class="form-control" @bind-Value="model.IsConform" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@conform" />
+                        </div>
+                        <div class="form-group col-sm-9">
+                            <label for="customerName">No. de No Conforme</label>
+                            <RadzenTextBox Disabled="@(this.subModule.Equals("Billing") || (!this.editTransportOrder ? true : model.IsConform.Equals("Sí")))" class="form-control" Name="noConform" @bind-Value="model.NoConform" Placeholder="Ingrese el No. de No Conforme"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-12">
+                            <label for="works">No. OP</label>
+                            <RadzenTextBox Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" Name="orderId" @bind-Value="model.OPNum" Placeholder="Ingrese el Número de OP" class="form-control"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <h5 class="mb-3 mt-3">Información del transportador</h5>
+                    <div class="form-row">
+                        <div class="form-group col-sm-3">
+                            <label for="VendorAccount">NIT</label>
+                            <RadzenTextBox Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" class="form-control" Name="VendorAccount" @bind-Value="model.VendorAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
+                        </div>
+                        <div class="form-group col-sm-9">
+                            <label for="vendorName">Nombre Transportador</label>
+                            <RadzenDropDown Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" AllowFiltering="true" Name="vendorName" class="form-control" @bind-Value="model.VendorAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vendors" TextProperty="Description" ValueProperty="IdentificationNum" />
+                        </div>
+                    </div>
+                    <h5 class="mb-3 mt-3">Información del Vehículo</h5>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="vehicleType">Transporte a cargo de</label>
+                            <RadzenDropDown Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" AllowFiltering="true" Name="ReponsableTrans" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@reponsableTrans" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="vehicleType">Tipo Vehículo</label>
+                            <RadzenDropDown Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-12">
+                            <label for="PlateNum">Placa</label>
+                            <RadzenTextBox Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" Name="PlateNum" @bind-Value="model.PlateNum" Placeholder="Ingrese la placa" class="form-control"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-12">
+                            <label for="DriverName">Conductor</label>
+                            <RadzenTextBox Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" Name="DriverName" @bind-Value="model.DriverName" Placeholder="Ingrese el nombre del conductor" class="form-control"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <h5 class="mb-3 mt-3">Información de factura</h5>
+                    <div class="form-row">
+                        <div class="form-group col-sm-12">
+                            <label for="vehicleType">Solicitado por</label>
+                            <RadzenDropDown Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" AllowFiltering="true" Name="salesPerson" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="InvoiceDate">Fecha Factura</label>
+                            <RadzenDatePicker Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" Name="InvoiceDate" @bind-Value="model.InvoiceDate" DateFormat="dd/MM/yyyy" id="InvoiceDate" class="d-block" />
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="InvoiceNum">Numero Factura</label>
+                            <RadzenTextBox Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" Name="InvoiceNum" @bind-Value="model.InvoiceNum" Placeholder="Ingrese el numero de factura" class="form-control"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="InvoiceAmount">Valor Factura</label>
+                            <RadzenNumeric Disabled="@(this.subModule.Equals("Billing") || !this.editTransportOrder)" Format="C0" Name="InvoiceAmount" id="InvoiceAmount" TValue="Decimal" @bind-Value="model.InvoiceAmount" class="form-control"></RadzenNumeric>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">                    
+                    @{
+                        if (this.subModule.Equals("Billing"))
+                        {
+                            <h5 class="mb-3 mt-3">Facturación</h5>
+                            <div class="form-row mb-3">
+                                <div class="form-group col-sm-6">
+                                    <label for="FVTransport">FV-UNISPAN Transportes</label>
+                                    <RadzenTextBox Disabled="@(!this.editTransportOrder)" Name="InvoiceNum" @bind-Value="model.FVTransport" Placeholder="Ingrese el FV-UNISPAN Transportes" class="form-control"></RadzenTextBox>
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="Period">Periodo</label>
+                                    <RadzenDatePicker Disabled="@(!this.editTransportOrder)" TValue="DateTime?" Name="Period" @bind-Value="model.Period" DateFormat="dd/MM/yyyy" id="Period" class="d-block" />
+                                </div>
+                            </div>
+                        }
+                    }
+                    <div class="form-group">
+                        <label for="observations">Observaciones</label>
+                        <RadzenTextArea Disabled="@(!this.editTransportOrder)" Name="observations" @bind-Value="model.Comment" Placeholder="Ingrese observaciones" class="form-control"></RadzenTextArea>
+                    </div>
+                    <table class="table mt-3">
+                        <thead>
+                            <tr>
+                                <th style="width: 200px">Fecha</th>
+                                <th>Comentario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                foreach (var comment in model.Comments)
+                                {
+                                    <tr>
+                                        <td>@(comment.CreatedDatetTime.ToString("dd/MM/yyyy"))</td>
+                                        <td>@(comment.Comment)</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>

@@ -1,0 +1,97 @@
+﻿@page "/ViewRptCustomerRanking"
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.Interfaces;
+@using  Newtonsoft.Json
+
+@inject IHttpContextAccessor httpContextAccessor
+@inject NotificationService notificationService
+@inject ILedgerBalanceService balanceService;
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager;
+
+@code {
+    DTOLedgerBalanceFilter balanceFilter = new DTOLedgerBalanceFilter();
+    public List<CommonData> ReportTypes { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ReportTypes = new List<CommonData>()
+        {
+            new CommonData()
+            {
+                IdStr = "AdminId",
+                Description = "Administrador"
+            },
+            new CommonData()
+            {
+                IdStr = "ZoneId",
+                Description = "Zona"
+            },
+            new CommonData()
+            {
+                IdStr = "SectorId",
+                Description = "Sector"
+            }
+        };
+
+        balanceFilter.Year = DateTime.UtcNow.Year;
+        balanceFilter.MonthsSelected = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+        balanceFilter.GroupBy = new List<string> { "AdminId" };
+    }
+
+    void BtnGenerateRpt()
+    {
+
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                RESUMEN DE RENTAS
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label>Agrupar por</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="balanceFilter.GroupBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@ReportTypes" TextProperty="Description" ValueProperty="IdStr" />
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-group">
+                                    <label>Año</label>
+                                    <RadzenNumeric id="year" class="form-control" @bind-Value="balanceFilter.Year" />
+                                </div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label>Meses</label>
+                                    <RadzenDropDown class="form-control" @bind-Value="balanceFilter.MonthsSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@balanceFilter.Months" TextProperty="Description" ValueProperty="Id" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group col-md-2">
+                <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" />
+            </div>
+        </div>
+
+        <div class="form-row">
+
+            <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
+
+        </div>
+    </div>
+</div>
+

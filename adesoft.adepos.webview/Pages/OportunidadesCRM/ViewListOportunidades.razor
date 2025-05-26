@@ -1,0 +1,245 @@
+﻿@page "/ViewListOportunidades"
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@inject OportunidadesCRMService oportunidadService
+@inject DialogService dialogService
+@inject SecurityService securityService
+@code {
+    private RenderFragment? CustomRender { get; set; }
+    List<OportunidadesCRM> lists;
+
+    int valueTypeReport;
+    OportunidadesCRM model = new OportunidadesCRM();
+    int count;
+    bool CanSync;
+    List<DTOOportunidadesCRM> listEtaps = new List<DTOOportunidadesCRM>();
+    protected override async Task OnInitializedAsync()
+    {
+        lists = new List<OportunidadesCRM>();
+
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        ActionApp actionapp = await securityService.ValidatePermissionByTooken(tooken, "ViewListOportunidades", "Sync");
+        CanSync = actionapp.TransactionIsOk;
+        //lists = await oportunidadService.selectAll(new OportunidadesCRM() { TransOption = 1 });
+        // lists= lists.Where(x => x.TypeTerceroId != 4).ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            model.FilterDateEnd = DateTime.Now.Date;
+            model.FilterDateInit = model.FilterDateEnd.Value.AddDays(-60);
+            valueTypeReport = 1;
+            await BtnGenerateRpt();
+
+        }
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    async Task BtnGenerateRpt()
+    {
+
+        if (model.FilterDateInit == null || model.FilterDateEnd == null)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los filtros de fecha son obligatorios.", Duration = 4000 });
+            return;
+        }
+        if (valueTypeReport == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe seleccionar una etapa.", Duration = 4000 });
+            return;
+        }
+        lists = new List<OportunidadesCRM>();
+
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Consultando información" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+
+        Task.Run(async () =>
+        {
+            model.TransOption = 2;
+            model.FilterTipoEtapaId = valueTypeReport;
+            lists = await oportunidadService.selectAll(model);
+            count = lists.Count();
+            DTOOportunidadesCRM dto = new DTOOportunidadesCRM();
+            dto.CargarCantEtapas(lists);
+            listEtaps.Clear();
+            listEtaps.Add(dto);
+            //   isLoading = false;
+            this.InvokeAsync(() =>
+            {
+                dialogService.Close();
+                this.StateHasChanged();
+
+            });
+
+        });
+        // isLoading = true;
+    }
+
+    async void OnChangeTypeReport(int value)
+    {
+
+    }
+    async Task BtnSync()
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Sincronizacion" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            await oportunidadService.StartSyncCRM();
+            dialogService.Close();
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Sincronizacion Ejecutada", Duration = 2000 });
+
+            //  lists = await itemService.selectAll(new Item() { TransOption = 3 });
+        });
+    }
+    async Task BtnShowReport()
+    {
+
+        dialogService.Open<ViewRptOportunidadesCRM>("Reporte Oportunidades", new Dictionary<string, object>() { { "ListsOportunidades", lists } , { "FilterOport", model } }, new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+    public void SetCustomRenderNull(OportunidadesCRM m)
+    {
+        CustomRender = null;
+        lists[lists.IndexOf(lists.Where(x => x.OportunidadID == m.OportunidadID).First())] = m;
+        // lists = await oportunidadService.selectAll(model);
+        this.InvokeAsync(() =>
+        {
+            this.StateHasChanged();
+        });
+    }
+
+}
+
+@functions {
+    RenderFragment CreateDynamicComponent(OportunidadesCRM Oport) => (builder) =>
+    {
+
+        builder.OpenComponent(0, typeof(ViewOportunidadCRM));
+        builder.AddAttribute(1, "OportunidadId", Oport.OportunidadID.ToString());
+        builder.AddAttribute(2, "viewList", this);
+        builder.AddAttribute(1, "OportunidadObj", Oport);
+        builder.CloseComponent();
+    };
+}
+@if (CustomRender != null)
+{
+    <div>
+        @CustomRender
+    </div>
+}
+else
+{
+
+    @*<div class="row">
+            <a href="/ViewItem/0" class="btn btn-primary">Nueva Oportunidad</a>
+        </div>*@
+    <div class="card" style="color:#102161;font-weight:bold;">
+        <div class="card-header">
+            LISTADO DE OPORTUNIDADES
+        </div>
+        <div class="card-body">
+
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label for="FilterDateinit">Fecha Inicio</label>
+                    <RadzenDatePicker Name="FilterDateinit" class="d-block" DateFormat="MM/dd/yyyy" @bind-Value="@model.FilterDateInit" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="FilterDateend">Fecha Final</label>
+                    <RadzenDatePicker Name="FilterDateend" class="d-block" DateFormat="MM/dd/yyyy" @bind-Value="@model.FilterDateEnd" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Etapa</label>
+                    <RadzenRadioButtonList TValue="int" @bind-Value="@valueTypeReport" Change=@((args) => OnChangeTypeReport(args))>
+                        <Items>
+                            <RadzenRadioButtonListItem Text="ABIERTAS" Value="1" />
+                            <RadzenRadioButtonListItem Text="CERRADAS" Value="2" />
+                            <RadzenRadioButtonListItem Text="TODAS" Value="3" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </div>
+                @*<div class="form-group col-md-1">
+                        <label for="btn1">&nbsp;</label>
+                        <button class="btn btn-success btn-sm d-block" @onclick="BtnGenerateRpt">Consultar</button>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="btn2">&nbsp;</label>
+                        <button class="btn btn-success btn-sm d-block" @onclick="BtnShowReport">Generar Reporte</button>
+                    </div>*@
+
+                <div class="form-group col-md-4">
+                    <label class="d-block">&nbsp;</label>
+                    <button class="btn btn-success btn-sm d-block" @onclick="BtnGenerateRpt" style="float:left;margin-right:5px;">Consultar</button>
+                    <button class="btn btn-primary btn-sm d-block" @onclick="BtnShowReport" style="float:left;margin-right:5px;">Generar Reporte</button>
+                    @if (CanSync)
+                    {
+                        <button class="btn btn-success btn-sm d-block" @onclick="BtnSync" style="float:left;margin-right:5px;">Sincronizar con CRM</button>
+                    }
+                </div>
+            </div>
+            <div class="form-row">
+                @if (lists == null || lists.Count() == 0)
+                {
+                    @*<p><em>Consultando información</em></p>*@
+                }
+                else
+                {
+                    <RadzenGrid AllowFiltering="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="false" PageSize="1" AllowSorting="false" Data="@listEtaps" TItem="DTOOportunidadesCRM" ColumnWidth="80px">
+                        <Columns>
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE2" Title="10%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE3" Title="20%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE4" Title="30%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE5" Title="40%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE6" Title="50%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE7" Title="60%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE8" Title="70%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantE9" Title="80%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantF10" Title="90%" />
+                            <RadzenGridColumn TItem="DTOOportunidadesCRM" Property="CantF11" Title="100%" />
+                        </Columns>
+                    </RadzenGrid>
+
+                    <RadzenGrid AllowFiltering="true" Count="@count" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="false" Data="@lists" TItem="OportunidadesCRM" ColumnWidth="120px">
+                        <Columns>
+                            @*<RadzenGridColumn TItem="OportunidadesCRM" Property="OPRT_NUMERO" Title="N° Oport." Width="60px" />*@
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="PorcentajeOport" Width="50px" Title="% Oport">
+                                <Template Context="data">
+                                    @(data.PorcentajeOport + " %")
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="FECHA_APERTURA" Title="Fecha Oportunidad" />
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="CONSECUTIVO" Title="N° Cot.Aprobada" />
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="FECHA_DESPACHO_LBL" Width="80px" Title="Fecha despacho" />
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="CLIENTE" Title="Cliente" />
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="OBRA" Title="Obra" />
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="COMERCIAL" Title="Comercial" />
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="VR_RENTA_MENSUAL" Title="Vr. Alq Mensual">
+                                <Template Context="data">
+                                    @(data.VR_RENTA_MENSUAL!=null? data.VR_RENTA_MENSUAL.Value.ToString("N0"):"")
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="FECHA_RECEP_LBL" Title="Contrato y pagare" />
+
+                            <RadzenGridColumn TItem="OportunidadesCRM" Property="OportunidadID" Width="50px" Title="Editar">
+                                <Template Context="data">
+                                    <div style="@(data.IsEdited?"background-color:#8CFF7C;":"")">
+                                        <a href="javascript:void(0);" @onclick="args => { CustomRender = CreateDynamicComponent(data); }">Editar</a>
+                                    </div>
+                                    @*<ViewOportunidadCRM></ViewOportunidadCRM>*@
+                                </Template>
+                            </RadzenGridColumn>
+                        </Columns>
+                    </RadzenGrid>
+                }
+            </div>
+
+        </div>
+    </div>
+
+}

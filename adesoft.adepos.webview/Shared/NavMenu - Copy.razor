@@ -1,0 +1,106 @@
+﻿@using Microsoft.JSInterop;
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+
+@inject SecurityService securityService
+
+@inject IJSRuntime JSRuntime
+@inject TokenAuthenticationStateProvider autenticationstate;
+@inject CompanyService companyService
+<div class="top-row navbar navbar-dark"  >
+    <img src="Images/LogoUnispanBlancot.png" class="@NavMenuCssClass" width="150" height="40" />
+    <a class="navbar-brand" href=""></a>
+    <button style="display:inline" class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+
+
+<div id="navprincipal" class="@NavMenuCssClass" style="height:calc(100% - 115px); overflow-y: auto; margin-top:10px;">
+    <ul class="nav flex-column">
+      
+        @foreach (ActionApp ac in listactionapp.Where(x => x.IdFather == null).OrderBy(x => x.OrderNum).ToList())
+        {
+            <li class="nav-item px-3">
+                @if (ac.Type == "Multiple")
+                {
+
+                    @*<NavLink class="nav-link nav-multiple"  href="#" @onclick="@(e => OnclickCollapsed(ac.ActionAppId.ToString()))">
+                        <span class="oi @ac.Icon" aria-hidden="true"></span> @ac.Label
+                    </NavLink>*@
+                    <NavLink class="btn btn-toggle nav-link nav-multiple accordion-button" data-bs-toggle="collapse" @onclick="@(e => OnclickCollapsed(ac.ActionAppId.ToString()))">
+                        <span class="@ac.Icon" style="margin-right:4px;" aria-hidden="true"></span>@ac.Label
+                    </NavLink>
+                    <div class="collapse" id="@("Div"+ac.ActionAppId.ToString())">
+                        <ul class="flex-column pl-4 nav">
+                            @foreach (ActionApp child in listactionapp.Where(x => x.IdFather == ac.ActionAppId && x.Type == "Action").OrderBy(x => x.OrderNum).ToList())
+                            {
+                                <li class="nav-item"> <NavLink class="nav-link py-0" href="@child.NameAction"><span class="@child.Icon" style="margin-right:4px;"></span>@child.Label</NavLink></li>
+                            }
+                        </ul>
+                    </div>
+
+                }
+                else
+                {
+                    <NavLink class="nav-link" href="@ac.NameAction">
+                        <span class="@ac.Icon" aria-hidden="true" style="margin-right:4px;"></span>@ac.Label
+                    </NavLink>
+                }
+            </li>
+        }
+    </ul>
+</div>
+<div class="fixed-bottom px-4 @NavMenuCssClass" style="height:40px;background-color:#3a3838;width:250px;">
+    <a href="" @onclick="CloseSession" style="margin-top:15px;color:white;"><span class="fat fa-sign-out-alt"></span>&nbsp;Cerrar Sesion</a>
+</div>
+
+@code {
+
+    List<ActionApp> listactionapp = new List<ActionApp>();
+      Company companyCurrent;
+    protected override async Task OnInitializedAsync()
+    {
+        // await connectprovider.SetInstanceContext();//Esto debe ir primero
+        companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId==0).ToList();
+    }
+
+
+    private bool collapseNavMenu = false;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+        JSRuntime.InvokeAsync<string>("ShowHideSidebar", "sidebar");
+
+    }
+
+    private string collapse = "";
+    private void OnclickCollapsed(string id)
+    {
+        JSRuntime.InvokeAsync<string>("addclassCollapse", "Div" + id);//Esta en el _host.cshtml
+                                                                      //if (collapse != null)
+                                                                      //{
+                                                                      //    collapse = null;
+                                                                      //}
+                                                                      //else
+                                                                      //{
+                                                                      //    collapse = "collapse";
+                                                                      //}
+    }
+
+    async void CloseSession(MouseEventArgs e)
+    {
+        await autenticationstate.SetTokenAsync(null);
+        await JSRuntime.InvokeVoidAsync("OnReload");
+    }
+
+
+
+}

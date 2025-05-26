@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".Dialogs.DialogNewNovedadFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="right">
+
+        <ImageButton
+            android:id="@+id/btnCloseDialog"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_baseline_close"
+            />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:orientation="vertical"
+        >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NOVEDAD"
+            android:textSize="30dp"
+            android:gravity="center"
+            android:textColor="#000000"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="300dp"
+            android:layout_marginTop="16.7dp"
+            android:layout_marginRight="300dp"
+            android:orientation="horizontal"
+            android:gravity="right"
+            android:layout_gravity=""
+            android:layout_marginBottom="10dp">
+
+            <Button
+                android:id="@+id/btnDelete"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/blue_fill__rounded_color"
+                android:fontFamily="@font/poppins_medium"
+                android:gravity="center"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:text="Eliminar"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                />
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
+
+
+    <LinearLayout
+
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:weightSum="100"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp">
+
+        <!-- col 1 -->
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="30"
+            android:layout_gravity="top"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:paddingTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+
+                android:fontWeight="700"
+                android:text="OPERARIO"
+                android:background="#CDCDCD"
+                android:textColor="#000000"
+                android:textSize="20dp"
+
+                android:layout_gravity="center"/>
+            <TextView
+                android:id="@+id/lblDate"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:orientation="vertical">
+
+            <TextView
+                android:paddingTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:gravity="left"
+                android:text="FECHA INICIO"
+                android:fontWeight="700"
+                android:background="#CDCDCD"
+                android:textColor="#000000"
+                android:textSize="20dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="left"
+                    android:textColor="#808080"
+                    android:textSize="18dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                >
+                <TextView
+                    android:paddingTop="10dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:gravity="left"
+                    android:text="FECHA FIN"
+                    android:fontWeight="700"
+                    android:background="#CDCDCD"
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+                <TextView
+
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="left"
+                    android:textColor="#808080"
+                    android:textSize="18dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                >
+                <TextView
+                    android:paddingTop="10dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:gravity="left"
+                    android:text="CANT HORAS"
+                    android:fontWeight="700"
+                    android:background="#CDCDCD"
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+                <TextView
+
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="left"
+                    android:textColor="#808080"
+                    android:textSize="18dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:orientation="vertical"
+                >
+                <TextView
+                    android:paddingTop="35dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="110dp"
+                    android:gravity="left"
+                    android:layout_gravity="center"
+                    android:text="OBSERVACIONES/MOTIVO"
+                    android:fontWeight="700"
+                    android:background="#CDCDCD"
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+            </LinearLayout>
+
+
+
+
+        </LinearLayout>
+        <!-- col 1 end -->
+
+        <!-- col 2 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="70"
+            android:layout_marginLeft="10dp"
+            android:orientation="vertical" >
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#CDCDCD">
+                <TextView
+                    android:paddingTop="10dp"
+                    android:id="@+id/lblNameOperario"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:gravity="left"
+                    android:fontWeight="700"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="20dp" />
+                <ImageButton
+                    android:id="@+id/btnListOperator"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+
+                    android:background="@null"
+                    android:fontFamily="@font/poppins_medium"
+                    android:src="@drawable/ic_baseline_find_in_page_24"
+                    android:textColor="#ffffff"
+                    android:textSize="12sp"
+                    android:foregroundGravity="center"
+                    />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/lbloperators"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                >
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/blue_border_rounded_cornwe">
+                    <!-- INPUT -->
+                    <EditText
+                        android:clickable="false"
+                        android:cursorVisible="false"
+                        android:focusable="false"
+                        android:id="@+id/tbxDateIni"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_toRightOf="@+id/username_icon"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/poppins_regular"
+                        android:hint="Seleccione Fecha"
+                        android:inputType="none"
+                        android:maxLines="1"
+                        android:paddingLeft="17dp"
+                        android:paddingTop="15dp"
+                        android:paddingBottom="15dp"
+                        android:textCursorDrawable="@drawable/cursor_color"
+                        android:textSize="12sp"
+                        android:textColorHint="#000000"
+                        android:textColor="#000000"/>
+                    <!-- ICON -->
+                </RelativeLayout>
+
+
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                >
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/blue_border_rounded_cornwe">
+                    <!-- INPUT -->
+                    <EditText
+                        android:clickable="false"
+                        android:cursorVisible="false"
+                        android:focusable="false"
+                        android:id="@+id/tbxDateFin"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_toRightOf="@+id/username_icon"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/poppins_regular"
+                        android:hint="Seleccione Fecha"
+                        android:inputType="none"
+                        android:maxLines="1"
+                        android:paddingLeft="17dp"
+                        android:paddingTop="15dp"
+                        android:paddingBottom="15dp"
+                        android:textCursorDrawable="@drawable/cursor_color"
+                        android:textSize="12sp"
+                        android:textColorHint="#000000"
+                        android:textColor="#000000"/>
+                    <!-- ICON -->
+                </RelativeLayout>
+
+
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                >
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/blue_border_rounded_cornwe">
+
+
+                <EditText
+                    android:id="@+id/tbxCantidad"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_toRightOf="@+id/username_icon"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/poppins_regular"
+                    android:hint="Cantidad"
+                    android:maxLines="1"
+                    android:inputType="phone"
+                    android:paddingLeft="17dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:textCursorDrawable="@drawable/cursor_color"
+                    android:textSize="12sp"
+                    android:textColorHint="#000000"
+                    android:textColor="#000000"/>
+
+                </RelativeLayout>
+
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left"
+                android:textColor="#808080"
+                android:textSize="18dp" />
+
+            <LinearLayout android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+              >
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/blue_border_rounded_cornwe">
+                    <!-- INPUT -->
+
+                    />
+                    <EditText
+                        android:id="@+id/tbxObservaciones"
+                        android:layout_width="match_parent"
+                        android:layout_height="110dp"
+                        android:layout_toRightOf="@+id/username_icon"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/poppins_regular"
+                        android:hint="Observaciones"
+                        android:paddingLeft="17dp"
+                        android:inputType="textMultiLine|textCapCharacters"
+                        android:lines="8"
+                        android:minLines="6"
+                        android:maxLines="10"
+                        android:textCursorDrawable="@drawable/cursor_color"
+                        android:textSize="12sp"
+                        android:textColorHint="#000000"
+                        android:textColor="#000000"/>
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+        <!-- col 2 end -->
+        <!-- col 3 -->
+
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="50dp"
+        android:layout_marginTop="16.7dp"
+        android:layout_marginRight="50dp"
+        android:orientation="horizontal"
+        android:gravity="right"
+        android:layout_marginBottom="50dp"
+        android:layout_gravity="">
+
+        <Button
+            android:id="@+id/btnSaveNovedad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/blue_fill__rounded_color"
+            android:fontFamily="@font/poppins_medium"
+            android:gravity="center"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Guardar"
+            android:textColor="#ffffff"
+            android:textSize="12sp"
+            />
+
+    </RelativeLayout>
+
+</LinearLayout>

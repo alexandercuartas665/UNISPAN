@@ -1,0 +1,88 @@
+﻿@page "/viewrole/{RoleAppId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject RoleAppService roleAppService
+@inject NotificationService notificationService
+
+<div class="card">
+    <div class="card-header">
+        Rol
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formroleapp" id="formroleapp" class="col-md-6" TItem="RoleApp" Data="@model" Submit="@OnSubmit">
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="inputUsername">Nombre</label>
+                    <RadzenTextBox Name="inputUsername" @bind-Value="model.Name" class="form-control" id="inputUsername" placeholder="Nombre" />
+                    <RadzenRequiredValidator Component="inputUsername" Text="Usuario es requerido" Popup="true" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <input class="btn btn-success" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-3">
+                    <a class="btn btn-success" href="/ViewSearchRole">Buscar</a>
+                </div>
+            </div>
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string RoleAppId { get; set; }
+
+    RoleApp model = new RoleApp();
+
+
+    List<RoleApp> listroles = new List<RoleApp>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (long.Parse(RoleAppId) != 0)
+        {
+            model = await roleAppService.SelectById(new RoleApp() { RoleAppId = long.Parse(RoleAppId) });
+        }
+    }
+
+    async void OnSubmit(RoleApp para)
+    {
+        if (model.RoleAppId != 0)
+        {
+            RoleApp u = await roleAppService.Update(model);
+            model.RoleAppId = u.RoleAppId;
+        }
+        else
+        {
+            RoleApp u = await roleAppService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el rol correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+    void Change(object value, string name)
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        //events.Add(DateTime.Now, $"{name} value changed to {str}");
+        //StateHasChanged();
+    }
+
+}

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.home.NewProductionFragment"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="92dp"
+        android:layout_marginTop="36.7dp"
+        android:layout_marginRight="92dp"
+        >
+        <!-- INPUT -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nueva Medición"
+            android:textSize="30dp"
+            android:gravity="center"
+            android:textColor="#000000"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="92dp"
+        android:layout_marginTop="36.7dp"
+        android:layout_marginRight="92dp"
+        android:background="@drawable/blue_border_rounded_cornwe"
+        >
+        <!-- INPUT -->
+        <EditText
+
+            android:enabled="false"
+            android:id="@+id/tbxDateNow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/username_icon"
+            android:background="@android:color/transparent"
+            android:fontFamily="@font/poppins_regular"
+            android:hint="Seleccione Fecha"
+            android:inputType="none"
+            android:maxLines="1"
+            android:paddingLeft="17dp"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:textCursorDrawable="@drawable/cursor_color"
+            android:textSize="12sp"
+            android:textColorHint="#000000"
+            android:textColor="#000000"/>
+
+
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_marginLeft="92dp"
+        android:layout_marginTop="36.7dp"
+        android:layout_marginRight="92dp"
+        android:background="@drawable/blue_border_rounded_cornwe"
+        >
+        <!-- INPUT -->
+
+        <Spinner
+            android:id="@+id/ddlCategorys"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_toRightOf="@+id/username_icon"
+            android:fontFamily="@font/poppins_regular"
+            android:hint="Seleccione Actividad"
+            android:inputType="none"
+            android:maxLines="1"
+            android:paddingLeft="17dp"
+            android:spinnerMode="dialog"
+            android:textCursorDrawable="@drawable/cursor_color"
+            android:textSize="20sp"
+            android:textColorHint="#000000"
+            android:textColor="#000000"/>
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_marginLeft="92dp"
+        android:layout_marginTop="36.7dp"
+        android:layout_marginRight="92dp"
+        android:background="@drawable/blue_border_rounded_cornwe"
+        >
+        <!-- INPUT -->
+
+        <Spinner
+            android:id="@+id/ddlActivityList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_toRightOf="@+id/username_icon"
+            android:fontFamily="@font/poppins_regular"
+            android:hint="Seleccione Actividad"
+            android:inputType="none"
+            android:maxLines="1"
+            android:paddingLeft="17dp"
+            android:spinnerMode="dialog"
+            android:textColor="#000000"
+            android:textColorHint="#000000"
+            android:textCursorDrawable="@drawable/cursor_color"
+            android:textSize="12sp" />
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="92dp"
+        android:layout_marginTop="36.7dp"
+        android:layout_marginRight="92dp"
+        >
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Operarios"
+            android:textColor="#000000"
+            android:textSize="20dp" />
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:paddingTop="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        >
+        <LinearLayout
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/blue_border_rounded_cornwe"
+                >
+                <!-- INPUT -->
+                <EditText
+
+                    android:id="@+id/tbxCodOperario"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/username_icon"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/poppins_regular"
+                    android:hint="Codigo Operario"
+                    android:inputType="none"
+                    android:maxLines="1"
+                    android:paddingLeft="17dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:textColor="#000000"
+                    android:textColorHint="#000000"
+                    android:textCursorDrawable="@drawable/cursor_color"
+                    android:textSize="12sp" />
+
+            </RelativeLayout>
+
+
+        </LinearLayout>
+        <ImageButton
+            android:id="@+id/btnOpenFind"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginLeft="20dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_baseline_find_in_page_24"/>
+        <LinearLayout
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btnAddOperator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="40dp"
+                android:layout_marginRight="62dp"
+                android:background="@drawable/blue_fill__rounded_color"
+                android:fontFamily="@font/poppins_medium"
+                android:gravity="center"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:text="Agregar"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        >
+
+        <ListView
+            android:id="@+id/list_view"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:paddingLeft="70dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/btnSeveProduction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="62dp"
+            android:layout_marginRight="62dp"
+            android:background="@drawable/blue_fill__rounded_color"
+            android:fontFamily="@font/poppins_medium"
+            android:gravity="center"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Siguiente"
+            android:textColor="#ffffff"
+            android:textSize="12sp"
+            />
+
+
+    </LinearLayout>
+
+
+</LinearLayout>

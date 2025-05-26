@@ -1,0 +1,69 @@
+﻿@page "/viewsearchtercero"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject TerceroService terceroService
+@code {
+
+}
+@if (lists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @*<div class="row">
+        <a href="/ViewTercero/0" class="btn btn-primary btn-sm">Nuevo Empleado</a>
+    </div>*@
+    <div class="row mb-3">                   
+        <div class="form-group col-sm-2">
+            <label for="Filter4 ">Filter</label>
+            <RadzenDropDown class="form-control" @bind-Value="filter.State" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data="@filter.States" />
+        </div>                        
+        <div class="form-group col-sm-2">
+            <label for="Filter4" class="d-block">&nbsp;</label>
+            <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Consultar" type="button" />
+        </div>                    
+    </div>
+    <div class="row">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="20" AllowSorting="true" Data="@lists" TItem="Tercero" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="Tercero" Property="FirstName" Title="Nombre" />
+                <RadzenGridColumn TItem="Tercero" Property="LastName" Title="Apellido" />
+                <RadzenGridColumn TItem="Tercero" Property="NumDocument" Title="Identificacion" />
+
+                <RadzenGridColumn TItem="Tercero" Property="TerceroId" Title="Editar">
+                    <Template Context="data">
+                        <NavLink href="@("/ViewTercero/"+ data.TerceroId)">Editar</NavLink>
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+
+@code {
+    DTOHREmployFilter filter;
+    IEnumerable<Tercero> lists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOHREmployFilter();
+        await this.BtnGenerateRpt();
+    }
+
+    async Task BtnGenerateRpt()
+    {
+        lists = await terceroService.GetEmpleados();
+        switch (filter.State)
+        {
+            case "Activos":
+                lists = lists.Where(t => t.IsActive);
+                break;
+
+            case "Retirados":
+                lists = lists.Where(t => !t.IsActive);
+                break;
+        }
+    }
+}

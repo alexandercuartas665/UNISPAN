@@ -1,0 +1,42 @@
+﻿@page "/ViewReportNovedades"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject NominaService nominaService
+@inject ProduccionService produccionService
+@code {
+
+}
+
+
+<RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@listsNovedades" TItem="NominaNovedad">
+    <Columns>
+        <RadzenGridColumn TItem="NominaNovedad" Sortable="false" Filterable="false" Title="Empleado">
+            <Template Context="data">
+                @(terceroFullName)
+            </Template>
+        </RadzenGridColumn>
+        <RadzenGridColumn TItem="NominaNovedad" Filterable="false" Property="DateInitEndLabelProduction" Sortable="false" Title="Fechas Novedad" />
+        <RadzenGridColumn TItem="NominaNovedad" Filterable="false" Property="HoursNovedad2" Sortable="false" Title="Cant. Horas" />
+        <RadzenGridColumn TItem="NominaNovedad" Filterable="false" Sortable="false" Title="Observación">
+            <Template Context="data">
+                <RadzenTextArea Value="@(data.Observation)" Rows="2" Style="font-size: 10px;line-height: 11px;width:200px;" />
+            </Template>
+        </RadzenGridColumn>
+    </Columns>
+</RadzenGrid>
+
+
+
+@code {
+
+    [Parameter]
+    public List<NominaNovedad> listsNovedades { get; set; }
+    [Parameter]
+    public string terceroFullName { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+}

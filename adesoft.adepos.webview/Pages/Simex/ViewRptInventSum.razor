@@ -1,0 +1,126 @@
+﻿@page "/Simex/ViewRptInventSum"
+@using adesoft.adepos.webview.Data.DTO;
+@using adesoft.adepos.webview.Data.DTO.Simex
+@using adesoft.adepos.webview.Data.Model.Simex
+@using adesoft.adepos.webview.Util
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject SimexService simexService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@code {
+    DTOSimexInventSumFilter filter;
+    ConnectionDB connectionDB;
+    List<DTOGroupBy> GroupBy { get; set; }
+    public string LastUpdateModule { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOSimexInventSumFilter();
+        filter.GroupBy = new List<string>
+        {
+            "InventLocationId",
+            "ItemId"
+        };
+        await this.initComponents();
+    }
+
+    private async Task initComponents()
+    {
+        var lum = await simexService.GetLastUpdateModule("InventSum");
+        if (lum is null)
+            LastUpdateModule = "No registrada...";
+        else
+            LastUpdateModule = lum.LastUpdateModule_At.ToString();
+
+        this.GroupBy = new List<DTOGroupBy>()
+        {
+            new DTOGroupBy
+            {
+                GroupById = "InventLocationId",
+                Description = "Bodega"
+            },
+            new DTOGroupBy
+            {
+                GroupById = "ItemId",
+                Description = "Producto"
+            }
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateRpt();
+        }
+    }
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async Task BtnGenerateRpt()
+    {
+
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await simexService.AddInventSumFilter(filter);
+
+        string RptOpt = this.filter.GroupBy.Count().ToString();
+
+
+        string paramurl = "RptSimexInventSum.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + RptOpt;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                REPORTE INVENTARIO
+            </div>
+            <div class="col-4">
+                <label>Última actualización:</label>
+                <span>@LastUpdateModule</span>
+            </div>
+        </div>        
+    </div>
+    <div class="card-body">
+        
+        <div class="form-row">
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label for="filterBy">Agrupar por:</label>
+                    <RadzenDropDown id="filterBy" class="form-control" @bind-Value="filter.GroupBy" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@GroupBy" TextProperty="Description" ValueProperty="GroupById" />
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label for="searchBy">Buscar por:</label>
+                    <RadzenTextBox  id="searchBy" class="form-control" @bind-Value="filter.SearchBy" />
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label for="btnGenerate" class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" id="btnGenerate" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+
+            <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
+
+        </div>
+    </div>
+</div>
+

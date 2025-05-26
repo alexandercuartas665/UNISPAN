@@ -1,0 +1,163 @@
+﻿@page "/ViewCompany/{CompanyId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject CompanyService companyService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+
+<div class="card">
+    <div class="card-header">
+        Sede
+    </div>
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formcompany" id="formcompany" Method="post" class="col-md-12" TItem="Company" Data="@model" Submit="@OnSubmit">
+
+            <div class="form-row">
+                <div class="form-group col-md-3  ">
+                    <input class="btn btn-success" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-3 ">
+                    <a class="btn btn-success" href="/viewsearchcompany">Buscar</a>
+                </div>
+            </div>
+            <RadzenFieldset Text="Informacion Sede">
+                @*<RadzenAccordionItem Text="Employees" Icon="account_box">
+                Details for Employees
+            </RadzenAccordionItem>
+            <RadzenAccordionItem Text="Customers" Icon="accessibility">
+                Details for Customers
+            </RadzenAccordionItem>*@
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputName">Razon social</label>
+                        <RadzenTextBox Name="inputName" @bind-Value="model.Name" AutoComplete="false" ReadOnly="(model.CompanyId==0?false:true)" class="form-control" placeholder="Nombre" />
+                        <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputLastName">Nit o Cedula</label>
+                        <RadzenTextBox Name="inputLastName" @bind-Value="model.Nit" ReadOnly="(model.CompanyId==0?false:true)" AutoComplete="false" class="form-control" placeholder="Nit o CEdula" />
+                        <RadzenRequiredValidator Component="inputLastName" Text="Documento es requerido" Popup="false" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+            <RadzenFieldset Text="Contacto">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputPhone1">Telefono </label>
+                        <RadzenTextBox Name="inputPhone1" TValue="decimal" ReadOnly="(model.CompanyId==0?false:true)" AutoComplete="false" @bind-Value="model.Phone1" class="form-control" Placeholder="Telefono" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputEmail">Correo</label>
+                        <RadzenTextBox Name="inputEmail" @bind-Value="model.Email" ReadOnly="(model.CompanyId==0?false:true)" AutoComplete="false" class="form-control" Placeholder="Correo" />
+                        <RadzenRequiredValidator Component="inputEmail" Text="Correo es requerido" Popup="false" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+            <RadzenFieldset Text="Parametros">
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <label for="inputComision">% de Comision por credito</label>
+                        <RadzenNumeric Name="inputComision" @bind-Value="model.ComisionCredit" ReadOnly="(model.CompanyId==0?false:true)" AutoComplete="false" class="form-control" Placeholder="% Comision" />
+                        <RadzenRequiredValidator Component="inputComision" Text="Correo es requerido" Popup="false" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+            <RadzenFieldset Text="Acceso a la cuenta">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputUser">Usuario </label>
+                        <RadzenTextBox Name="inputUser" TValue="decimal" AutoComplete="false" @bind-Value="model.Usuario" class="form-control" Placeholder="Usuario" />
+                        <RadzenRequiredValidator Component="inputUser" Text="Usuario es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputPassword">Password </label>
+                        <RadzenTextBox Name="inputPassword" @bind-Value="model.Password" AutoComplete="false" class="form-control" Placeholder="Correo" />
+                        <RadzenRequiredValidator Component="inputPassword" Text="Password es requerido" Popup="false" />
+                    </div>
+                </div>
+
+            </RadzenFieldset>
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    ElementReference Fileupload;
+    [Parameter]
+    public string CompanyId { get; set; }
+
+    Company model = new Company();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        if (long.Parse(CompanyId) != 0)
+        {
+
+            model = await companyService.SelectById(new Company() { CompanyId = long.Parse(CompanyId) , TransOption=2 });
+        }
+
+    }
+
+    public void Changed()
+    {
+
+    }
+
+    public void ChangedFile()
+    {
+        Console.WriteLine(Fileupload.Id);
+        JSRuntime.InvokeAsync<string>("$.fn.GetFilesInput", Fileupload);
+
+
+        //string source = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABG4...YII=";
+        //string base64 = source.Substring(source.IndexOf(',') + 1);
+        //byte[] data = Convert.FromBase64String(base64);
+    }
+
+
+    async void OnSubmit(Company para)
+    {
+        Company resp;
+        if (model.CompanyId != 0)
+        {
+            model.TransOption = 2;
+            resp = await companyService.Update(model);
+            model.CompanyId = resp.CompanyId;
+        }
+        else
+        {
+            resp = await companyService.Create(model);
+        }
+        model.TypeAPP = "CREDITO";
+        if (resp.TransactionIsOk)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = resp.MessageResponse, Duration = 4000 });
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = resp.MessageResponse, Duration = 4000 });
+        }
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+}

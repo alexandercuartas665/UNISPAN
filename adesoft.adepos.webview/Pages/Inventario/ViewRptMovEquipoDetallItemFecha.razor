@@ -1,0 +1,204 @@
+﻿@page  "/ViewRptMovEquipoDetallItemFecha"
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Util
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject BiableService biableService
+@inject QuantifyService quantifyService
+@inject ItemService itemService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@inject DialogService dialogService
+@code {
+    List<Item> itemsSearch;
+    public DTOFiltersCompras filter { get; set; }
+    ConnectionDB connectionDB;
+    List<DTOMonth> ListMonths { get; set; }
+    List<DTOYear> ListYears { get; set; }
+    string CodigoItemSelected = string.Empty;
+    string ItemSelected = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        //model = new DTOViewRptCompra();
+        //model.Proveedores = await biableService.selectAll(new DTOTercero());
+        ListYears = await quantifyService.SelectAnosMovEquiposAlquiler();
+        itemsSearch = await itemService.selectAll(new Item() { TransOption = 1 });
+        filter = new DTOFiltersCompras();
+        filter.TypeReportId = 7;
+        ListMonths = DTOViewRptCompra.GetMonths();
+
+        long yearnow = DateTime.Now.Year;
+        if (ListYears.Where(x => x.IdYear == yearnow).Count() > 0)
+            ((IList<long>)filter.multipleValuesYear).Add(yearnow);
+
+        filter.DateInit = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        filter.DateEnd = filter.DateInit.Value.AddMonths(1).AddDays(-1);
+
+        long yearbefore = yearnow - 1;
+        if (ListYears.Where(x => x.IdYear == yearbefore).Count() > 0)
+            ((IList<long>)filter.multipleValuesYear).Add(yearbefore);
+
+        ListMonths.Select(x => x.IdMonth).ToList().ForEach(t => ((IList<long>)filter.multipleValuesMonth).Add(t));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+            //((IList<string>)filter.Sedes).Add("001");
+
+
+            //((IList<string>)filter.COs).Add("00101");
+
+            //await BtnGenerateRpt();
+        }
+    }
+
+
+
+
+    void ChangueTypeReport(long value)
+    {
+        filter.multipleValuesYear = new List<long>();
+        if (value == 9)
+        {
+            long[] arrayl = ListYears.Select(x => x.IdYear).ToArray();
+
+            ((List<long>)filter.multipleValuesYear).AddRange(arrayl);
+        }
+        else if (value == 8)
+        {
+            long yearnow = DateTime.Now.Year;
+            if (ListYears.Where(x => x.IdYear == yearnow).Count() > 0)
+                ((IList<long>)filter.multipleValuesYear).Add(yearnow);
+
+            long yearbefore = yearnow - 1;
+            if (ListYears.Where(x => x.IdYear == yearbefore).Count() > 0)
+                ((IList<long>)filter.multipleValuesYear).Add(yearbefore);
+        }
+
+    }
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async Task BtnGenerateRpt()
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+        if ((filter.multipleValuesYear.Count() == 0
+            || filter.multipleValuesMonth.Count() == 0) && filter.TypeReportId != 7)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+        if (string.IsNullOrEmpty(CodigoItemSelected))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+        filter.Item = CodigoItemSelected;
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+
+        await quantifyService.AddFilterCompras(filter);
+
+        string paramurl = "RptQuantify.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + filter.TypeReportId;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+
+    async void searchItem()
+    {
+        List<Item>
+    itemsSearch = await itemService.selectAll(new Item() { TransOption = 5 });
+        dialogService.Open<CtrlSearchItemProduct>("Busqueda", new Dictionary<string, object>() { { "lists", itemsSearch }, { "viewItem", this } }, new DialogOptions() { Width = "800px", Height = "530px", Left = "calc(50% - 400px)", Top = "10px" });
+    }
+    public void SelectSearchItem(Item itemselect)
+    {
+        dialogService.Close();
+        CodigoItemSelected = itemselect.Barcode;
+        ItemSelected = itemselect.BarcodeAndName;
+        StateHasChanged();
+    }
+}
+
+
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        MOVIMIENTO EQUIPO ALQUILER ITEM DETALLADO
+    </div>
+    <div class="card-body">
+
+
+        <div class="form-row">
+            <div class="col-md-5">
+                <label for="Filter1">Tipo Reporte</label>
+                <RadzenRadioButtonList @bind-Value="@filter.TypeReportId" TValue="long" Change="@ChangueTypeReport">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Diario" TValue="long" Value="7" />
+                        <RadzenRadioButtonListItem Text="Mensual" TValue="long" Value="8" />
+                        <RadzenRadioButtonListItem Text="Anual" TValue="long" Value="9" />
+                    </Items>
+                </RadzenRadioButtonList>
+            </div>
+            @*<div class="form-group col-md-3">
+                    <label for="Filter4">Referencia</label>
+                    <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="CodigoItemSelected" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@itemsSearch" TextProperty="BarcodeAndName" ValueProperty="Barcode" />
+                </div>*@
+           
+
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label class="d-block">&nbsp;</label>
+                <input type="text" class="form-control" readonly="readonly" placeholder="Producto" @bind-value="ItemSelected" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" @onclick="searchItem" value="Buscar Producto" type="button" />
+            </div>
+            @if (filter.TypeReportId == 8 || filter.TypeReportId == 9)
+            {
+                <div class="form-group col-md-2">
+                    <label for="Filter4">Año</label>
+                    <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.multipleValuesYear" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@ListYears" TextProperty="Name" ValueProperty="IdYear" />
+                </div>
+                @if (filter.TypeReportId == 8)
+                {
+                    <div class="form-group col-md-2">
+                        <label for="Filter4">Meses</label>
+                        <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.multipleValuesMonth" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@ListMonths" TextProperty="Name" ValueProperty="IdMonth" />
+                    </div>
+                }
+            }
+            else if (filter.TypeReportId == 7)
+            {
+                <div class="form-group col-md-2">
+                    <label for="FilterDateinit">Fecha Inicio</label>
+                    <RadzenDatePicker Name="FilterDateinit" DateFormat="MM/dd/yyyy" @bind-Value="@filter.DateInit" />
+                </div>
+
+                <div class="form-group col-md-2">
+                    <label for="FilterDateend">Fecha Final</label>
+                    <RadzenDatePicker Name="FilterDateend" DateFormat="MM/dd/yyyy" @bind-Value="@filter.DateEnd" />
+                </div>
+            }
+
+            <div class="form-group col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" />
+            </div>
+        </div>
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height:450px;width:100%;"></iframe>
+        </div>
+    </div>
+</div>
+

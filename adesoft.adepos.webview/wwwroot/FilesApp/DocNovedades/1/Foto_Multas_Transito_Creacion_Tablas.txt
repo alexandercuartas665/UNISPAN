@@ -1,0 +1,91 @@
+FOTO MULTAS DE TRÁNSITO - CREACIÓN GRÁFICA DE TABLAS
+====================================================
+
+
+CONTENIDO DE LA GUÍA
+====================
+1.Creación gráfica de tablas.
+2.Requerimientos complementarios.
+3.Inserción de datos.
+
+
+1.CREACIÓN GRÁFICA DE TABLAS
+============================
+1.1.Utilizando Oracle APEX a través de la opción: "SQL Workshop->Object Browser", de forma gráfica (sin ejecutar comandos SQL, 
+    sino que únicamente de forma gráfica) usted debe crear las tablas que se describen a continuación. Recuerde el significado 
+    de las convenciones:
+
+  Símbolo	Significado
+  =======	=====================================================
+     #		Significa que el campo es llave primaria.
+     *		Significa que el campo es requerido, o sea: NOT NULL.
+     o		Significa que el campo es opcional.
+    FK		Significa que el campo es llave foránea.
+
+Y estas son las tablas a crear:
+
+PP_IDIOMA
+ #CODIGO	NUMBER	Debe ser un número consecutivo generado automáticamente a través de una secuencia
+ *NOMBRE	VARCHAR2(100)
+
+PP_PAIS
+ #CODIGO	NUMBER	Debe ser un número consecutivo generado automáticamente a través de una secuencia
+ *NOMBRE	VARCHAR2(100)
+ *CONTINENTE	CHAR(2)
+ oCOD_IDIOMA	NUMBER (FK: Proviene de la tabla: "PP_IDIOMA")
+
+PP_DEPARTAMENTO
+ #CODIGO	NUMBER	Debe ser un número consecutivo generado automáticamente a través de una secuencia
+ *NOMBRE	VARCHAR2(100)
+ *COD_PAIS	NUMBER (FK: Proviene de la tabla: "PP_PAIS")
+ oPRINCIPAL	CHAR(1)
+
+PP_CIUDAD
+ #CODIGO	NUMBER	Debe ser un número consecutivo generado automáticamente a través de una secuencia
+ *NOMBRE	VARCHAR2(100)
+ *COD_DPTO	NUMBER (FK: Proviene de la tabla: "PP_DEPARTAMENTO")
+ oCAPITAL	CHAR(1)
+
+PP_PICO_PLACA
+ #CONSECUTIVO	NUMBER	Debe ser un número consecutivo generado automáticamente a través de una secuencia
+ *COD_CIUDAD	NUMBER (FK: Proviene de la tabla: "PP_CIUDAD")
+ *TIPO_SERVICIO	CHAR(2)
+ *DIA		CHAR(2)
+ *ULTIMO_DIGITO	CHAR(1)
+
+
+2.REQUERIMIENTOS COMPLEMENTARIOS
+================================
+2.1.La tabla "PP_PAIS" en el campo "CONTINENTE" solamente debe aceptar los siguientes cinco (5) valores: EU, AS, AF, OC, AM 
+    (Significan: Cada uno de los cinco continentes). Cualquier otro valor que se intente ingresar, deberá ser rechazado 
+    automáticamente por la tabla. Esto se resuelve creando un CHECK CONSTRAINT en la tabla.
+
+2.2.La tabla "PP_DEPARTAMENTO" en el campo "PRINCIPAL" solamente debe aceptar los siguientes dos (2) valores: S, N 
+    (Significan: Si, No). Cualquier otro valor que se intente ingresar, deberá ser rechazado automáticamente por la tabla. 
+    Esto se resuelve creando un CHECK CONSTRAINT en la tabla.
+
+2.3.La tabla "PP_CIUDAD" en el campo "CAPITAL" solamente debe aceptar los siguientes dos (2) valores: S, N (Significan: Si, No). 
+    Cualquier otro valor que se intente ingresar, deberá ser rechazado automáticamente por la tabla. Esto se resuelve creando un 
+    CHECK CONSTRAINT en la tabla.
+
+2.4.La tabla "PICO_PLACA" en el campo "TIPO_SERVICIO" solamente debe aceptar los siguientes dos (2) valores: PU, PR (Significan: 
+    Servicio Público, Servicio Privado). Cualquier otro valor que se intente ingresar, deberá ser rechazado automáticamente por 
+    la tabla. Esto se resuelve creando un CHECK CONSTRAINT en la tabla.
+
+2.5.La tabla "PICO_PLACA" en el campo "DIA" solamente debe aceptar los siguientes siete (7) valores: DO, LU, MA, MI, JU, VI, SA 
+    (Significan: Cada uno de los días de la semana). Cualquier otro valor que se intente ingresar, deberá ser rechazado 
+    automáticamente por la tabla. Esto se resuelve creando un CHECK CONSTRAINT en la tabla.
+
+2.6.La tabla "PICO_PLACA" en el campo "ULTIMO_DIGITO" solamente debe aceptar los siguientes diez (10) valores: 0, 1, 2, 3, 4, 
+    5, 6, 7, 8, 9 (Significan: Los números en los que finaliza una placa vehicular). Cualquier otro valor que se intente ingresar, 
+    deberá ser rechazado automáticamente por la tabla. Esto se resuelve creando un CHECK CONSTRAINT en la tabla.
+
+
+3.INSERCIÓN DE DATOS
+====================
+3.1.Conéctese a Oracle APEX y a través de la opción: "SQL Workshop->Object Browser", inserte gráficamente veinte (20) registros 
+    dentro de la tabla: "PICO_PLACA". Dentro de esos registros deben existir: tres ciudades diferentes, también deben existir: 
+    servicio público, servicio privado, y finalmente deben existir: los siete días de la semana. Puede buscar en Internet para 
+    conocer cuáles son los días de pico y placa tanto en Cali, como en otras ciudades. Las siguientes direcciones le pueden servir:
+    http://www.diagnosticentrodelvalle.com.co/publicaciones/129599/pico-y-placa--cali-2019/
+    https://www.pyphoy.com/cali/particulares

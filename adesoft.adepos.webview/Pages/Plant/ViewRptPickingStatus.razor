@@ -1,0 +1,66 @@
+﻿@using adesoft.adepos.webview.Data.Model.PL;
+@using adesoft.adepos.webview.Data.DTO.PL;
+@using adesoft.adepos.webview.Data.Interfaces;
+
+@inject IHttpContextAccessor httpContextAccessor
+@inject Data.Interfaces.IPlantService plantService
+@inject IJSRuntime JSRuntime
+
+@code {
+    ConnectionDB connectionDB;
+    DTOPlantFilter plantFilter = new DTOPlantFilter();
+
+    [Parameter]
+    public DTOOrder OrderSelected { get; set; }
+
+    public string ZoneProductId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateRpt();
+        }
+    }
+
+    async Task BtnGenerateRpt()
+    {
+        //this.OrderSelected = this.plantService.GetOrder(this.OrderSelected.OrderType, this.OrderSelected.OrderId);
+
+        string guidfilter = Guid.NewGuid().ToString();
+        plantFilter.FilterId = guidfilter;
+        plantFilter.OrderSelected = this.OrderSelected;
+        plantService.AddPlantFilter(plantFilter);
+
+        string paramurl = $"RptPlantReport.aspx?CuentaN={connectionDB.CuentaN}&filterObj={guidfilter}&rptOpt={3}";
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+}
+
+
+<div class="container-fluid">
+    <div class="form-row">
+        <div class="form-group col-md-2">
+            <label for="zoneProducts">Zonas</label>
+            <RadzenDropDown Name="zoneProducts" TValue="string" @bind-Value="plantFilter.ZoneProductId" class="form-control" AllowClear="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@OrderSelected.ZoneProducts" TextProperty="Name" ValueProperty="ZoneProductId" />
+        </div>
+        <div class="form-group col-sm-2">
+            <label for="Filter4" class="d-block">&nbsp;</label>
+            <div class="btn-group" role="group" aria-label="button group">
+                <button class="btn btn-primary" @onclick="BtnGenerateRpt">Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+    <div class="form-row">
+        <iframe id="iframeReport" frameborder="0" style="height: 76vh; width: 100%; padding: 0px;"></iframe>
+    </div>
+</div>

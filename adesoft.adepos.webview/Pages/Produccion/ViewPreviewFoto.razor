@@ -1,0 +1,25 @@
+﻿@page "/ViewPreviewFoto"
+
+@code {
+
+    [Parameter]
+    public string UrlPhoto { get; set; }
+
+    [Parameter]
+    public Production production { get; set; }
+
+    [Parameter]
+    public DetailProduction DetailProduction { get; set; }
+
+    [Parameter]
+    public object objViewCall { get; set; }
+
+
+}
+
+<div class="row justify-content-center">
+    <a href="@UrlPhoto" target="_blank" download=""><span class="fat fa-file-download"></span>&nbsp;Descargar</a>
+</div>
+<div class="row justify-content-center">
+    <img src="@UrlPhoto" class="img-fluid" alt="Responsive image" />
+</div>

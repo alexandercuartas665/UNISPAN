@@ -1,0 +1,316 @@
+﻿@page "/ViewLedgerEstimate";
+@using Newtonsoft.Json
+@using Data.Interfaces;
+@using System.Globalization;
+
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject ILedgerBalanceService ledgerBalanceService;
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    List<CommonData> months;
+    List<CommonData> categories;
+    List<CommonDataTable> commonDataTable;
+    List<LedgerEstimate> ledgerEstimates;
+
+    protected override void OnInitialized()
+    {
+        this.categories = new List<CommonData>()
+{
+            new CommonData()
+            {
+                IdStr = "Sector",
+                Description = "Sector"
+            },
+            new CommonData()
+            {
+                IdStr = "ZonePpal",
+                Description = "Zona"
+            },
+            new CommonData()
+            {
+                IdStr = "Administrator",
+                Description = "Administrador"
+            }
+        };
+        this.Year = 0;
+        this.months = new List<CommonData>()
+{
+            new CommonData()
+            {
+                Id = 1,
+                Description = "Enero"
+            },
+            new CommonData()
+            {
+                Id = 2,
+                Description = "Febrero"
+            },
+            new CommonData()
+            {
+                Id = 3,
+                Description = "Marzo"
+            },
+            new CommonData()
+            {
+                Id = 4,
+                Description = "Abril"
+            },
+            new CommonData()
+            {
+                Id = 5,
+                Description = "Mayo"
+            },
+            new CommonData()
+            {
+                Id = 6,
+                Description = "Junio"
+            },
+            new CommonData()
+            {
+                Id = 7,
+                Description = "Julio"
+            },
+            new CommonData()
+            {
+                Id = 8,
+                Description = "Agosto"
+            },
+            new CommonData()
+            {
+                Id = 9,
+                Description = "Septiembre"
+            },
+            new CommonData()
+            {
+                Id = 10,
+                Description = "Octubre"
+            },
+            new CommonData()
+            {
+                Id = 11,
+                Description = "Noviembre"
+            },
+            new CommonData()
+            {
+                Id = 12,
+                Description = "Diciembre"
+            }
+        };
+        this.CategoryId = "";
+
+
+        this.SetModel();
+    }
+
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string CategoryId { get; set; }
+
+    public LedgerEstimate model { get; set; }
+
+    void ChangeYear(int year)
+    {
+        this.Year = year;
+        this.SetModel();
+    }
+
+    void ChangeMonth(int month)
+    {
+        this.Month = month;
+        this.SetModel();
+    }
+
+    void ChangeCategory(string categoryId)
+    {
+        this.CategoryId = categoryId;
+        if (!string.IsNullOrEmpty(this.CategoryId))
+            this.commonDataTable = ledgerBalanceService.GetCommonDataTable(this.CategoryId);
+        this.SetModel();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    void SetModel()
+    {
+        if (this.Year != 0 && this.Month != 0 && this.CategoryId != "")
+        {
+            if (this.Year != model.Year || this.Month != this.model.Month || CategoryId != model.CategoryId)
+            {
+                ledgerEstimates = ledgerBalanceService.GetLedgerEstimates(this.Year, this.Month, this.CategoryId);                
+                    
+                this.model = new LedgerEstimate()
+                {
+                    Year = this.Year,
+                    Month = this.Month,
+                    CategoryId = this.CategoryId
+                };                
+            }
+        }
+        else
+        {
+            this.model = new LedgerEstimate();
+        }
+    }
+
+    void AddLedgerEstimate()
+    {
+        if (model.Year == 0 || model.Month == 0 || model.CategoryId == "" || model.CommonDataId == "" || model.AmountEstimate == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+            return;
+        }
+
+        if ((model.Id == 0) && (ledgerEstimates.Where(x => x.Year == model.Year && x.Month == model.Month && x.CategoryId == model.CategoryId && x.CommonDataId == model.CommonDataId).Count() > 0))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El estimado ingresado ya existe.", Duration = 4000 });
+            return;
+        }
+
+        model = ledgerBalanceService.CreateOrUpdate(model);
+
+        ledgerEstimates = ledgerBalanceService.GetLedgerEstimates(this.Year, this.Month, this.CategoryId);
+
+        this.model = new LedgerEstimate()
+        {
+            Year = this.Year,
+            Month = this.Month,
+            CategoryId = this.CategoryId
+        };
+    }
+
+    void RemoveLedgerEstimate(LedgerEstimate ledgerEstimate)
+    {
+        try
+        {
+            var isRemove = ledgerBalanceService.RemoveLedgerEstimate(ledgerEstimate);
+            if (isRemove)
+            {
+                ledgerEstimates.Remove(ledgerEstimate);
+            }
+            else
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El estimado no pudo ser eliminado, por favor intenta de nuevo.", Duration = 4000 });
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El estimado no pudo ser eliminado, por favor intenta de nuevo.", Duration = 4000 });
+            return;
+        }
+
+    }
+
+    void EditLedgerEstimate(LedgerEstimate ledgerEstimate)
+    {
+        this.model = ledgerEstimate;
+    }
+
+    async void ReplicateLastMonth()
+    {
+        if (this.Year == 0 || this.Month == 0 || this.CategoryId == "")
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los filtros son obligatorios.", Duration = 4000 });
+            return;
+        }
+        int lastYear = this.Year;
+        int lastMonth = this.Month - 1;
+        if (lastMonth == 0)
+        {
+            lastYear = lastYear - 1;
+            lastMonth = 12;
+        }
+
+        var lastLedgerEstimates = ledgerBalanceService.GetLedgerEstimates(lastYear, lastMonth, this.CategoryId);
+        foreach (var lastLedgerEstimate in lastLedgerEstimates)
+        {
+            lastLedgerEstimate.Id = 0;
+            lastLedgerEstimate.Year = this.Year;
+            lastLedgerEstimate.Month = this.Month;
+            this.ledgerBalanceService.CreateOrUpdate(lastLedgerEstimate);
+        }
+
+        lastLedgerEstimates = ledgerBalanceService.GetLedgerEstimates(this.Year, this.Month, this.CategoryId);
+    }
+
+}
+
+<div class="card">
+    <div class="card-header">
+        ESTIMADO CONTABLE
+
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="Filter4">Año</label>
+                <RadzenNumeric TValue="int" class="form-control" ValueChanged="ChangeYear" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter4">Mes</label>
+                <RadzenDropDown AllowFiltering="true" TValue="int" ValueChanged="ChangeMonth" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@months" ValueProperty="Id" TextProperty="Description" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter4">Categoria</label>
+                <RadzenDropDown AllowFiltering="true" TValue="string" ValueChanged="ChangeCategory" class="form-control" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@categories" ValueProperty="IdStr" TextProperty="Description" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-warning btn-sm" @onclick="ReplicateLastMonth" value="Replicar datos mes anterior" type="button" />
+                </div>
+            </div>
+        </div>
+        <RadzenFieldset Text="Presupuestos">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="Filter4">Asignar a</label>
+                    <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="model.CommonDataId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@commonDataTable" TextProperty="Description" ValueProperty="Id" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Presupuesto</label>
+                    <RadzenNumeric Name="value" TValue="decimal" Format="c2" Currency="USD" @bind-Value="model.AmountEstimate" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="d-block">&nbsp;</label>
+                    <input class="btn btn-success btn-sm" @onclick="AddLedgerEstimate" value="Guardar" type="button" />
+                </div>
+            </div>
+            <div class="form-row">
+
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@ledgerEstimates" TItem="LedgerEstimate" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="LedgerEstimate" Property="CommonDataName" Title="Asignado">
+                            <Template Context="data">
+                                @(data.CommonDataName)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="LedgerEstimate" Property="Amount" Title="Valor">
+                            <Template Context="data">
+                                @(data.AmountEstimate.ToString("C", new CultureInfo("en-us", false)))
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="LedgerEstimate" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { EditLedgerEstimate(data); })">Editar</NavLink>
+                                <br />
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { RemoveLedgerEstimate(data); })">Eliminar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

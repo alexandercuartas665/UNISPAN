@@ -1,0 +1,93 @@
+﻿@page "/HR/ViewHRDashboard/"
+@using  adesoft.adepos.webview.Controller
+@using System.Linq
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@using Radzen.Blazor.Rendering
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject DialogService dialogService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject NominaService nominaService
+@code {
+
+    DTOHREmployFilter filter;
+    ConnectionDB connectionDB;
+
+    List<DTOChartData> areasSalary;
+    List<DTOChartData> areasCount;
+
+    public long ValueYear { get; set; }
+    public long ValueMonth { get; set; }
+    string mesLbl = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOHREmployFilter();
+
+        this.filter.ToDate = DateTime.Now;
+        this.filter.FromDate = DateTime.MinValue;        
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateDashboard();
+        }
+    }
+
+    //async void BtnGenerateDashboard()
+    //{
+    //    this.areasSalary = await nominaService.GetChartData(this.filter.FromDate, this.filter.ToDate, "Salary");
+    //    this.areasCount = await nominaService.GetChartData(this.filter.FromDate, this.filter.ToDate, "Count");
+    //}
+
+    async Task BtnGenerateDashboard()
+    {
+        string RptOpt = "Dashboard";
+        filter.ReportName = RptOpt;
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await nominaService.AddEmployFilter(filter);
+
+        string paramurl = "RptHRViewReport.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + RptOpt;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                DASHBOARD GESTIÓN HUMANA
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="FilterDateinit">Fecha Inicio</label>
+                <RadzenDatePicker Name="FilterDateinit" DateFormat="MM/dd/yyyy" @bind-Value="@filter.FromDate" TValue="DateTime" />
+            </div>
+            <div class="form-group col-md-2">
+                <label for="FilterDateend">Fecha Final</label>
+                <RadzenDatePicker Name="FilterDateend" DateFormat="MM/dd/yyyy" @bind-Value="@filter.ToDate" TValue="DateTime" />
+            </div>
+            <div class="form-group col-md-3">
+                <label for="Filter4" class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" @onclick="BtnGenerateDashboard" value="Generar" type="button" />
+            </div>
+        </div>
+
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
+        </div>
+    </div>
+</div>

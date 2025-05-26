@@ -1,0 +1,44 @@
+﻿@page "/viewsearchnominadates"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject NominaService nominaService
+@code {
+
+}
+@if (lists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <a href="/ViewCreateProgramation/0" class="btn btn-primary">Nuevo Periodo</a>
+    </div>
+
+    <div class="row">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@lists" TItem="NominaProgramation" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="NominaProgramation" Property="DayInitLabel" Sortable="false" Title="Fecha Inicial" />
+                <RadzenGridColumn TItem="NominaProgramation" Property="DayEndLabel" Sortable="false" Title="Fecha Final" />
+                <RadzenGridColumn TItem="NominaProgramation" Property="Description" Title="Descripcion Periodo">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="NominaProgramation" Property="NominaProgramationId" Title="">
+                    <Template Context="data">
+                        <NavLink href="@("/viewcreateprogramation/"+data.NominaProgramationId)">Ver</NavLink>
+                    </Template>
+                </RadzenGridColumn>
+
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+
+@code {
+    IEnumerable<NominaProgramation> lists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lists = await nominaService.selectAll(new NominaProgramation());
+    }
+}

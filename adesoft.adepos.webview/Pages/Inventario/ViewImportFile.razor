@@ -1,0 +1,61 @@
+﻿@page "/ViewImportFile"
+
+@inject TransactionGenericService transactionservice
+@inject NotificationService notificationService
+@inject LogisticsService logisticsService;
+@inject DialogService dialogService
+
+@code {
+
+    [Parameter]
+    public TransactionGeneric Model { get; set; }
+
+    [Parameter]
+    public ViewDashBoardDispatchOrder callView { get; set; }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void OnSubmit(TransactionGeneric transaction)
+    {
+        if (string.IsNullOrEmpty(transaction.AuxTest))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe adjuntar la orden de despacho.", Duration = 4000 });
+            return;
+        }
+
+        dialogService.Close();
+
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando Importacion" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            transaction = await transactionservice.ImportFile(transaction);
+
+            callView.UpdateCardByDispatch(transaction);
+
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });            
+        });
+    }
+}
+
+<RadzenTemplateForm name="formOrderImport" id="formOrderImport" Method="post" class="col-md-12" TItem="TransactionGeneric" Data="@Model" Submit="@OnSubmit">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="form-group">
+                <label for="inputfileDocument">Documento Orden despacho</label>
+                <RadzenFileInput Name="inputfileDocument" @bind-Value="@Model.AuxTest" Accept="*" ChooseText="Documento" TValue="string" />
+            </div>
+        </div>
+    </div>
+    <div class="row pt-3">
+        <div class="col-md-12 text-end">
+            <RadzenButton ButtonType="ButtonType.Submit" Variant="Variant.Flat" Text="Import" Style="width: 120px; float: right"></RadzenButton>            
+        </div>
+    </div>
+</RadzenTemplateForm>

@@ -1,0 +1,459 @@
+﻿@page "/ViewOrder/{strFromDate}/{strToDate}/{orderType:int}/{orderId:long}"
+
+@using adesoft.adepos.webview.Data.Model.PL;
+@using adesoft.adepos.webview.Data.DTO.PL;
+@using adesoft.adepos.webview.Data.Interfaces;
+@using Newtonsoft.Json
+
+@inject DialogService dialogService;
+@inject LogisticsService logisticsService;
+@inject NavigationManager navigationManager;
+@inject NotificationService notificationService;
+@inject IJSRuntime JSRuntime
+@inject IPlantService plantService;
+@inject CompanyService companyService
+@inject SecurityService securityService
+
+@code {
+    [Parameter]
+    public string strFromDate { get; set; }
+
+    [Parameter]
+    public string strToDate { get; set; }
+
+    [Parameter]
+    public int orderType { get; set; }
+
+    [Parameter]
+    public long orderId { get; set; }
+
+    string title = "Order";
+
+    private DTOOrder model;
+    public List<DTOOrderPallet> pallets = new List<DTOOrderPallet>();
+    public List<DTOOrderPallet> filterOrderPallets = new List<DTOOrderPallet>();
+    public List<DTOOrderProductVersion> productVersions = new List<DTOOrderProductVersion>();
+    DTOOrderProductVersion productVersionSelected = null;
+
+    public List<DTOLogisticMasterData> customers = new List<DTOLogisticMasterData>();
+    public List<DTOLogisticMasterData> vendors = new List<DTOLogisticMasterData>();
+    public List<DTOLogisticMasterData> salesPersons = new List<DTOLogisticMasterData>();
+    public List<DTOLogisticMasterData> modules = new List<DTOLogisticMasterData>();
+    public List<DTOLogisticMasterData> cities = new List<DTOLogisticMasterData>();
+    public List<DTOLogisticMasterData> transports = new List<DTOLogisticMasterData>();
+    public List<DTOLogisticMasterData> vehicleTypes = new List<DTOLogisticMasterData>();
+
+    public List<DTOZoneProduct> zoneProducts = new List<DTOZoneProduct>();
+    public string zoneProductId = "";
+
+    public DateTime? time;
+
+    private bool reportPalletInfo = false;
+    private bool cancelPallet = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.model = this.plantService.GetOrder((OrderType)this.orderType, this.orderId);
+        this.pallets = this.plantService.GetOrderPallets(this.orderId);        
+        this.OnFilterOrderPallets();
+        this.productVersions = this.plantService.GetOrderProductVersions(this.orderId);
+        this.selectProductVersion(this.productVersions.FirstOrDefault());
+
+        if ((OrderType)this.orderType == OrderType.Dispatch)
+        {
+            this.time = this.model.DispatchDateTime;
+            this.title = string.Format("{0} de despacho", title);
+        }
+        else if ((OrderType)this.orderType == OrderType.Return)
+        {
+            this.time = this.model.ReturnDateTime;
+            this.title = string.Format("{0} de devolución", title);
+        }
+
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+
+            this.customers = await logisticsService.GetCustomers();
+            //this.vendors = await logisticsService.GetVendors();
+            this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+            this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
+            this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
+            this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+            this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+
+        await this.GetSecurity();
+    }
+
+    public void Cancel()
+    {
+        navigationManager.NavigateTo(string.Format("ViewOrders/{0}/{1}", strFromDate, strToDate));
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }   
+
+    public async void SaveOrder()
+    {
+        try
+        {
+            if (orderType == 1)
+            {
+                if (model.OrderNum == "" || model.CustomerAccount == "" || model.Works == "")
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+                    return;
+                }
+            }
+            else
+            {
+                if (model.Works == "")
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+                    return;
+                }
+            }
+
+            if ((OrderType)this.orderType == OrderType.Dispatch)
+            {
+                this.model.DispatchDateTime = this.model.DispatchDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
+            }
+            else if ((OrderType)this.orderType == OrderType.Return)
+            {
+                this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
+            }
+
+            this.model = plantService.UpdateOrder(model);
+
+            this.Cancel();
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+        }
+    }
+
+    void selectProductVersion(DTOOrderProductVersion productVersion) 
+    {
+        this.productVersionSelected = this.plantService.GetOrderProductVersion(productVersion.OrderProductVersionId);
+
+        StateHasChanged();
+    }
+
+    async Task OpenMenu(DTOOrderPallet orderPallet, string optionSelected)
+    {
+        if(optionSelected.Equals("delete")) 
+        {
+            await this.DeletePallet(orderPallet);
+        }
+        else if(optionSelected.Equals("print"))
+        {
+            this.GenerateReport(orderPallet);
+        }
+    }
+
+    void GenerateReport(DTOOrderPallet orderPalletSelected)
+    {
+        this.dialogService.Open<ViewRptPalletInfo>($"ESTIBA No. {orderPalletSelected.PalletNo}", new Dictionary<string, object>() { { "OrderSelected", this.model }, { "OrderPalletSelected", orderPalletSelected } },
+                new DialogOptions() { Width = "700px", Height = "70vh"});
+    }
+
+    async Task DeletePallet(DTOOrderPallet orderPallet)
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Esta seguro de eliminar la estiba No.: {orderPallet.PalletNo}"))
+                return;
+
+            this.plantService.DeletePallet(orderPallet);
+            this.pallets.Remove(orderPallet);
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private async Task GetSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("ReportPalletInfo")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.reportPalletInfo = opt.IsActive;
+        }
+
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("CancelPallet")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.cancelPallet = opt.IsActive;
+        }
+    }
+
+    public void OnFilterOrderPallets()
+    {
+        this.filterOrderPallets = this.pallets
+            .Where(p => string.IsNullOrEmpty(this.zoneProductId) || (p.ZoneProductId.Equals(this.zoneProductId)))
+            .ToList();
+    }
+
+    public void OnChangeZoneProduct()
+    {
+        this.OnFilterOrderPallets();
+
+        StateHasChanged();
+    }
+}
+
+<nav class="navbar navbar-light bg-transparent justify-content-between">
+    <h3>@this.title</h3>
+    <div class="form-inline">
+        @{
+            if (this.model.Status.Equals(OrderStatus.Paused))
+            {
+                <span class="badge badge-warning mr-5">En Pausa</span>
+            }
+        }
+        <button class="btn btn-light mr-3" @onclick="@(args => { Cancel(); })">Regresar</button>
+        @*<button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })">Guardar</button>*@
+    </div>
+</nav>
+
+<RadzenTabs TabPosition="TabPosition.Top" Class="w-100" RenderMode="TabRenderMode.Client" Style="font-size:11px; height: calc(100vh - 70px);">
+    <Tabs>
+        <RadzenTabsItem Text="Información de la orden">
+            <div class="row">
+                <div class="col-sm-5">
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="orderId">No. Order</label>
+                            <RadzenTextBox Name="orderId" @bind-Value="model.OrderNum" Placeholder="Ingrese el número de orden" class="form-control" Disabled></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="works">Obra</label>
+                            <RadzenTextBox Name="works" @bind-Value="model.Works" Disabled Placeholder="Ingrese la obra" class="form-control" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => this.model.Works = __value?.ToUpper(), this.model.Works?.ToUpper())"></RadzenTextBox>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="identificationNum">NIT</label>
+                            <RadzenTextBox class="form-control" Name="identificationNum" Disabled @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <label for="customerName">Nombre cliente</label>
+                            <RadzenDropDown AllowFiltering="true" Name="customerName" Disabled class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="salesPeron">Comercial</label>
+                            <RadzenDropDown AllowFiltering="true" Name="salesPeron" Disabled class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="module">Modulo</label>
+                            <RadzenDropDown AllowFiltering="true" Name="module" Disabled class="form-control" @bind-Value="model.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@modules" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="city">Ciudad</label>
+                            <RadzenDropDown AllowFiltering="true" Name="city" Disabled class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="exampleInputEmail1">Transporte a cargo de</label>
+                            <RadzenDropDown Name="city" class="form-control" Disabled @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="DispatchDate">Fecha despacho</label>                            
+                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" Disabled @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block"/>                                                            
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="DispatchTime">Hora despacho</label>
+                            <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" Disabled ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" />                            
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="Wight">Peso (Toneladas)</label>
+                            <RadzenNumeric TValue="decimal" Format="0.00" Name="Wight" Disabled id="Wight" @bind-Value="model.Wight" class="form-control"></RadzenNumeric>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="vehicleType">Tipo vehículo</label>
+                            <RadzenDropDown AllowFiltering="true" Name="vehicleType" Disabled class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-7">
+                    <span>Listado de productos</span><br />
+                    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+                    AllowSorting="true" Data="@model.Products" TItem="DTOOrderProduct" Style="height: calc(100vh - 155px)">
+                        <Columns>
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="Reference" Title="Codigo" />
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="Description" Title="Descripción" />
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="ZoneProduct.Name" Title="Zona" />
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="Qty" Title="Cant. Pend." TextAlign="TextAlign.Right"/>
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="LastVersionCode" Title="Versión Anterior" TextAlign="TextAlign.Right"/>
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="LastQty" Title="Cant. Anterior" TextAlign="TextAlign.Right" />
+                            <RadzenGridColumn TItem="DTOOrderProduct" Property="Weight" Title="Peso" TextAlign="TextAlign.Right" />
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+            </div>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Versiones">
+            <div class="row">
+                <div class="col-sm-2">
+                    <ul class="list-group">
+                        @{
+                            foreach (var productVersion in this.productVersions)
+                            {
+                                <li class="list-group-item @(productVersion.OrderProductVersionId == this.productVersionSelected.OrderProductVersionId ? "active" : "")" @onclick="@(args => { selectProductVersion(productVersion); })">
+                                    <h5 class="mb-1">@productVersion.VersionCode</h5>
+                                    <p class="mb-1" style="font-style: italic">@productVersion.CreatedOn</p>
+                                </li>
+                            }
+                        }
+                    </ul>
+                </div>
+                <div class="col-sm-10">
+                    <span>Listado de productos</span><br />
+                    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+                    AllowSorting="true" Data="@this.productVersionSelected.OrderProductLogs" TItem="DTOOrderProductLog" 
+                    Style="height: calc(100vh - 155px)">
+                        <Columns>
+                            <RadzenGridColumn TItem="DTOOrderProductLog" Property="Reference" Title="Codigo" />
+                            <RadzenGridColumn TItem="DTOOrderProductLog" Property="Description" Title="Descripción"/>
+                            <RadzenGridColumn TItem="DTOOrderProductLog" Property="ZoneProduct.Name" Title="Zona" />
+                            <RadzenGridColumn TItem="DTOOrderProductLog" Property="Qty" Title="Cant." TextAlign="TextAlign.Center" />
+                            <RadzenGridColumn TItem="DTOOrderProductLog" Property="Weight" Title="Peso" TextAlign="TextAlign.Center" />
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+            </div>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Estibas">
+            @{
+                if(this.pallets.Count != 0) 
+                {
+                    <div class="row">
+                        <div class="col-3">
+                            <div class="form-group">
+                                <label for="zoneProductId">Filtrar por</label>
+                                <RadzenDropDown Name="zoneProductId" class="form-control" @bind-Value="zoneProductId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Multiple="false" Data="@model.ZoneProducts" TextProperty="Name" ValueProperty="ZoneProductId" AllowClear=true
+                                        Change="@(args => { this.OnChangeZoneProduct(); })" />
+                            </div>
+                        </div>                        
+                    </div>
+                    <div class="row mt-2">
+                        @{
+                            foreach (var orderPallet in this.filterOrderPallets)
+                            {
+                                <div class="col-12 col-sm-6 col-md-4 mb-2 mt-2">
+                                    <RadzenCard class="@string.Format("{0}", (orderPallet.Status == OrderPalletStatus.VersionChange ? "card-version-change" : "card-closed" ))">
+                                        <div class="row m-2 pt-2">
+                                            <div class="col-sm-10">
+                                                <h4 style="margin-bottom: 2px">Estiba No. @orderPallet.PalletNo</h4>
+                                                <h5 style="margin-bottom: 2px">Zona: @orderPallet.ZoneProduct.Name</h5>
+                                                <h5 style="margin-bottom: 2px"><i>Fecha de creación: @orderPallet.CreatedOn</i></h5>                                                
+                                            </div>
+                                            <div class="col-sm-2 text-right">
+                                                @if(this.reportPalletInfo || this.cancelPallet)
+                                                {
+                                                    <div class="btn-group" role="group">
+                                                        <button id="btnGroupDrop1" type="button" class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                                                <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"></path>
+                                                            </svg>
+                                                        </button>
+                                                        <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                                                            @if(this.cancelPallet)
+                                                            {                                                            
+                                                                <a class="dropdown-item" href="javascript:void(0)" @onclick="@(args => { this.OpenMenu(orderPallet, "delete"); })">Eliminar</a>
+                                                            }
+                                                            @if (this.reportPalletInfo)
+                                                            {
+                                                                <a class="dropdown-item" href="javascript:void(0)" @onclick="@(args => { this.OpenMenu(orderPallet, "print"); })">Imprimir ticket</a>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }                                                
+                                            </div>
+                                        </div>
+                                        <div class="row m-2 pb-2">
+                                            <div class="col-sm-12">
+                                                <RadzenAccordion>
+                                                    <Items>                                                    
+                                                        <RadzenAccordionItem Text="Detalle" style="padding: 0px !important">
+                                                            <table class="table table-light mb-0" >
+                                                                <thead >
+                                                                    <tr>
+                                                                        <th>Descripción</th>
+                                                                        <th>Cant.</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @{
+                                                                        foreach (var orderPalletProduct in orderPallet.OrderPalletProducts)
+                                                                        {
+                                                                            if(orderPalletProduct.Qty < 0)
+                                                                            {
+                                                                                <tr>
+                                                                                    <td><del>@orderPalletProduct.Description</del></td>
+                                                                                    <td><del>@(-orderPalletProduct.Qty)</del></td>
+                                                                                </tr>
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <tr>
+                                                                                    <td>@orderPalletProduct.Description</td>
+                                                                                    <td>@orderPalletProduct.Qty</td>
+                                                                                </tr>
+                                                                            }                                                                            
+                                                                        }
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </RadzenAccordionItem>
+                                                    </Items>
+                                                </RadzenAccordion>
+                                            </div>
+                                        </div>
+                                    </RadzenCard>
+                                </div>
+                            }
+                        }
+                    </div>
+                }    
+                else
+                {
+                    <p>La orden no tiene estibas configuradas.</p>
+                }
+            }            
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>

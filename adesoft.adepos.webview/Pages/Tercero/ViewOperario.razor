@@ -1,0 +1,128 @@
+﻿@page "/ViewOperario/{TerceroId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject TerceroService terceroService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject CompanyService companyService
+<div class="card">
+    <div class="card-header">
+        Operario Producción
+    </div>
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formcliente" id="formcliente" Method="post" Submit="OnSubmit" OnInvalidSubmit="OnInvalidSubmit" class="col-md-12" TItem="Tercero" Data="@model">
+
+            <div class="form-row">
+                <div class="form-group col-md-1">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-1">
+                    <a class="btn btn-success btn-sm" href="/viewsearchoperario">Buscar</a>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="inputName">Nombre</label>
+                    <RadzenTextBox Name="inputName" @bind-Value="model.FirstName" class="form-control text-uppercase" placeholder="Nombre" AutoComplete="false" />
+                    <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputLastName">Apellido</label>
+                    <RadzenTextBox Name="inputLastName" @bind-Value="model.LastName" class="form-control text-uppercase" placeholder="Apellido" AutoComplete="false" />
+                    <RadzenRequiredValidator Component="inputLastName" Text="Apellido es requerido" Popup="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputDocument"># Documento</label>
+                    <RadzenTextBox Name="inputDocument" @bind-Value="model.NumDocument" class="form-control" placeholder="Numero documento" AutoComplete="false" />
+                    <RadzenRequiredValidator Component="inputDocument" Text="Documento es requerido" Popup="false" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="LblState">Estado</label>
+                    <label Name="LblState">@(model.IsActive?"ACTIVO":"INACTIVO")</label>
+                    <RadzenCheckBox Name="inputState" TValue="bool" @bind-Value="model.IsActive" class="form-control " />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="inputOperario">Codigo Operario</label>
+                    <RadzenTextBox Name="inputOperario" @bind-Value="model.CodeEnterprise" class="form-control" placeholder="Codigo" />
+                    <RadzenRequiredValidator Component="inputOperario" Text="Codigo es requerido" Popup="false" />
+                </div>
+            </div>
+
+
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code
+{
+    [Parameter]
+    public string TerceroId { get; set; }
+
+    Tercero model = new Tercero();
+    protected override async Task OnInitializedAsync()
+    {
+        model.TypePersonId = 1;
+        if (long.Parse(TerceroId) != 0)
+        {
+            model = await terceroService.SelectById(new Tercero() { TerceroId = long.Parse(TerceroId), TransOption = 3 });
+        }
+    }
+
+    public void Changed()
+    {
+
+    }
+
+    async void OnSubmit()
+    {
+        model.TypeTerceroId = 5;
+        model.ToUpper();
+        if (model.TerceroId != 0)
+        {
+            model.TransOption = 1;
+            Tercero u = await terceroService.Update(model);
+            if (u.TransactionIsOk == false)
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = u.MessageResponse, Duration = 4000 });
+                return;
+            }
+            model.TerceroId = u.TerceroId;
+        }
+        else
+        {
+            model.TransOption = 1;
+            Tercero u = await terceroService.Create(model);
+            if (u.TransactionIsOk == false)
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = u.MessageResponse, Duration = 4000 });
+                return;
+            }
+            model.TerceroId = u.TerceroId;
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el operario correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+    }
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+}

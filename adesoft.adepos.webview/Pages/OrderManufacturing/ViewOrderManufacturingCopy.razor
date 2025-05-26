@@ -1,0 +1,145 @@
+﻿@*@page "/viewordermanufacturing"
+@inject TransactionGenericService transactionservice
+@inject OrderManufacturingService orderManufacturingService
+@inject ItemService itemService
+@inject NotificationService notificationService
+@code {
+    [Parameter]
+    public object objectView { get; set; }
+
+    [Parameter]
+    public OrderManufacturing model { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        //model.Item = await itemService.SelectById(new Item() { ItemId = model.ItemId });
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void OnSubmit(OrderManufacturing tra)
+    {
+
+        if (tra.OrderManufacturingId != 0)
+        {
+            OrderManufacturing clone = tra.GetClone<OrderManufacturing>();
+            clone.Item = null;
+            orderManufacturingService.Update(clone);
+        }
+        else
+        {
+            OrderManufacturing clone = tra.GetClone<OrderManufacturing>();
+            clone.Item = null;
+            clone = await orderManufacturingService.Create(clone);
+            tra.OrderManufacturingId = clone.OrderManufacturingId;
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Ok.", Detail = "Se creo correctamente la orden de fabricacion.", Duration = 4000 });
+        if (objectView is ViewDetailDispatch)
+            ((ViewDetailDispatch)objectView).SaveOrderManufacturing(tra);
+        else if (objectView is ViewSearchOrderManufacturing)
+            ((ViewSearchOrderManufacturing)objectView).CancelView();
+
+        //if (tra.DocumentExtern != null)
+        //    tra.DocumentExtern = tra.DocumentExtern.Trim();
+        //if (string.IsNullOrEmpty(tra.AuxTest))
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe adjuntar la orden de despacho.", Duration = 4000 });
+        //    return;
+        //}
+        //tra.Note = tra.Note.ToUpper();
+        //tra.TransOption = 4;
+        //TransactionGeneric resp = await transactionservice.SelectById(tra);
+        //if (resp != null && resp.TransactionGenericId != 0)
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Ya existe una orden con el mismo numero.", Duration = 4000 });
+        //    return;
+        //}
+        //if (objectView is ViewDetailDispatch)
+        //    ((ViewDetailDispatch)objectView).SaveImport(tra);
+    }
+
+    void ClickCancel()
+    {
+        if (objectView is ViewDetailDispatch)
+            ((ViewDetailDispatch)objectView).CancelView();
+    }
+    void ClickEliminar()
+    {
+        OrderManufacturing clone = model.GetClone<OrderManufacturing>();
+        clone.Item = null;
+        orderManufacturingService.Delete(clone);
+        if (objectView is ViewDetailDispatch)
+        {
+            model.detailTransaction.OrderManufacturing = null;
+            ((ViewDetailDispatch)objectView).CancelView();
+        }
+        else if (objectView is ViewSearchOrderManufacturing)
+        {
+            ((ViewSearchOrderManufacturing)objectView).CancelView();
+        }
+    }
+
+}
+
+
+
+<div class="card">
+
+    <div class="card-body">
+        <RadzenTemplateForm name="formCreateOrderManu" id="formCreateOrderManu" Method="post" class="col-md-12" TItem="OrderManufacturing" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                <div class="form-group col-md-1">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-1">
+                    <a class="btn btn-warning btn-sm" @onclick="ClickCancel">Cancelar</a>
+                </div>
+                <div class="form-group col-md-1">
+                    <a class="btn btn-danger btn-sm" @onclick="ClickEliminar">Eliminar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="TextorderNum">Orden Despacho</label>
+                    <RadzenTextBox @bind-Value="model.NumOrderDespacho" Name="TextorderNum" class="form-control" placeholder="# de Orden" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="TextorderNum">Item</label>
+                    <RadzenTextBox @bind-Value="model.Item.Description" Name="TextorderNum" class="form-control" placeholder="# de Orden" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="inputDateInit">Fecha de Solicitud</label>
+                    <RadzenDatePicker Name="inputDateInit" @bind-Value="model.DateInit" DateFormat="MM/dd/yyyy" class="d-block " id="inputDateInit" />
+                    <RadzenRequiredValidator Component="inputDateInit" Text="Fecha de solicitud es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputDateEnd ">Fecha de Entrega</label>
+                    <RadzenDatePicker Name="inputDateEnd" @bind-Value="model.DateEnd" DateFormat="MM/dd/yyyy" class="d-block " id="inputDateInit" />
+                    <RadzenRequiredValidator Component="inputDateEnd" Text="Fecha entrega es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputCantRequest">Cant. Solicitada</label>
+                    <RadzenNumeric @bind-Value="model.CantRequest" Name="inputCantRequest" class="form-control" />
+                </div>
+                @if (model.OrderManufacturingId != 0)
+                {
+                    <div class="form-group col-md-3">
+                        <label for="inputCantDelivery">Cant. Entregada</label>
+                        <RadzenNumeric @bind-Value="model.CantDelivery" Name="inputCantDelivery" class="form-control" />
+                    </div>
+                }
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label for="TextNote">Observaciones</label>
+                    <RadzenTextArea @bind-Value="model.Observation" Name="TextObservation" Rows="2" MaxLength="500" class="form-control text-uppercase" placeholder="Observaciones" />
+                </div>
+            </div>
+        </RadzenTemplateForm>
+    </div>
+</div>*@

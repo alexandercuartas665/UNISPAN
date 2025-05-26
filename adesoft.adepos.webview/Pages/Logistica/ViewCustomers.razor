@@ -1,0 +1,102 @@
+﻿@page "/ViewCustomers"
+@using  Newtonsoft.Json
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.Model
+
+@inject DialogService dialogService
+@inject LogisticsService logisticsService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+
+@code {
+    public DTOLogisticMasterData model { get; set; }
+    public List<DTOLogisticMasterData> customers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.model = new DTOLogisticMasterData();
+        this.model.Type = "CLIENTE";
+        this.customers = await logisticsService.GetCustomers();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void AddCustomer()
+    {
+        if (model.IdentificationNum == "" || model.Description == "" )
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+            return;
+        }
+
+        this.model = await logisticsService.CreateOrUpdateCustomer(model);
+
+        this.OnNew();
+        this.customers = await logisticsService.GetCustomers();
+    }
+
+    void EditCustomer(DTOLogisticMasterData customer)
+    {
+        this.model = customer;
+    }  
+    
+    void OnNew()
+    {
+        this.model = new DTOLogisticMasterData();
+        this.model.Type = "CLIENTE";
+    }
+}
+
+<div class="card">
+    <div class="card-header">
+        CLIENTES
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <RadzenFieldset Text="Clientes">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Número de identificación</label>
+                    <RadzenTextBox Name="IdentificationNum" TValue="string" @bind-Value="model.IdentificationNum" class="form-control" ReadOnly="@(model.Id != 0)"/>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputinit">Nombre</label>
+                    <RadzenTextBox Name="Name" TValue="string" @bind-Value="model.Description" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="d-block">&nbsp;</label>                    
+                    <input class="btn btn-success btn-sm" @onclick="AddCustomer" value="Guardar" type="button" />
+                    <input class="btn btn-primary btn-sm" @onclick="OnNew" value="Nuevo" type="button" />
+                </div>
+            </div>
+            <div class="form-row pt-3">
+
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@customers" TItem="DTOLogisticMasterData" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="DTOLogisticMasterData" Property="IdentificationNum" Title="Número de identificación">
+                            <Template Context="data">
+                                @(data.IdentificationNum)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOLogisticMasterData" Property="Description" Title="Nombre">
+                            <Template Context="data">
+                                @(data.Description)
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="DTOLogisticMasterData" Title="">
+                            <Template Context="data">
+                                <NavLink href="javascript:void(0);" @onclick="@(args=> { EditCustomer(data); })">Editar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+        </RadzenFieldset>
+    </div>
+</div>

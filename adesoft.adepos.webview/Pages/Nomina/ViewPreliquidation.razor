@@ -1,0 +1,166 @@
+﻿@page "/ViewPreliquidation/{NominaProgramationId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject NominaService nominaService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+<div class="card">
+    <div class="card-header">
+        REPORTE DE NOVEDADES - @model.Description.ToUpper()
+    </div>
+    <div class="card-body">
+
+
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="inputDateInit">Fecha Inicio</label>
+                <RadzenTextBox Name="inputDateInit" Value="@model.DayInitLabel" ReadOnly="true" class="d-block" id="inputDateInit" />
+            </div>
+            <div class="form-group col-md-2">
+                <label for="inputDateEnd">Fecha Fin</label>
+                <RadzenTextBox Name="inputDateEnd" Value="@model.DayEndLabel" ReadOnly="true" class="d-block" id="inputDateEnd" />
+            </div>
+
+            <div class="form-group col-md-5">
+                <label class="d-block">&nbsp;</label>
+                @* <a class="btn btn-success btn-sm" href="/ViewSearchPreliquidation" style="float:left;margin-right:5px;">Buscar</a>*@
+                <input class="btn btn-primary btn-sm" value="Registrar Novedad" type="button" style="float:left;margin-right:5px;" @onclick="@(args => { BtnRegisterNovedad(0); })" />
+                <input class="btn btn-success btn-sm" value="Generar Plano" type="button" @onclick="GeneratePlano" style="float:left;margin-right:5px;" />
+            </div>
+
+            @*<div class="form-group col-md-3">
+                    <label for="inputUniMed">Unidad Medida</label>
+                    <RadzenDropDown Name="inputUniMed" class="form-control" AllowClear="false" @bind-Value="model.UnitMeasurementId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@UnitMeasurements" TextProperty="Name" ValueProperty="UnitMeasurementId" />
+                    <RadzenRequiredValidator Component="inputUniMed" Text="Unidad de medida es requerida" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="CheckHasInventory1">Maneja Inventario?</label>
+                    <RadzenCheckBox Name="CheckHasInventory1" class="form-control" @bind-Value="model.HasIventory"></RadzenCheckBox>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="CheckHasInventory2">Es Combo o Compuesto?</label>
+                    <RadzenCheckBox Name="CheckHasInventory2" @onchange="@(args=>{ StateHasChanged(); } )" class="form-control" @bind-Value="model.IsCompuesto"></RadzenCheckBox>
+                </div>*@
+        </div>
+        <div class="form-row">
+            @if (!string.IsNullOrEmpty(model.PathFileNmbatchDownload))
+            {
+                <div class="form-group col-md-3">
+                    <NavLink href="@model.PathFileNmbatchDownload" target="_blank" download>
+                        <span class="fat fa-paperclip" aria-hidden="true"></span>&nbsp;&nbsp;@(System.IO.Path.GetFileName(model.PathFileNmbatchDownload))
+                    </NavLink>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(model.PathFileTnlDownload))
+            {
+                <div class="form-group col-md-3">
+                    <NavLink href="@model.PathFileTnlDownload" target="_blank" download>
+                        <span class="fat fa-paperclip" aria-hidden="true"></span>&nbsp;&nbsp;@(System.IO.Path.GetFileName(model.PathFileTnlDownload))
+                    </NavLink>
+                </div>
+            }
+        </div>
+
+        <div class="form-row">
+            <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="25" AllowSorting="true" Data="@listsNovedades" TItem="NominaNovedad" ColumnWidth="200px">
+                <Columns>
+                    <RadzenGridColumn TItem="NominaNovedad" Property="CodeNovedad.NovedadName" Sortable="false" Title="Novedad" />
+                    <RadzenGridColumn TItem="NominaNovedad" Property="Tercero.FirstName" Sortable="false" Title="Empleado" />
+                    <RadzenGridColumn TItem="NominaNovedad" Filterable="false" Property="DateInitEndLabel" Sortable="false" Title="Fecha" />
+                    <RadzenGridColumn TItem="NominaNovedad" Property="StateNovedadLabel" Sortable="false" Title="Estado">
+                        <Template Context="data">
+                            <label style="color:white;background:@data.ColorStateNovedad;">@data.StateNovedadLabel</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="NominaNovedad" Sortable="false" Property="NominaProgramationId" Title="">
+                        <Template Context="data">
+                            @if (data.StateNovedad == 1)
+                            {
+                                <button class="btn btn-success btn-sm"  data-toggle="tooltip" data-placement="top" title="Aprobar" @onclick="@(args => { ChangueState(2, data.NominaNovedadId); })">
+                                    <i class="fat fa-check-double"></i>
+                                </button>
+                            }
+                            else if (data.StateNovedad == 2)
+                            {
+                                <button class="btn btn-warning btn-sm"  data-toggle="tooltip" data-placement="top" title="Desaprobar" @onclick="@(args => { ChangueState(1, data.NominaNovedadId); })">
+                                    <i class="fat fa-ban"></i>
+                                </button>
+                            }
+                            <button class="btn btn-warning btn-sm"  data-toggle="tooltip" data-placement="top" title="Anular" @onclick="@(args => { ChangueState(3, data.NominaNovedadId); })">
+                                <i class="fat fa-trash-alt"></i>
+                            </button>
+                            <NavLink href="javascript:void(0)"  class="btn btn-primary btn-sm" @onclick="@(args=> { BtnRegisterNovedad(data.NominaNovedadId); })">
+                                <i class="fat fa-external-link-alt"></i>
+                            </NavLink>
+                            @if (data.PathDocumentoAdjunto != null)
+                            {
+                                <NavLink href="@data.PathDocumentoAdjunto" target="_blank" download>
+                                    <span class="fat fa-paperclip" aria-hidden="true"></span>&nbsp;&nbsp;@data.NameFile
+                                </NavLink>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+
+
+
+                </Columns>
+            </RadzenGrid>
+        </div>
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string NominaProgramationId { get; set; }
+    public NominaProgramation model = new NominaProgramation();
+    List<NominaNovedad> listsNovedades = new List<NominaNovedad>();
+    protected override async Task OnInitializedAsync()
+    {
+        if (long.Parse(NominaProgramationId) != 0)
+        {
+            model = await nominaService.SelectById(new NominaProgramation() { NominaProgramationId = long.Parse(NominaProgramationId) });
+            listsNovedades = await nominaService.selectAll(new NominaNovedad() { NominaProgramationId = model.NominaProgramationId, TransOption = 2 });
+        }
+    }
+
+    async void GeneratePlano()
+    {
+        await nominaService.GeneratePlanos(model);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Generacion Ok!", Detail = "Se genero correctamente los archivos planos.", Duration = 4000 });
+    }
+
+
+    async void ChangueState(long stateid, long novedadid)
+    {
+        NominaNovedad novedad = listsNovedades.Where(x => x.NominaNovedadId == novedadid).FirstOrDefault();
+        novedad.StateNovedad = stateid;
+        await nominaService.Update(novedad);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se actualizo el estado correctamente.", Duration = 4000 });
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+
+    async void BtnRegisterNovedad(long NominaNovedadId)
+    {
+        dialogService.Open<ViewCreateNovedad>("Registrar Novedad", new Dictionary<string, object>() { { "objectView", this }, { "NominaProgramationId", model.NominaProgramationId }, { "NominaNovedadId", NominaNovedadId.ToString() } }, new DialogOptions() { Width = "900px", Height = "560px", Left = "calc(50% - 450px)", Top = "80px" });
+    }
+
+    public async void SaveRegisterNovedad()
+    {
+        listsNovedades = await nominaService.selectAll(new NominaNovedad() { NominaProgramationId = model.NominaProgramationId, TransOption = 2 });
+        StateHasChanged();
+        dialogService.Close();
+    }
+}

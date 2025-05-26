@@ -1,0 +1,120 @@
+﻿@page "/ViewSearchMedicion"
+@page "/ViewSearchMedicion/{DateActivity}"
+@inject DialogService dialogService
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject ProduccionService produccionService
+@code {
+
+    void GenerateReportReferencias()
+    {
+        if (DateMedicion != null)
+        {
+            List<TypeActivity> activitys = productions.Select(x => x.TypeActivity).Distinct().ToList();
+            List<Tercero> terceros = new List<Tercero>();
+            foreach (Production pro in productions)
+            {
+                foreach (DetailProductionTercero prodDet in pro.DetailTerceros)
+                {
+                    if (terceros.Where(x => x.TerceroId == prodDet.TerceroId).Count() == 0)
+                        terceros.Add(prodDet.Tercero);
+                }
+            }
+            dialogService.Open<ViewReportRendimientoPorItem>(null, new Dictionary<string, object>() { { "ParamTerceros" , terceros } , { "ParamTypeActivitys", activitys }
+        , { "DateTimeActiviy", DateMedicion.Value } }, new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
+    }
+}
+@if (productions == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Mediciones
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label for="FilterDateinit">Fecha Medicion</label>
+                    <RadzenDatePicker Name="FilterDateinit" Change="ChangueDateMedicion" @bind-Value="DateMedicion" DateFormat="MM/dd/yyyy" TValue="DateTime?" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label class="d-block">&nbsp;</label>
+                    <a href="/ViewMedicion/0/@(DateMedicion.Value.ToString("MMddyyyy"))" class="btn btn-primary btn-sm">Nueva Medicion</a>
+                </div>
+                @if (DateMedicion != null)
+                {
+                    <div class="form-group col-md-2">
+                        <label class="d-block">&nbsp;</label>
+                        <input type="button" value="Reporte Referencias" @onclick="GenerateReportReferencias" class="btn btn-primary btn-sm" />
+                    </div>
+                }
+            </div>
+            @if (DateMedicion != null)
+            {
+
+                <div class="form-row">
+                    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Style="margin-bottom:0px !important;" AllowPaging="true" PageSize="15" AllowSorting="true" Data="@productions" TItem="Production" ColumnWidth="200px">
+                        <Columns>
+                            <RadzenGridColumn TItem="Production" Property="DateProductionLabel" Title="Fecha Actividad">
+                            </RadzenGridColumn>
+
+                            <RadzenGridColumn TItem="Production" Title="Operarios" Property="ReadTerceros">
+                                <Template Context="data">
+                                    <ul Style="margin-bottom:0px !important;">
+                                        @foreach (DetailProductionTercero det in data.DetailTerceros)
+                                        {
+                                            <li>@(det.Tercero.CodeEnterprise + " " + det.Tercero.FullName)</li>
+                                        }
+                                    </ul>
+                                </Template>
+                            </RadzenGridColumn>
+
+                            <RadzenGridColumn TItem="Production" Property="TypeActivity.Name" Title="Actividad">
+                                <Template Context="data">
+                                    @(data.TypeActivity.Name)
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="Production" Title="">
+                                <Template Context="data">
+                                    <NavLink href="@("/ViewMedicion/"+data.ProductionId+"/00")">Editar</NavLink>
+                                </Template>
+                            </RadzenGridColumn>
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string DateActivity { get; set; }
+
+    IEnumerable<Production> productions;
+    public DateTime? DateMedicion { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        productions = new List<Production>();
+        if (DateActivity == null)
+            DateMedicion = DateTime.Now;
+        else
+            DateMedicion = DateTime.ParseExact(DateActivity, "MMddyyyy", null);
+        ChangueDateMedicion();
+    }
+
+    async void ChangueDateMedicion()
+    {
+        if (DateMedicion != null)
+            productions = await produccionService.SelectAll(new Production() { TransOption = 2, DateProduction = DateMedicion.Value });
+        else
+        {
+            productions = new List<Production>();
+        }
+        StateHasChanged();
+    }
+}

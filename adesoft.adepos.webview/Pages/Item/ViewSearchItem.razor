@@ -1,0 +1,41 @@
+﻿@page "/viewsearchitem"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject ItemService itemService
+@code {
+
+}
+@if (lists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <a href="/ViewItem/0" class="btn btn-primary">Nuevo Item</a>
+    </div>
+
+    <div class="row">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="4" AllowSorting="true" Data="@lists" TItem="Item" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="Item" Property="Description" Title="Nombre" />
+                <RadzenGridColumn TItem="Item" Property="Category.Name" Title="Categoria" />
+                <RadzenGridColumn TItem="Item" Property="ItemId" Title="Editar">
+                    <Template Context="data">
+                        <NavLink href="@("/ViewItem/"+data.ItemId)">Editar</NavLink>
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+
+@code {
+    IEnumerable<Item> lists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lists = await itemService.selectAll(new Item());
+    }
+}

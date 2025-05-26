@@ -1,0 +1,46 @@
+﻿
+@page "/CtrlSearchItem/{lists}"
+
+
+@code {
+    [Parameter]
+    public List<Item> lists { get; set; }
+
+
+    [Parameter]
+    public object viewItem { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    void GridClickSelect(EventArgs e, object obj)
+    {
+        if (viewItem is ViewItem)
+            ((ViewItem)viewItem).SelectSearchItem((Item)obj);
+
+        if (viewItem is ViewOrderManufacturing)
+            ((ViewOrderManufacturing)viewItem).SelectSearchItem((Item)obj);
+    }
+}
+
+
+
+
+<div class="row">
+    <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="4" AllowSorting="true" Data="@lists" TItem="Item" ColumnWidth="200px">
+        <Columns>
+            <RadzenGridColumn TItem="Item" Property="Description" Title="Nombre" />
+            <RadzenGridColumn TItem="Item" Property="Category.Name" Title="Categoria" />
+            <RadzenGridColumn TItem="Item" Property="Barcode" Title="Codigo" />
+            <RadzenGridColumn TItem="Item" Width="50" Filterable="false" Property="" Title="">
+                <Template Context="data">
+                    <a href="javascript:void(0)" @onclick="@(args => GridClickSelect(args, data))"><RadzenIcon Icon="loupe" /></a>
+                </Template>
+            </RadzenGridColumn>
+        </Columns>
+    </RadzenGrid>
+</div>

@@ -1,0 +1,37 @@
+﻿@using adesoft.adepos.webview.Data.Model.ElectronicBilling
+@using adesoft.adepos.webview.Data.DTO.ElectronicBilling
+@using Newtonsoft.Json
+
+@inject DialogService dialogService
+@inject Data.Interfaces.IElectronicBillingService electronicBillingService
+@inject IHttpContextAccessor httpContextAccessor
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    [Parameter]
+    public string guidfilter { get; set; }
+
+    ConnectionDB connectionDB;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await GenerateRpt();
+        }
+    }
+
+    async Task GenerateRpt()
+    {
+        string paramurl = "RptClosingsInvoiced.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + this.guidfilter;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+}
+
+
+<iframe id="iframeReport" frameborder="0" style="height: 800px; width: 100%; padding: 0px;"></iframe>

@@ -1,0 +1,16 @@
+[
+  {
+    "Name": "Nuevo perfil",
+    "Projects": [
+      {
+        "Path": "adesoft.adepos.webview\\adesoft.adepos.webview.csproj",
+        "Action": "Start",
+        "DebugTarget": "IIS Express"
+      },
+      {
+        "Path": "adesoft.adeposx.report\\adesoft.adeposx.report\\adesoft.adeposx.report.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

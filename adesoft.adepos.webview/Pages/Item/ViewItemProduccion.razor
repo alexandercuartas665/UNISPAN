@@ -1,0 +1,158 @@
+﻿@page "/ViewItemProduccion/{ItemId}"
+
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject CategoryService categoryService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@inject Data.Interfaces.IPlantService plantService
+
+<div class="card">
+    <div class="card-header">
+        Producto
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formcategory" id="formcategory" class="col-md-12" autocomplete="off" TItem="Item" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-2">
+                    <a class="btn btn-success btn-sm" href="/ViewSearchItemProduccion">Buscar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="inputName">Desripcion</label>
+                    <RadzenTextBox Name="inputName" @bind-Value="model.Description" AutoComplete="false" class="form-control text-uppercase" id="inputName" placeholder="Descripcion Item" />
+                    <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="false" />
+                </div>
+                @*<div class="form-group col-md-4">
+                        <label for="selectCategoria">Categoria</label>
+                        <RadzenDropDown Name="selectCategoria" class="form-control" AllowClear="false" @bind-Value="model.CategoryId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorysnormal" TextProperty="Name" ValueProperty="CategoryId" />
+                        <RadzenRequiredValidator Component="selectCategoria" Text="Categoria es requerida" Popup="false" />
+                    </div>*@
+                <div class="form-group col-md-3">
+                    <label for="selectCategoria">Categoria de medición</label>
+                    <RadzenDropDown Name="selectCategoria" class="form-control" AllowClear="false" @bind-Value="model.categoryMedicionId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId" />
+                    <RadzenRequiredValidator Component="selectCategoria" Text="Categoria es requerida" Popup="false" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="selectCategoria">Zona</label>
+                    <RadzenDropDown AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data=@zoneProducts @bind-Value=@model.ZoneProductId
+                                    TextProperty="Name" ValueProperty="ZoneProductId" style="display: block" Class="w-100" Name="ZoneProductId" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="inputBarcode">Codigo</label>
+                    <RadzenTextBox Name="inputBarcode" @bind-Value="model.Barcode" AutoComplete="false" class="form-control" id="inputBarcode" placeholder="Codigo" />
+                    <RadzenRequiredValidator Component="inputBarcode" Text="Codigo es requerido" Popup="false" />
+                </div>
+            </div>
+            <div class="form-row">
+
+                <div class="form-group col-md-2">
+                    <label for="InputArea">Area M2</label>
+                    <RadzenNumeric Name="InputArea" TValue="decimal" @bind-Value="model.Area" class="form-control" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="InputPeso">Peso Kg</label>
+                    <RadzenNumeric Name="InputPeso" TValue="decimal" @bind-Value="model.Weight" class="form-control" />
+                </div>
+            </div>
+            <h5>Datos Integraciones</h5>
+            <div class="form-row">
+
+                <div class="form-group col-md-2">
+                    <label for="InputSyncode">Codigo 8.5</label>
+                    <RadzenTextBox Name="InputSyncode" @bind-Value="model.Syncode" class="form-control" />
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="InputPrecioSync">Precio Externo</label>
+                    <RadzenNumeric Name="InputPrecioSync" TValue="decimal" @bind-Value="model.PrecioSyncode" class="form-control" />
+                </div>
+            </div>
+        </RadzenTemplateForm>
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    public string ItemId { get; set; }
+
+    Item model = new Item();
+    List<Category> categorys = new List<Category>();
+    List<Category> categorysnormal = new List<Category>();
+
+    List<DTOZoneProduct> zoneProducts;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        categorys = await categoryService.selectAll(new Category() { TransOption = 2 });
+        // listimpues=
+        if (long.Parse(ItemId) != 0)
+        {
+            model = await itemService.SelectById(new Item() { ItemId = long.Parse(ItemId) });
+        }
+        else
+        {
+            model.UnitMeasurementId = 3;
+        }
+        model.TypeTaxId = 2;
+
+        this.GetZoneProducts();
+    }
+
+    public void GetZoneProducts()
+    {
+        this.zoneProducts = plantService.GetZoneProducts();
+    }
+
+    /// <summary>
+    /// Guardado de formulario
+    /// </summary>
+    /// <param name="para"></param>
+    async void OnSubmit(Item para)
+    {
+
+        if (model.CategoryId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la categoria.", Duration = 4000 });
+            return;
+        }
+        else if (model.UnitMeasurementId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar la unidad de medida.", Duration = 4000 });
+            return;
+        }
+        model.Description = model.Description.ToUpper();
+        model.Referencia = model.Barcode;
+        if (model.ItemId != 0)
+        {
+
+            Item u = await itemService.Update(model);
+            model.ItemId = u.ItemId;
+        }
+        else
+        {
+            Item u = await itemService.Create(model);
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el item correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+}

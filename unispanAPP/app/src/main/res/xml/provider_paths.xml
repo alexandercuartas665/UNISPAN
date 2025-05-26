@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path name="external_files" path="/storage/emulated/0/Android/data/com.example.unispanapp/files/Pictures/"/>
+    <external-path
+        name="external_path"
+        path="/storage/emulated/0/Android/data/com.example.unispanapp/files/Pictures/" />
+    <external-path
+        name="external"
+        path="." />
+    <external-path
+        name="externalSD"
+        path="/storage/emulated/0/databases/" />
+    <external-files-path
+        name="external_files"
+        path="." />
+    <files-path
+        name="files"
+        path="." />
+</paths>

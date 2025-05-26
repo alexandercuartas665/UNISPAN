@@ -1,0 +1,130 @@
+﻿@page "/viewrequestcertificated"
+@inject SecurityService securityService
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@inject TerceroService terceroService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject RequestCertificateService RequestCertificateService
+@*<div class="main">
+
+        <div class="content px-4">
+
+
+            <div class="card">
+                <div class="card-header">
+                    SOLICITUD DE CERTIFICACIONES
+                </div>
+
+                <div class="card-body">
+                    <RadzenTemplateForm name="formcliente" id="formcliente" Method="post" @onsubmit="OnSubmit" class="col-md-8" TItem="RequestCertificate" Data="@model">
+                        <img class="mb-4" src="Images/Unispan.png" alt="" style="display:block;margin:auto;" width="285" height="100">
+                        <h1 class="h3 mb-3 font-weight-normal">Iniciar sesión</h1>
+                        <div class="form-row">
+                            <div class="form-group col-md-3">
+                                <input class="btn btn-success" value="Enviar Solicitud" type="submit" />
+                            </div>
+                            <div class="form-group col-md-3">
+                                <a class="btn btn-success" href="/viewrequestcertificated">Cancelar</a>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-8">
+                                <label for="inputDocument">Número de documento</label>
+                                <RadzenTextBox Name="inputDocument" @bind-Value="model.NumberDocument" class="form-control" />
+                                <RadzenRequiredValidator Component="inputRef" Text="Documento es requerido" Popup="false" />
+                            </div>
+                            <div class="form-group col-md-8">
+                                <label for="InputEnterprise">Tipo de Certificado</label>
+                                <RadzenDropDown Name="InputEnterprise" class="form-control" @bind-Value="model.TypeCertificate" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="false" Data="@(model.ListTypeCertificates)" />
+                            </div>
+                        </div>
+                    </RadzenTemplateForm>
+                </div>
+            </div>
+
+        </div>
+    </div>*@
+
+
+<RadzenTemplateForm name="formlogin" id="formlogin" class="form-signin" TItem="RequestCertificate" Data="@model" Submit="@OnSubmit">
+
+    <img class="mb-4" src="Images/Unispan2.png" alt="" style="display:block;margin:auto;" width="285" height="100">
+    <h1 class="h3 mb-3 font-weight-normal">Solicitud de Certificaciones</h1>
+    @if (string.IsNullOrEmpty(ResultMessage))
+    {
+        @* <RadzenRequiredValidator Component="inputAccount" Text="Cuenta es requerido" Popup="false" />*@
+        <RadzenTextBox Name="inputDocument" Placeholder="Número de documento" @bind-Value="model.NumberDocument" class="form-control" />
+        <RadzenRequiredValidator Component="inputDocument" Text="Documento es requerido" />
+        <RadzenDropDown Name="InputCertifica" Placeholder="Tipo de Certificado" class="form-control" @bind-Value="model.TypeCertificate" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="false" Data="@(model.ListTypeCertificates)" />
+        <RadzenRequiredValidator Component="InputCertifica" Text="Debe seleccionar el tipo" />
+        <RadzenButton class="btn btn-lg btn-success btn-block" ButtonType="ButtonType.Submit" Text="Enviar Solicitud"></RadzenButton>
+    }
+    else
+    {
+        @if (typemessage == "OK")
+        {
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">Solicitud Enviada!</h4>
+                <p>@ResultMessage</p>
+                <hr>
+                @* <p class="mb-0">Whenever you need to, be sure to use margin utilities to keep things nice and tidy.</p>*@
+            </div>
+        }
+        else if (typemessage == "ERROR")
+        {
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">Solicitud Pendiente!</h4>
+                <p>@ResultMessage</p>
+                <hr>
+                @* <p class="mb-0">Whenever you need to, be sure to use margin utilities to keep things nice and tidy.</p>*@
+            </div>
+        }
+    }
+    <p class="mt-5 mb-3 text-muted">&copy; Unispan - 2020</p>
+
+</RadzenTemplateForm>
+
+
+@code{
+    RequestCertificate model = new RequestCertificate();
+    public string ResultMessage { get; set; }
+    public string typemessage { get; set; }
+    async void OnSubmit()
+    {
+        Tercero tercer = await terceroService.SelectById(new Tercero() { NumDocument = model.NumberDocument, TransOption = 2 });
+        if (tercer == null || tercer.TerceroId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "No existe!", Detail = "El numero de documento no se encuentra registrado en nuestra base de datos.", Duration = 6000 });
+            return;
+        }
+        model.TerceroId = tercer.TerceroId;
+        model.DateRecord = DateTime.Now;
+        model.StateRequestCertificateId = 1;
+        model.TransOption = 2;
+        RequestCertificate reques = await RequestCertificateService.SelectById(model);
+        if (reques != null && reques.RequestCertificateId != 0)
+        {
+            ResultMessage = "Ya tiene una solicitud pendiente de respuesta para el mismo tipo de certificado , recibira respuesta de ella a su correo.";
+            typemessage = "ERROR";
+            return;
+        }
+        await RequestCertificateService.Create(model);
+        typemessage = "OK";
+        ResultMessage = "Hemos enviado su solicitud , recibira respuesta de ella a su correo.";
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+    }
+
+ 
+}

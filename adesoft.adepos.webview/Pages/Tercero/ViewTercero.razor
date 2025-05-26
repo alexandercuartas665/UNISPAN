@@ -1,0 +1,293 @@
+﻿@page "/ViewTercero/{TerceroId}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject TerceroService terceroService
+@inject IJSRuntime JSRuntime
+@inject NotificationService notificationService
+@inject LocationGenericService locationGenericService
+@inject CompanyService companyService
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                EMPLEADOS
+            </div>
+        </div>
+    </div>    
+    <div class="card-body">
+        <RadzenTemplateForm name="formcliente" id="formcliente" Method="post" @onsubmit="OnSubmit" class="col-md-12" TItem="Tercero" Data="@model">
+
+            <div class="form-row">
+                <div class="form-group col-md-1">
+                    <input class="btn btn-success btn-sm" value="Guardar" type="submit" />
+                </div>
+                <div class="form-group col-md-1">
+                    <a class="btn btn-success btn-sm" href="/ViewSearchTercero">Buscar</a>
+                </div>
+            </div>
+            <RadzenFieldset Text="Informacion Personal">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputName">Nombre</label>
+                        <RadzenTextBox Name="inputName" @bind-Value="model.FirstName" class="form-control" placeholder="Nombre" />
+                        <RadzenRequiredValidator Component="inputName" Text="Nombre es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="inputLastName">Apellido</label>
+                        <RadzenTextBox Name="inputLastName" @bind-Value="model.LastName" class="form-control" placeholder="Apellido" />
+                        <RadzenRequiredValidator Component="inputLastName" Text="Apellido es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="inputDocument">Cedula o Nit</label>
+                        <RadzenTextBox Name="inputDocument" @bind-Value="model.NumDocument" class="form-control" />
+                        <RadzenRequiredValidator Component="inputRef" Text="Documento es requerido" Popup="false" />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="Filter4" class="d-block">Estado</label>
+                        <RadzenCheckBox @bind-Value="model.IsActive" Name="CheckBox1" TValue="bool" Disabled="true" />
+                        <RadzenLabel Text="Activo" Component="CheckBox1" Style="margin-left: 8px; vertical-align: middle;" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="inputEmail">Correo</label>
+                        <RadzenTextBox Name="inputEmail" @bind-Value="model.Email" class="form-control" />
+                        @*<RadzenRequiredValidator Component="inputEmail" Text="Correo es requerido" Popup="false" />*@
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputAdress1">Direccion</label>
+                        <RadzenTextBox Name="inputAdress1" @bind-Value="model.Adress1" class="form-control" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="inputPhone1">Telefono </label>
+                        <RadzenTextBox Name="inputPhone1" TValue="decimal" @bind-Value="model.Phone1" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="terceroType">Tipo empleado</label>
+                        <RadzenDropDown Name="terceroType" class="form-control" @bind-Value="model.TypeTerceroId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data="terceroTypes" TextProperty="Name" ValueProperty="TypeTerceroId" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="CodeEnterprise">Código empleado</label>
+                        <RadzenTextBox Name="CodeEnterprise" @bind-Value="model.CodeEnterprise" class="form-control" />
+                    </div>
+                </div>                
+
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="Informacion Laboral">
+
+                <RadzenTabs Change="SelectedChangeTab" SelectedIndex="TabSelected">
+                    <Tabs>
+                        <RadzenTabsItem Text="Perfil">
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="InputEnterprise">Empresa</label>
+                                    <RadzenDropDown Name="InputEnterprise" Disabled="true" class="form-control" @bind-Value="model.EnterpriseId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.EMPRESA).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="InputCentroCosto">Centro de costo</label>
+                                    <RadzenDropDown Name="InputCentroCosto" Disabled="true" class="form-control" @bind-Value="model.AreaId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.AREA).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="InputCargo">Cargo</label>
+                                    <RadzenDropDown Name="InputCargo" Disabled="true" class="form-control" @bind-Value="model.CargoId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.CARGO).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="InputSede">Sede</label>
+                                    <RadzenDropDown Name="InputSede" Disabled="true" class="form-control" @bind-Value="model.SucursalId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.SUCURSAL).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="InputSede">Centro de costo homologado</label>
+                                    <RadzenDropDown Name="InputSede" class="form-control" @bind-Value="model.AreaIdHomologate" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.AREAHM).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="InputSede">Cargo homologado</label>
+                                    <RadzenDropDown Name="InputSede" class="form-control" @bind-Value="model.CargoIdHomologate" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.CARGOHM).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="inputInicionC">Inicio Contrato</label>
+                                    <RadzenTextBox Name="inputInicionC" ReadOnly="true" Value="@model.LabelDateContractStart" class="form-control" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="inputFinC">Fin Contrato</label>
+                                    <RadzenTextBox Name="inputFinC" ReadOnly="true" Value="@model.LabelDateContractEnd" class="form-control" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="inputSueldo">Sueldo</label>
+                                    <RadzenTextBox Name="inputSueldo" ReadOnly="true" Value="@(model.Salary.ToString("N2"))" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="inputVacacionH">Vacacion Hasta</label>
+                                    <RadzenTextBox Name="inputVacacionH" ReadOnly="true" Value="@model.LabelVacationUntil" class="form-control" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="inputVacacionDays">Dias pagados de vacaciones</label>
+                                    <RadzenTextBox Name="inputVacacionDays" ReadOnly="true" Value="@(model.DayPaysVacations.ToString("N2"))" class="form-control" />
+                                </div>
+                            </div>
+                            @if (model.DateRetirement != null)
+                            {
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label for="inputDateRetir">Fecha de retiro</label>
+                                        <RadzenTextBox Name="inputDateRetir" ReadOnly="true" Value="@model.LabelDateRetirement" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label for="inputRazonRet">Motivo del retiro</label>
+                                        <RadzenTextBox Name="inputRazonRet" ReadOnly="true" Value="@(model.ReasonRetirement)" class="form-control" />
+                                    </div>
+                                </div>
+                            }
+                        </RadzenTabsItem>
+                        <RadzenTabsItem Text="Prestaciones Sociales">
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="InputEps">EPS</label>
+                                    <RadzenDropDown Name="InputEps" Disabled="true" class="form-control" @bind-Value="model.EpsId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.EPS).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="Inputafp">AFP</label>
+                                    <RadzenDropDown Name="Inputafp" Disabled="true" class="form-control" @bind-Value="model.AfpId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.AFP).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="InputArl">ARL</label>
+                                    <RadzenDropDown Name="InputArl" Disabled="true" class="form-control" @bind-Value="model.ArlId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.ARL).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="InputArl">AFC</label>
+                                    <RadzenDropDown Name="InputArl" Disabled="true" class="form-control" @bind-Value="model.AfcId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.AFC).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="InputCaja">Caja Compensacion</label>
+                                    <RadzenDropDown Name="InputCaja" Disabled="true" class="form-control" @bind-Value="model.CajaCompesacionId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@(locationGenerics.Where(x=>x.TypeLocation==TypesLocations.CAJA).ToList())" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                            </div>
+                        </RadzenTabsItem>
+                    </Tabs>
+                </RadzenTabs>
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="Documentacion">
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <RadzenFileInput Name="InputPhoto" @bind-Value="@model.PhotoBase64" ChooseText="Fotografia" Style="width:150px;" TValue="string" />
+                    </div>
+                    @*<div class="form-group col-md-3">
+                            <RadzenFileInput Name="InputPhoto" @bind-Value="@model.Photo1Base64" ChooseText="Cedula Frente" Style="width:150px;" TValue="string"  />
+                        </div>
+                        <div class="form-group col-md-3">
+                            <RadzenFileInput Name="InputPhoto" @bind-Value="@model.Photo2Base64" ChooseText="Cedula Atras" Style="width:150px;" TValue="string" />
+                        </div>*@
+                </div>
+            </RadzenFieldset>
+
+
+        </RadzenTemplateForm>
+
+        @*<h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>*@
+    </div>
+</div>
+
+
+
+
+@code {
+    ElementReference Fileupload;
+    [Parameter]
+    public string TerceroId { get; set; }
+
+
+    List<LocationGeneric> locationGenerics { get; set; }
+    List<TypeTercero> terceroTypes { get; set; }
+
+    Tercero model = new Tercero();
+    Company companyCurrent;
+    public int TabSelected = 0;
+    protected override async Task OnInitializedAsync()
+    {
+        model.TypePersonId = 1;
+        locationGenerics = await locationGenericService.selectAll(new LocationGeneric());
+        terceroTypes = new List<TypeTercero>()
+        {
+            new TypeTercero
+            {
+                TypeTerceroId = 3,
+                Name = "Empleado"
+            },
+            new TypeTercero
+            {
+                TypeTerceroId = 5,
+                Name = "Operario de Producción "
+            }
+        };
+
+        if (long.Parse(TerceroId) != 0)
+        {
+
+            model = await terceroService.SelectById(new Tercero() { TerceroId = long.Parse(TerceroId), TransOption = 3 });
+        }
+
+        //locationGenericService.selectAll(new LocationGeneric() { TypeLocation = TypesLocations.AREA });
+
+    }
+    public void SelectedChangeTab(int tabselected)
+    {
+        TabSelected = tabselected;
+    }
+    public void Changed()
+    {
+
+    }
+
+    public void ChangedFile()
+    {
+        Console.WriteLine(Fileupload.Id);
+        JSRuntime.InvokeAsync<string>("$.fn.GetFilesInput", Fileupload);
+
+
+        //string source = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABG4...YII=";
+        //string base64 = source.Substring(source.IndexOf(',') + 1);
+        //byte[] data = Convert.FromBase64String(base64);
+    }
+
+    async void OnSubmit()
+    {        
+        if (model.TerceroId != 0)
+        {
+            model.TransOption = 2;
+            Tercero u = await terceroService.Update(model);
+            model.TerceroId = u.TerceroId;
+        }
+        else
+        {
+            model.TransOption = 2;
+            Tercero u = await terceroService.Create(model);
+            model.TerceroId = u.TerceroId;
+
+        }
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el cliente correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+
+    }
+
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+}

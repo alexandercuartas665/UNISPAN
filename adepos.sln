@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33530.505
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "adesoft.adepos.webview", "adesoft.adepos.webview\adesoft.adepos.webview.csproj", "{E73EAF8E-05DC-4E85-A975-504DFD12730D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "adesoft.adeposx.report", "adesoft.adeposx.report\adesoft.adeposx.report\adesoft.adeposx.report.csproj", "{9571676B-C93C-4FF9-A575-A8AFBC124FAC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E73EAF8E-05DC-4E85-A975-504DFD12730D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E73EAF8E-05DC-4E85-A975-504DFD12730D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E73EAF8E-05DC-4E85-A975-504DFD12730D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E73EAF8E-05DC-4E85-A975-504DFD12730D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9571676B-C93C-4FF9-A575-A8AFBC124FAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9571676B-C93C-4FF9-A575-A8AFBC124FAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9571676B-C93C-4FF9-A575-A8AFBC124FAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9571676B-C93C-4FF9-A575-A8AFBC124FAC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {136D1E8B-CF25-4DB4-88D1-9B037E5FA142}
+	EndGlobalSection
+EndGlobal

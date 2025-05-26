@@ -1,0 +1,74 @@
+﻿@page "/ViewModifyItemMedicion"
+@inject NotificationService notificationService
+@inject DialogService dialogService
+
+@code {
+    [Parameter]
+    public DetailProduction objItem { get; set; }
+
+    [Parameter]
+    public object objViewCall { get; set; }
+
+    public decimal CantOrigin { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        objItem.ObservacionesCambio = "";
+        CantOrigin = objItem.Cant;
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    void Savechangue()
+    {
+        if (objItem.Cant != CantOrigin && string.IsNullOrEmpty(objItem.ObservacionesCambio))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Por favor ingrese un motivo por el ajuste realizado.", Duration = 2000 });
+            return;
+        }
+        UserApp userp = ((ViewMedicion)objViewCall).userapp;
+        objItem.Observation += userp.Username.ToUpper() + ";" + objItem.Cant + ";" + objItem.ObservacionesCambio.ToUpper() + "|";
+        dialogService.Close();
+        if (objViewCall is ViewMedicion)
+        {
+            ((ViewMedicion)objViewCall).RefreshView();
+        }
+    }
+
+    void CancelChangue()
+    {
+        objItem.Cant = CantOrigin;
+        objItem.ObservacionesCambio = "";
+        dialogService.Close();
+    }
+}
+
+<div class="card">
+    <div class="card-header">
+        MODIFICAR CANTIDAD
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <input class="btn btn-success btn-sm" @onclick="Savechangue" value="Aceptar" type="button" />
+                <input class="btn btn-danger btn-sm" @onclick="CancelChangue" value="Cancelar" type="button" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-8">
+                <label for="inputNameProduct">Producto</label>
+                <RadzenTextBox Value="@objItem.Item.DescriptionShow" Name="inputNameProduct" class="form-control " />
+            </div>
+            <div class="form-group col-md-4">
+                <label for="inputCant">Producto</label>
+                <RadzenNumeric Name="inputCant" Placeholder="Cantidad" @bind-Value="objItem.Cant" class="form-control" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label for="TextNote">Motivo de ajuste</label>
+                <RadzenTextArea @bind-Value="objItem.ObservacionesCambio" Name="TextNote" Rows="2" MaxLength="200" class="form-control text-uppercase" placeholder="Motivo de ajuste" />
+            </div>
+        </div>
+    </div>
+</div>

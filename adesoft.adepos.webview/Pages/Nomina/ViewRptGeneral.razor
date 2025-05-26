@@ -1,0 +1,172 @@
+﻿@page "/HR/ViewRptGeneral"
+@using adesoft.adepos.webview.Data.DTO;
+@using adesoft.adepos.webview.Data.Model;
+@using adesoft.adepos.webview.Util;
+@using  Newtonsoft.Json
+@inject IHttpContextAccessor httpContextAccessor
+@inject NominaService nominaService
+@inject SimexService simexService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@code {
+    DTOHREmployFilter filter;
+    ConnectionDB connectionDB;
+
+    List<LocationGeneric> Areas { get; set; }
+    List<LocationGeneric> AreasHomologate { get; set; }
+    List<LocationGeneric> Empresas { get; set; }
+    List<DTOHRGroup> Filters;
+
+    public string LastUpdateModule { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter = new DTOHREmployFilter();
+        await this.initComponents();
+    }
+
+    private async Task initComponents()
+    {
+        var lum = await simexService.GetLastUpdateModule("HR-CG1");
+        if (lum is null)
+            LastUpdateModule = "No registrada...";
+        else
+            LastUpdateModule = lum.LastUpdateModule_At.ToString();
+
+        this.Areas = await nominaService.GetLocations("AREA");
+        this.AreasHomologate = await nominaService.GetLocations("AREAHM");
+        this.Empresas = await nominaService.GetLocations("EMPRESA");
+        var empresas = this.filter.EnterpriceIds.ToList();
+        foreach (var emp in this.Empresas)
+        {
+            empresas.Add(emp.LocationGenericId);
+        }
+        this.filter.EnterpriceIds = empresas;
+
+        this.Filters = new List<DTOHRGroup>()
+    {
+                new DTOHRGroup()
+                {
+                    Id = 0,
+                    Description = "Ninguno"
+                },
+                new DTOHRGroup()
+                {
+                    Id = 1,
+                    Description = "Centro de Costos"
+                },
+                new DTOHRGroup()
+                {
+                    Id = 2,
+                    Description = "Centro de Costos Homologado"
+                }
+            };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            connectionDB = httpContextAccessor.HttpContext.Session.Get<ConnectionDB>("ConnectionDB");
+
+            await BtnGenerateRpt();
+        }
+    }
+
+    void ChangeFilter()
+    {
+        this.filter.AreaIds = new List<long>();
+        this.filter.AreaIdsHomologate = new List<long>();
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async Task BtnGenerateRpt()
+    {
+        string RptOpt = "General";
+        filter.ReportName = RptOpt;
+        string guidfilter = Guid.NewGuid().ToString();
+        filter.GuidFilter = guidfilter;
+        await nominaService.AddEmployFilter(filter);
+
+        string paramurl = "RptHRViewReport.aspx?CuentaN=" + connectionDB.CuentaN + "&filterobj=" + guidfilter + "&RptOpt=" + RptOpt;
+        await JSRuntime.InvokeVoidAsync("$.fn.LoadReport", paramurl);
+
+        StateHasChanged();
+    }
+}
+
+<div class="card" style="color:#102161;font-weight:bold;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                REPORTE GENERAL
+            </div>
+            <div class="col-4">
+                <label>Última actualización:</label>
+                <span>@LastUpdateModule</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label for="FilterDateinit">Fecha campo Inicio</label>
+                        <RadzenDatePicker Name="FilterDateinit" DateFormat="MM/dd/yyyy" @bind-Value="@filter.FromDate" />
+                    </div>
+
+                    <div class="form-group col-md-3">
+                        <label for="FilterDateend">Fecha Final</label>
+                        <RadzenDatePicker Name="FilterDateend" DateFormat="MM/dd/yyyy" @bind-Value="@filter.ToDate" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="Filter4" class="d-block">&nbsp;</label>
+                        <input class="btn btn-success btn-sm" @onclick="BtnGenerateRpt" value="Generar Reporte" type="button" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="Filter4 ">Empresas</label>
+                        <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.EnterpriceIds" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Empresas" TextProperty="Description" ValueProperty="LocationGenericId" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="Filter4 ">Filtrar por</label>
+                        <RadzenDropDown class="form-control" @bind-Value="filter.FilterId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@Filters" TextProperty="Description" ValueProperty="Id" Change="@ChangeFilter" />
+                    </div>
+                    @switch (filter.FilterId)
+                    {
+                        case 1:
+                            {
+                                <div class="form-group col-md-4">
+                                    <label for="Filter4" class="d-block">&nbsp;</label>
+                                    <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.AreaIds" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@Areas" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                break;
+                            }
+
+                        case 2:
+                            {
+                                <div class="form-group col-md-4">
+                                    <label for="Filter4" class="d-block">&nbsp;</label>
+                                    <RadzenDropDown AllowFiltering="true" class="form-control" @bind-Value="filter.AreaIdsHomologate" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="true" Data="@AreasHomologate" TextProperty="Description" ValueProperty="LocationGenericId" />
+                                </div>
+                                break;
+                            }
+
+                        default:
+                            break;
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
+        </div>
+    </div>
+</div>

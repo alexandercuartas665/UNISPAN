@@ -1,0 +1,453 @@
+﻿@page "/viewordermanufacturing/{TransactionGenericId}"
+@using adesoft.adepos.webview.Pages.Item
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+
+@*@inject TransactionGenericService userAppService*@
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject ItemService itemService
+@inject SecurityService securityService
+@inject TransactionGenericService transactionGenericService
+@inject WarehouseService warehouseService
+@inject IJSRuntime JSRuntime
+<div class="card">
+    <div class="card-header">
+        ORDEN DE FABRICACION
+    </div>
+    <div class="card-body">
+        <RadzenTemplateForm name="formutransactionapp" id="formutransactionapp" class="col-md-12" TItem="TransactionGeneric" Data="@model" Submit="@OnSubmit">
+            <div class="form-row">
+                @if (CanWrite)
+                {
+                    <div class="col-md-2">
+                        <input class="btn btn-success" value="Guardar" type="submit" />
+                    </div>
+                    <div class="col-md-2">
+                        <input class="btn btn-danger btn-sm" value="Eliminar" @onclick="DeleteOrder2" type="button" />
+                    </div>
+                }
+                <div class="col-md-2">
+                    <a class="btn btn-primary" href="/ViewSearchOrderManufacturing">Buscar</a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="selectWarehouse">Bodega</label>
+                    <RadzenDropDown Name="selectWarehouse" @bind-Value="model.WarehouseOriginId" TValue="long" Disabled="!CanWrite" class="form-control" AllowClear="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Warehouses" TextProperty="Name" ValueProperty="WarehouseId" />
+                    <RadzenRequiredValidator Component="selectWarehouse" Text="La bodega es obligatoria" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputDocument">N° Orden Interno</label>
+                    <RadzenTextBox Name="inputDocument" @bind-Value="model.DocumentExtern" Disabled="!CanWrite" class="form-control" id="inputDocument" placeholder="Numero de orden interno" />
+                    <RadzenRequiredValidator Component="inputDocument" Text="El numero interno es obligatorio" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputDateInit ">Fecha Solicitud</label>
+                    <RadzenDatePicker Name="inputDateInit" @bind-Value="model.DateInit" Disabled="!CanWrite" DateFormat="MM/dd/yyyy" class="d-block" id="inputDateInit" />
+                    <RadzenRequiredValidator Component="inputDateInit" Text="Fecha es requerido" Popup="true" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="inputDateInit ">Fecha Entrega</label>
+                    <RadzenDatePicker Name="inputDateEnd" @bind-Value="DateDelivery" Disabled="!CanWrite" DateFormat="MM/dd/yyyy" class="d-block" id="inputDateEnd" />
+                    @*<RadzenRequiredValidator Component="inputDateEnd" Text="Fecha es requerido" Popup="true" />*@
+                </div>
+                @*<div class="form-group col-md-3">
+                        <label for="TextNote">Notas</label>
+                        <RadzenTextArea @bind-Value="model.Note"  Name="TextNote" Rows="2" class="form-control" placeholder="Notas...." />
+                    </div>*@
+            </div>
+
+            <div class="form-row">
+
+                @*<div class="form-group col-md-3">
+                        <label for="selectVendedor">Vendedor</label>
+                        <RadzenDropDown Name="selectVendedor" TValue="long" class="form-control" AllowClear="false" @bind-Value="model.VendedorId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@listvendedores" TextProperty="FullName" ValueProperty="TerceroId" />
+                        <RadzenRequiredValidator Component="selectVendedor" Text="Vendedor es requerido" Popup="true" />
+                    </div>*@
+            </div>
+
+
+
+
+
+            @*<div class="form-row">
+                    <div class="form-group col-md-3">
+                        <input class="btn btn-success" value="Guardar" type="submit" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <a class="btn btn-success" href="/ViewSearchUsuario">Buscar</a>
+                    </div>
+                </div>*@
+        </RadzenTemplateForm>
+
+
+        <RadzenTemplateForm name="formudetailapp" id="formudetailapp" Visible="CanWrite" class="col-md-12" TItem="DetailTransactionGeneric" Data="@detailModel">
+
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>&nbsp;</label>
+                    <div class="input-group mb-0">
+                        <RadzenTextBox @bind-Value="detailModel.Item.Barcode" Change="@(args=>InputBarcodeChange(args))" class="form-control" placeholder="Barcode" />
+                        <div class="input-group-append">
+                            <button @onclick="OnClickSearchItem" class="btn btn-outline-secondary btn-sm" style="" type="button">
+                                Buscar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label>&nbsp;</label>
+                    <RadzenTextBox ReadOnly="true" @bind-Value="detailModel.Item.Description" class="form-control" placeholder="Item" />
+                </div>
+
+                <div class="form-group col-md-2">
+                    <label>Cant Solicitada: </label>
+                    <RadzenNumeric @bind-Value="detailModel.Cant" TValue="decimal" Change="@(args=>InputChange(args))" class="form-control" />
+                </div>
+
+                @*<div class="form-group col-md-2">
+                        <label>Precio Und: </label>
+                        <RadzenNumeric @bind-Value="detailModel.PriceUnd" TValue="decimal" Change="@(args=>InputChange(args))" class="form-control" />
+                    </div>*@
+
+                <div class="form-group col-md-1">
+                    <label>&nbsp;</label>
+                    <button type="submit" style="display:block;" @onclick="BtnAddItem" class="btn btn-primary btn-sm">+</button>
+                </div>
+            </div>
+        </RadzenTemplateForm>
+
+    </div>
+</div>
+<table class="table tableGridTrans table-bordered" style="font-size:13px !important; width:70%; margin:0 auto;">
+    <thead class="thead-dark">
+        <tr>
+            <th scope="col"></th>
+            <th scope="col">N°</th>
+            <th scope="col">Item</th>
+            <th scope="col">Solctada</th>
+            <th scope="col">Entrgda</th>
+            <th scope="col">Pendte</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (DetailTransactionGeneric t in details.OrderByDescending(x => x.NumOrder).ToList())
+        {
+            <tr>
+                <td><a href="javascript:void(0)" @onclick="@(args=>DeleteItem(t))"><i class="fat fa-trash-alt"></i></a></td>
+                <td>@(t.NumOrder)</td>
+                <td>@(t.Item.Description)</td>
+                <td>@((long)t.Cant)</td>
+                <td><RadzenNumeric @bind-Value="t.Total" ReadOnly="!CanWrite" TValue="decimal" Style="width:100px;" Change="@(args=>InputChangeTotal(t))" class="form-control" /></td>
+                <td>@((long)t.InventarioPendiente)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@*<div class="row ResumTotal">
+        <ul class="list-unstyled">
+            <li><p class="h6 ResC1">Total Bruto: </p><p class="h6 ResC2">@model.Subtotal.ToString("N2") </p></li>
+                <li><p class="h6 ResC1">- Descuentos: </p><p class="h6 ResC2">@model.TotalDiscount.ToString("N2")</p></li>
+
+            <li><p class="h6" >Descuentos: </p><p class="h6" style="width:100px;display:inline-block;">$ 400.000</p></li>
+        </ul>
+        <ul class="list-unstyled">
+
+            <li><p class="h6 ResC1">+ Impuestos: </p><p class="h6 ResC2">@model.TotalTax.ToString("N2")</p></li>
+            <li><p class="h6 ResC1" style="font-weight:bold;">Total: </p><p class="h6 ResC2">@model.TotalBuy.ToString("N2")</p></li>
+            <li><p class="h6" >Descuentos: </p><p class="h6" style="width:100px;display:inline-block;">$ 400.000</p></li>
+        </ul>
+    </div>*@
+
+
+@code {
+    [Parameter]
+    public string TransactionGenericId { get; set; }
+
+    TransactionGeneric model = new TransactionGeneric();
+    List<Warehouse> Warehouses = new List<Warehouse>();
+    DetailTransactionGeneric detailModel = new DetailTransactionGeneric();
+
+    List<DetailTransactionGeneric> details = new List<DetailTransactionGeneric>();
+
+    public DateTime? DateDelivery { get; set; }
+
+    bool CanWrite = false;
+
+    async void DeleteOrder2()
+    {
+        details.Clear();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task task = Task.Run(async () =>
+        {
+            model.TransOption = 2;
+            model.Details.ForEach(x => x.Item = null);
+            await transactionGenericService.Delete(model);
+
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                model = new TransactionGeneric();
+                model.TerceroId = 1;
+                model.VendedorId = 0;
+                model.DateInit = DateTime.Now;
+                model.Details = new List<DetailTransactionGeneric>();
+                DateDelivery = null; model.DateEnd = DateTime.MinValue;
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Eliminado Ok!", Detail = "Se elimino la orden correctamente.", Duration = 4000 });
+                this.StateHasChanged();
+            });
+        });
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        dialogService.Close();
+        Warehouses = await warehouseService.selectAll(new Warehouse() { TransOption = 2 });
+        detailModel.Item = new Item();
+        model.TerceroId = 1;
+        model.VendedorId = 0; //model.MethodPaymentId = 2; model.PaymentConditionId = 1;
+        model.DateInit = DateTime.Now;
+        model.Details = new List<DetailTransactionGeneric>();
+
+
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        ActionApp actionapp = await securityService.ValidatePermissionByTooken(tooken, "ViewSearchOrderManufacturing", "Edit");
+        CanWrite = actionapp.TransactionIsOk;
+
+        //listroles = await roleAppService.selectAll(new RoleApp());
+        if (long.Parse(TransactionGenericId) != 0)
+        {
+            model = await transactionGenericService.SelectById(new TransactionGeneric() { TransactionGenericId = long.Parse(TransactionGenericId), TransOption = 3 });
+            details = model.Details;
+            DateDelivery = model.DateEnd;
+        }
+        ReorderItems();
+    }
+
+    async void OnSubmit(TransactionGeneric para)
+    {
+        if (DateDelivery == null)
+            model.DateEnd = DateTime.MinValue;
+        else
+            model.DateEnd = DateDelivery.Value;
+
+        if (model.TransactionGenericId != 0)
+        {
+            model.TransOption = 2;
+            TransactionGeneric u = await transactionGenericService.Update(model);
+            model.TransactionGenericId = u.TransactionGenericId;
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo la orden correctamente.", Duration = 4000 });
+        }
+        else
+        {
+
+            if (details.Count == 0)
+            {
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe agregar Items a la transaccion.", Duration = 4000 });
+                return;
+            }
+            //else if (model.MethodPaymentId == 0)
+            //{
+            //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La forma de pago es obligatoria", Duration = 4000 });
+            //    return;
+            //}
+            //else if (model.PaymentConditionId == 0)
+            //{
+            //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La condicion de pago es obligatoria", Duration = 4000 });
+            //    return;
+            //}
+            model.TypeTransactionId = CodTypeTransaction.ORDENTRABAJO;//Factura compra a proveedor
+            foreach (DetailTransactionGeneric d in details)
+            {
+                DetailTransactionGeneric clon = d.GetClone<DetailTransactionGeneric>();
+                clon.HasIventory = d.Item.HasIventory;
+                clon.Item = null;
+                model.Details.Add(clon);
+            }
+
+            //BODEGA
+            ////model.WarehouseOriginId = CodWareouse.PRINCIPAL;//PRINCIPAL
+            model.WarehouseDestinId = 0;
+            /*******************/
+            model.DatePayInit = model.DateInit;
+            model.TransOption = 5;
+            CreateFactura();
+        }
+
+
+    }
+
+    public async void CreateFactura()
+    {
+        model.StateTransactionGenericId = 5;
+        TransactionGeneric tran = await transactionGenericService.Create(model);
+        if (!tran.TransactionIsOk)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = tran.MessageType, Detail = tran.MessageResponse, Duration = 4000 });
+            //  dialogService.Open<MessageGeneric>(null, new Dictionary<string, object>() { { "MessageResponse", tran.MessageResponse }, { "MessageType", model.MessageType }, { "ViewCall", this } }, new DialogOptions() { Width = "350px", Height = "260px" });
+            return;
+        }
+        details.Clear();
+        model = new TransactionGeneric();
+        model.TerceroId = 1;
+        model.VendedorId = 0;
+        model.DateInit = DateTime.Now;
+        model.Details = new List<DetailTransactionGeneric>();
+        DateDelivery = null; model.DateEnd = DateTime.MinValue;
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo la orden correctamente.", Duration = 4000 });
+        this.StateHasChanged();
+    }
+
+
+    public async void CancelCreate()
+    {
+        dialogService.Close();
+
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        //  await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+    void DeleteItem(DetailTransactionGeneric deta)
+    {
+        if (deta.DetailTransactionGenericId != 0)
+            model.DetailsRemove.Add(deta);
+        details.Remove(deta);
+        ReorderItems();
+        StateHasChanged();
+    }
+
+    void BtnAddItem()
+    {
+        if (!string.IsNullOrEmpty(detailModel.Item.Barcode) && detailModel.Cant != 0)
+        {
+            detailModel.InventarioPendiente = detailModel.Cant;
+            details.Add(detailModel);
+            ReorderItems();
+
+            StateHasChanged();
+            detailModel = new DetailTransactionGeneric();
+            detailModel.Item = new Item();
+            detailModel.Cant = 0;
+        }
+    }
+
+
+    public async void InputBarcodeChange(string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            detailModel.Item = await itemService.SelectById(new Item() { TransOption = 2, Barcode = value });
+            if (detailModel.Item == null)
+            {
+                detailModel = new DetailTransactionGeneric();
+                detailModel.Item = new Item();
+            }
+            else
+            {
+                SelectedItem();
+                StateHasChanged();
+            }
+
+        }
+    }
+
+
+    public void SelectedItem()
+    {
+        detailModel.ItemId = detailModel.Item.ItemId;
+        detailModel.Cant = 1;
+    }
+
+    public async void InputChange(decimal value)
+    {
+
+        StateHasChanged();
+
+    }
+
+    public async void InputChangeTotal(DetailTransactionGeneric det)
+    {
+
+        StateHasChanged();
+        if (det.Total <= det.Cant)
+        {
+            det.InventarioPendiente = det.Cant - det.Total;
+        }
+        else
+        {
+            det.InventarioPendiente = 0;
+        }
+        //if (!string.IsNullOrEmpty(value))
+        //{
+        //    detailModel.Item = await itemService.SelectById(new Item() { TransOption = 2, Barcode = value });
+        //    detailModel.Cant = 1; detailModel.PriceUnd = detailModel.Item.PrecioDef;
+        //    detailModel.PriceCost = detailModel.Item.PriceCost;
+
+        //    StateHasChanged();
+        //}
+    }
+
+
+
+
+    public async void InputTaxChange(decimal value)
+    {
+
+        StateHasChanged();
+        //if (!string.IsNullOrEmpty(value))
+        //{
+        //    detailModel.Item = await itemService.SelectById(new Item() { TransOption = 2, Barcode = value });
+        //    detailModel.Cant = 1; detailModel.PriceUnd = detailModel.Item.PrecioDef;
+        //    detailModel.PriceCost = detailModel.Item.PriceCost;
+
+        //    StateHasChanged();
+        //}
+    }
+
+    public void SelectSearchItem(Item select)
+    {
+        dialogService.Close();
+        detailModel.Item = select;
+        SelectedItem();
+        StateHasChanged();
+    }
+
+
+
+    async void OnClickSearchItem(MouseEventArgs e)
+    {
+        List<Item> itemsSearch = await itemService.selectAll(new Item());
+
+        dialogService.Open<CtrlSearchItem>("Busqueda", new Dictionary<string, object>() { { "lists", itemsSearch }, { "viewItem", this } }, new DialogOptions() { Width = "700px", Height = "530px", Left = "calc(50% - 350px)", Top = "calc(50% - 265px)" });
+
+    }
+
+
+    void ReorderItems()
+    {
+        int ord = 1;
+        foreach (DetailTransactionGeneric it in details)
+        {
+            it.NumOrder = ord++;
+        }
+    }
+
+
+    public void ClickAceptaMsgGeneric(MessageGeneric msg)
+    {
+
+    }
+
+    public void ClickCancelMsgGeneric(MessageGeneric msg)
+    {
+
+    }
+}

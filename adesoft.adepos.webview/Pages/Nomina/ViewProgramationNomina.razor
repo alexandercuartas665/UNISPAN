@@ -1,0 +1,98 @@
+﻿@page "/viewprogramationnomina/{ProgramationId}"
+
+@code {
+    [Parameter]
+    public string ProgramationId { get; set; }
+
+    //#d95af9 morado
+    //#2fa200 verde
+    //cornflowerblue  azul
+}
+<div class="card" style="height:calc(100% - 20px);position:fixed;width:calc(100% - 290px);">
+    <div>
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="inputDateInit ">Fecha Inicial</label>
+                <RadzenDatePicker Name="inputDateInit" TValue="DateTime" DateFormat="MM/dd/yyyy" class="d-block " id="inputDateInit" />
+            </div>
+            <div class="form-group col-md-2">
+                <label for="inputDateInit ">Fecha Final</label>
+                <RadzenDatePicker Name="inputDateInit" TValue="DateTime" DateFormat="MM/dd/yyyy" class="d-block " id="inputDateInit" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="d-block">&nbsp;</label>
+                <input class="btn btn-success btn-sm" value="Generar" type="button" style=" margin-right:5px;" />
+                <input class="btn btn-primary btn-sm" value="Adicionar Empleado" type="button" style="margin-right:5px;" />
+                @*<input class="btn btn-success btn-sm" value="Despachado" type="button" style="float:right;margin-right:5px;" />
+        <input class="btn btn-primary btn-sm" value="Guardar"  type="button" style="float:right;margin-right:5px;" />*@
+            </div>
+            @*<div class="form-group col-md-2">
+                    <label for="selectWatehouse">Bodega</label>
+                    <RadzenDropDown Name="selectCompany" TValue="long" class="form-control" Change="@(args=>selectWarehouse((long)args))" AllowClear="false" @bind-Value="model.WarehouseId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@model.Warehouses" TextProperty="Name" ValueProperty="WarehouseId" />
+                </div>*@
+
+            @*<div class="form-group col-md-6">
+                    <label class="d-block">&nbsp;</label>
+                    @if (CanWrite)
+                    {
+                        <input Name="BtnLoadOrder" class="btn btn-success btn-sm" @onclick="ClickBtnImportar" type="button" value="Importar Orden de despacho" />
+                    }
+                    <input Name="BtnGenerateReport" class="btn btn-primary btn-sm" @onclick="GenerateReportGlobal" type="button" value="Generar Reporte Global" />
+                </div>*@
+
+
+        </div>
+    </div>
+
+    <div class="" style="display:flex;overflow-y:auto;overflow-x:hidden;white-space:nowrap;">
+        <div style="white-space:nowrap;height:max-content;margin-right:5px;">
+            <div class="DIVdrapanddrop" style="padding:10px 2px 2px 2px;  width:150px;background-image:linear-gradient(180deg, rgb(204 204 204) 0%, #c1c1c1 70%);display:inline-block;min-height:100%;height:auto;">
+                <div class="d-block">
+                    <label style="margin:auto;color:black;font-size:11px;font-weight:bold;text-align:center;">@("EMPLEADOS")</label>
+                    @*<p style="color:white;font-size:10px;width:100%;text-align:center;">@st.DescriptionState</p>*@
+                </div>
+                <div class="list-group">
+                    @for (int i = 1; i < 250; i++)
+                    {
+                        <a draggable="true" @ondblclick="@(args => { })" href="javascript:void(0)" class="DIVdrapanddrop list-group-item list-group-item-action" style="padding:3px;line-height:12px;color:white;margin-top:4px;background-color:cornflowerblue;">
+                            <label style="margin-bottom:0px;font-size:10px;">@("" + "GUILLERMO LEON HOYOS" + i)</label>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+        <div style="overflow-x:auto;overflow-y:hidden;white-space:nowrap;height:max-content;">
+
+            @for (int j = 1; j < 15; j++)
+            {
+
+                <div class="DIVdrapanddrop" style="padding:10px 2px 2px 2px; width:50px; background-image:linear-gradient(180deg, rgb(204 204 204) 0%, #c1c1c1 70%);display:inline-block;min-height:100%;height:auto;">
+                    <div class="d-block">
+                        <label style="margin:auto;color:white;font-size:11px;font-weight:bold;text-align:center;color:black;">@("25 FEB")</label>
+                        @*<p style="color:white;font-size:10px;width:100%;text-align:center;">@st.DescriptionState</p>*@
+                    </div>
+                    <div class="list-group">
+
+                        @for (int i = 1; i < 250; i++)
+                        {
+                        <a draggable="true" @ondblclick="@(args => { })" href="javascript:void(0)" class="DIVdrapanddrop list-group-item list-group-item-action" style="padding:3px;line-height:12px;color:white;margin-top:4px;background-color:cornflowerblue;">
+                            <label style="margin-bottom:0px;font-size:10px;">@("" + i)</label>
+                            <label style="margin-bottom:0px;font-size:15px;color:white;">@("P")</label>
+                        </a>
+                        }
+
+
+                    </div>
+                </div>
+
+
+
+
+            }
+
+
+        </div>
+
+
+    </div>
+</div>

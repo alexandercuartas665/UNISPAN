@@ -1,0 +1,52 @@
+﻿@page "/viewsearchoperario"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject TerceroService terceroService
+@code {
+
+}
+@if (lists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Operarios de Producción
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <a href="/ViewOperario/0" class="btn btn-primary btn-sm">Nuevo Operario</a>
+            </div>
+
+            <div class="form-row">
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="20" AllowSorting="true" Data="@lists" TItem="Tercero" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenGridColumn TItem="Tercero" Property="FirstName" Title="Nombre" />
+                        <RadzenGridColumn TItem="Tercero" Property="LastName" Title="Apellido" />
+                        <RadzenGridColumn TItem="Tercero" Property="NumDocument" Title="Identificacion" />
+                        <RadzenGridColumn TItem="Tercero" Property="CodeEnterprise" Title="Codigo" />
+                        <RadzenGridColumn TItem="Tercero"   Title="">
+                            <Template Context="data">
+                                <NavLink href="@("/ViewOperario/"+ data.TerceroId)">Editar</NavLink>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    IEnumerable<Tercero> lists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lists = await terceroService.selectAll(new Tercero() { TransOption = 5 });
+        // lists= lists.Where(x => x.TypeTerceroId != 4).ToList();
+    }
+}

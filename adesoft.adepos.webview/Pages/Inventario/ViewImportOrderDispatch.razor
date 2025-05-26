@@ -1,0 +1,153 @@
+﻿@page "/ViewImportOrderDispatch"
+@using adesoft.adepos.webview.Pages;
+@using Microsoft.JSInterop;
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject TransactionGenericService transactionservice
+@inject NotificationService notificationService
+@inject LogisticsService logisticsService;
+
+@code {
+    [Parameter]
+    public object objectView { get; set; }
+    [Parameter]
+    public long WarehouseId { get; set; }
+
+    public List<DTOLogisticMasterData> customers;
+    public List<DTOLogisticMasterData> vendors;
+    public List<DTOLogisticMasterData> salesPersons;
+    public List<DTOLogisticMasterData> modules;
+    public List<DTOLogisticMasterData> cities;
+    public List<DTOLogisticMasterData> transports;
+    public List<DTOLogisticMasterData> vehicleTypes;
+
+    TransactionGeneric model { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new TransactionGeneric();
+
+        this.customers = await logisticsService.GetCustomers();
+        this.vendors = await logisticsService.GetVendors();
+        this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+        this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
+        this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
+        this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+        this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+
+    }
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void OnSubmit(TransactionGeneric tra)
+    {
+        if (tra.DocumentExtern != null)
+            tra.DocumentExtern = tra.DocumentExtern.Trim();
+        if (string.IsNullOrEmpty(tra.AuxTest))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe adjuntar la orden de despacho.", Duration = 4000 });
+            return;
+        }
+        //tra.Note = tra.Note.ToUpper();
+        model.Scheduled = false;
+        model.DateEnd = TransactionGeneric.DateAplazados;
+        tra.TransOption = 4;
+        TransactionGeneric resp = await transactionservice.SelectById(tra);
+        if (resp != null && resp.TransactionGenericId != 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Ya existe una orden con el mismo numero.", Duration = 4000 });
+            return;
+        }
+        if (objectView is ViewDashBoardDispatchOrder)
+            ((ViewDashBoardDispatchOrder)objectView).SaveImport(tra);
+    }
+
+    void ClickCancel()
+    {
+        if (objectView is ViewDashBoardDispatchOrder)
+            ((ViewDashBoardDispatchOrder)objectView).CancelImport();
+    }
+
+    void checkAplazado(bool value)
+    {
+        if (value)
+        {
+            model.DateEnd = TransactionGeneric.DateAplazados;
+        }
+        else
+        {
+            model.DateEnd = DateTime.Now;
+        }
+    }
+}
+
+
+
+<RadzenTemplateForm name="formOrderImport" id="formOrderImport" Method="post" class="col-md-12" TItem="TransactionGeneric" Data="@model" Submit="@OnSubmit">
+    <div class="row navbar bg-light">
+        <div class="col-sm-12 pl-0">
+            <input class="btn btn-success" value="Importar" type="submit" />
+            <a class="btn btn-danger" @onclick="ClickCancel">Cancelar</a>
+        </div>        
+    </div>
+    <div class="row pt-3">
+        <div class="col-sm-6">
+            <div class="form-row">
+                <div class="form-group col-sm-6">
+                    <label for="TextorderNum">Digite el numero de orden<b class="text-danger">*</b></label>
+                    <RadzenTextBox @bind-Value="model.DocumentExtern" Name="TextorderNum" class="form-control" placeholder="# de Orden" />
+                    <RadzenRequiredValidator Component="TextorderNum" Text="Numero de orden es requerido" Popup="true" />
+                </div>
+                @*<div class="form-group col-md-4">
+                    <label for="inputDateInit ">Ingresar como aplazado?</label>
+                    <RadzenCheckBox Name="InputAplazar" class="d-block" TValue="bool" id="InputAplazar" />
+                </div>*@
+            </div>
+            <div class="form-group">
+                    <label for="inputNameWork">Obra<b class="text-danger">*</b></label>
+                    <RadzenTextBox @bind-Value="model.NameWork" Name="TextNameWork" class="form-control" placeholder="Nombre de obra" />
+                    <RadzenRequiredValidator Component="TextNameWork" Text="Nombre de obra es requerido" Popup="true" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-sm-4">
+                    <label for="identificationNum">NIT</label>
+                    <RadzenTextBox class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
+                </div>
+                <div class="form-group col-sm-8">
+                    <label for="customerName">Nombre cliente</label>
+                    <RadzenDropDown AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="salesPeron">Comercial</label>
+                <RadzenDropDown AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+            </div>
+            <div class="form-group">
+                <label for="module">Modulo</label>
+                <RadzenDropDown AllowFiltering="true" Name="module" class="form-control" @bind-Value="model.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@modules" TextProperty="Description" ValueProperty="Id" />
+            </div>
+            <div class="form-group">
+                <label for="city">Ciudad</label>
+                <RadzenDropDown AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
+            </div>
+            <div class="form-group">
+                <label for="exampleInputEmail1">Transporte a cargo de</label>
+                <RadzenDropDown Name="city" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" />
+            </div>            
+            <div class="form-group">
+                <label for="vehicleType">Tipo vehículo</label>
+                <RadzenDropDown AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" />
+            </div>            
+        </div>
+        <div class="col-sm-6">
+            <div class="form-group">
+                <label for="inputfileDocument">Documento Orden despacho</label>
+                <RadzenFileInput Name="inputfileDocument" @bind-Value="@model.AuxTest" Accept="*" ChooseText="Documento" TValue="string" />
+            </div>
+        </div>
+    </div>
+</RadzenTemplateForm>

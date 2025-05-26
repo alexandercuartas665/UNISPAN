@@ -1,0 +1,42 @@
+﻿@page "/viewsearchcompany"
+
+@using adesoft.adepos.webview.Data.Model
+@using adesoft.adepos.webview.Data
+@inject CompanyService companyService
+@code {
+
+}
+@if (lists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <a href="/ViewCompany/0" class="btn btn-primary">Nueva Sede</a>
+    </div>
+
+    <div class="row">
+        <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="4" AllowSorting="true" Data="@lists" TItem="Company" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="Company" Property="Name" Title="Sede" />
+                <RadzenGridColumn TItem="Company" Property="Nit" Title="Nit o Cedula" />
+                <RadzenGridColumn TItem="Company" Property="CompanyId" Title="Editar">
+                    <Template Context="data">
+                        <NavLink href="@("/ViewCompany/"+ data.CompanyId)">Editar</NavLink>
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+}
+
+@code {
+    IEnumerable<Company> lists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lists = await companyService.selectAll(new Company() { TransOption = 2 });
+        //lists= lists.Where(x => x.TypeCompanyId != 4).ToList();
+    }
+}

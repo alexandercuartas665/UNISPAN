@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:orientation="horizontal"
+    android:padding="5dp"
+    >
+
+    <TextView
+        android:id="@+id/lblNameOperator"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Enter Random Number"
+        android:gravity="center_vertical"
+        android:layout_weight="0.5" />
+
+    <ImageButton
+        android:id="@+id/btnDelteOperator"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginRight="20dp"
+        android:background="@null"
+        android:fontFamily="@font/poppins_medium"
+        android:gravity="center"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:src="@drawable/baseline_delete_20"
+        android:textColor="#ffffff"
+        android:textSize="12sp"
+        android:foregroundGravity="center"
+        />
+</LinearLayout>

@@ -1,0 +1,343 @@
+﻿@page "/ViewMedicion/{ProductionId}/{DateActivity}"
+
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.Model
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject CategoryService categoryService
+@inject NotificationService notificationService
+@inject ProduccionService produccionService
+@inject TerceroService terceroService
+@inject SecurityService securityService
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    [Parameter]
+    public string ProductionId { get; set; }
+
+    [Parameter]
+    public string DateActivity { get; set; }
+
+    List<Category> categorys = new List<Category>();
+    DetailProduction detailpro = new DetailProduction();
+    Production model = new Production();
+    List<TypeActivity> activitys = new List<TypeActivity>();
+    List<TypeActivity> activitysBinding = new List<TypeActivity>();
+
+    List<Tercero> Terceros = new List<Tercero>();
+    Tercero OperarioSelect { get; set; }
+    public UserApp userapp;
+    bool IsNew = false;
+    protected override async Task OnInitializedAsync()
+    {
+        categorys = await categoryService.selectAll(new Category() { TransOption = 2 });
+        detailpro.Item = new Item();
+        OperarioSelect = new Tercero();
+        activitys = await produccionService.selectAllTypeActivitys();
+        Terceros = await terceroService.selectAll(new Tercero() { TransOption = 5 });
+        long prodId = long.Parse(ProductionId);
+        try
+        {
+            string tooken = await AuthStateProvider.GetTokenAsync();
+            userapp = await securityService.GetUserAppByTooken(tooken);
+        }
+        catch
+        {
+
+        }
+        if (prodId != 0)
+        {
+            model = await produccionService.SelectProductionById(new Production() { ProductionId = prodId, TransOption = 1 });
+            activitysBinding = activitys; IsNew = false;
+        }
+        else
+        {
+            model.DateProduction = DateTime.ParseExact(DateActivity, "MMddyyyy", null); //mmddyyyy
+            if (userapp != null)
+                model.UserAppId = userapp.UserAppId; IsNew = true;
+        }
+
+    }
+
+
+    async void SaveAll()
+    {
+
+        if (model.DetailTerceros.Count == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar al menos un operario.", Duration = 2000 });
+            return;
+        }
+        if (model.DetailProductions.Count == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe adicionar al menos un item en medicion.", Duration = 2000 });
+            return;
+        }
+
+        if (model.ProductionId == 0)
+        {
+            model.TransOption = 1;
+            await produccionService.Create(model);
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el item correctamente.", Duration = 4000 });
+        }
+        else
+        {
+            model.TransOption = 1;
+            await produccionService.Update(model);
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Guardado Ok!", Detail = "Se guardo el item correctamente.", Duration = 4000 });
+        }
+    }
+
+    async void searchItem()
+    {
+        List<Item>
+    itemsSearch = await itemService.selectAll(new Item() { TransOption = 4, categoryMedicionId = model.CategoryMedicionId });
+        dialogService.Open<CtrlSearchItemProduct>("Busqueda", new Dictionary<string, object>() { { "lists", itemsSearch }, { "viewItem", this } }, new DialogOptions() { Width = "800px", Height = "530px", Left = "calc(50% - 400px)", Top = "10px" });
+    }
+
+    public void SelectSearchItem(Item itemselect)
+    {
+        // dialogService.Close();
+        detailpro.Item = itemselect;
+        detailpro.ItemId = itemselect.ItemId;
+        detailpro.Cant = itemselect.Cant;
+        itemselect.Cant = 0;
+        addItem();
+        // StateHasChanged();
+    }
+
+    void addItem()
+    {
+        //if (detailpro.Item == null || detailpro.Item.ItemId == 0)
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar un producto.", Duration = 2000 });
+        //    return;
+        //}
+        //if (model.DetailProductions.Where(x => x.ItemId == detailpro.Item.ItemId).Count() > 0)
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "El producto seleccionado ya fue agregado.", Duration = 2000 });
+        //    return;
+        //}
+        //if (detailpro.Cant <= 0)
+        //{
+        //    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "La cantidad debe ser mayor a 0.", Duration = 2000 });
+        //    return;
+        //}
+        model.DetailProductions.Add(detailpro);
+        detailpro = new DetailProduction();
+        detailpro.Item = new Item();
+        StateHasChanged();
+    }
+
+
+
+    void AddOperario()
+    {
+        if (OperarioSelect == null || OperarioSelect.TerceroId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "Debe seleccionar un operario.", Duration = 2000 });
+            return;
+        }
+        if (model.DetailTerceros.Where(x => x.TerceroId == OperarioSelect.TerceroId).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "El operario seleccionado ya fue agregado.", Duration = 2000 });
+            return;
+        }
+        model.DetailTerceros.Add(new DetailProductionTercero() { TerceroId = OperarioSelect.TerceroId, Tercero = OperarioSelect });
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void DeleteOperario(DetailProductionTercero detTerc)
+    {
+        model.DetailTerceros.Remove(detTerc);
+        if (detTerc.DetailProductionTerceroId != 0)
+            model.DetailTercerosDetele.Add(detTerc);
+    }
+
+    async void DeleteItem(DetailProduction detPro)
+    {
+        model.DetailProductions.Remove(detPro);
+        if (detPro.DetailProductionId != 0)
+            model.DetailProductionsDetele.Add(detPro);
+    }
+
+    void ChangueCategory(long CategoryId)
+    {
+        model.TypeActivityId = 0;
+        model.CategoryMedicionId = CategoryId;
+        if (model.CategoryMedicionId != 0)
+        {
+            activitysBinding = activitys.Where(x => x.CategoryId == model.CategoryMedicionId).ToList();
+        }
+        else
+        {
+            activitysBinding = new List<TypeActivity>();
+        }
+    }
+
+    public void RefreshView()
+    {
+        StateHasChanged();
+    }
+
+
+    async void VerFoto(DetailProduction detPro, Production prod, string UrlFoto)
+    {
+        dialogService.Open<ViewPreviewFoto>("Fotografia", new Dictionary<string, object>() { { "production", prod }, { "DetailProduction", detPro }, { "objViewCall", this }
+        , { "UrlPhoto", UrlFoto } }, new DialogOptions() { Width = "600px", Height = "600px", Left = "calc(50% - 300px)", Top = "10px" });
+    }
+
+    async void ModificarItem(DetailProduction detPro)
+    {
+        dialogService.Open<ViewModifyItemMedicion>("Busqueda", new Dictionary<string, object>() { { "objItem", detPro }, { "objViewCall", this } }, new DialogOptions() { Width = "500px", Height = "360px", Left = "calc(50% - 250px)", Top = "10px" });
+    }
+
+    async void ViewHistoryChangues(DetailProduction detPro)
+    {
+        dialogService.Open<ViewHistoryChangues>("HISTORIAL DE CAMBIOS", new Dictionary<string, object>() { { "HistoryChangues", detPro.Observation }, { "objItem", detPro }, { "objViewCall", this } }, new DialogOptions() { Width = "800px", Height = "360px", Left = "calc(50% - 400px)", Top = "10px" });
+    }
+}
+<div class="card">
+    <div class="card-header">
+        Medicion
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <input class="btn btn-success btn-sm" @onclick="SaveAll" value="Guardar" type="submit" />
+                <a class="btn btn-success btn-sm " href="/ViewSearchMedicion/@model.DateProduction.ToString("MMddyyyy")">Regresar</a>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="inputDateMedicion">Fecha</label>
+                <RadzenTextBox Name="inputDateMedicion" Value="@model.DateProductionLabel" class="form-control" ReadOnly="true" />
+            </div>
+            <div class="form-group col-md-4">
+                <label for="selectCategoria">Categoria de medición</label>
+                <RadzenDropDown Name="selectCategoria" class="form-control" Disabled="!IsNew" Value="@model.CategoryMedicionId" AllowClear="false" ValueChanged="ChangueCategory" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@categorys" TextProperty="Name" ValueProperty="CategoryId" />
+
+            </div>
+            @if (model.CategoryMedicionId != 0)
+            {
+                <div class="form-group col-md-3">
+                    <label for="selectActivity">Actividad</label>
+                    <RadzenDropDown Name="selectActivity" class="form-control" Disabled="!IsNew" AllowClear="false" @bind-Value="model.TypeActivityId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@activitysBinding" TextProperty="Name" ValueProperty="TypeActivityId" />
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(model.Photo1Name))
+            {
+                <div class="form-group col-md-3">
+                    @*<img src="@model.Photo1Name"
+                        alt="Imagen" class="img-responsive img-rounded"
+                        style="max-height: 50px; max-width: 50px;"/>*@
+                    <a href="javascript:void(0);" @onclick="@(args => { VerFoto(null,model,model.Photo1Name); })"><span class="fat fa-image"></span>&nbsp;Ver Fotografia</a>
+                </div>
+            }
+        </div>
+
+        @if (model.TypeActivityId != 0)
+        {
+            <RadzenFieldset Text="OPERARIOS">
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="selectOperario">Operario</label>
+                        <RadzenDropDown Name="selectOperario" class="form-control" @bind-Value="OperarioSelect" AllowClear="false" TValue="Tercero" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@Terceros" TextProperty="FullName" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label class="d-block">&nbsp;</label>
+                        <input class="btn btn-success btn-sm" @onclick="AddOperario" value="+ Adicionar" type="button" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <table class="table tablemedicion">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Codigo</th>
+                                <th scope="col">Operario</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (DetailProductionTercero det in model.DetailTerceros)
+                            {
+                                <tr>
+                                    <td>@det.Tercero.CodeEnterprise</td>
+                                    <td>@det.Tercero.FullName</td>
+                                    <td>
+                                        <a href="javascript:void(0);" @onclick="@(args => { DeleteOperario(det); })"><span class="fat fa-trash-alt"></span></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="PRODUCCION">
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        @*<label for="selectProducto">Producto</label>
+                            <RadzenTextBox Name="InputProductName" Value="@detailpro.Item.DescriptionShow" ReadOnly="true" />
+                            <input class="btn btn-primary btn-sm" @onclick="searchItem" value="Buscar" type="button" />
+                            <RadzenNumeric Name="InputCant" Placeholder="Cant" @bind-Value="detailpro.Cant" Style="width:80px;" />*@
+                        <input class="btn btn-success btn-sm" @onclick="searchItem" value="Agregar Producto" type="button" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <table class="table tablemedicion">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Codigo</th>
+                                <th scope="col">Producto</th>
+                                <th scope="col">Area</th>
+                                <th scope="col">Peso</th>
+                                <th scope="col">Cant</th>
+                                <th scope="col"></th>
+                                <th scope="col"></th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (DetailProduction de in model.DetailProductions.ToList())
+                            {
+                                <tr>
+                                    <td>@de.Item.Barcode</td>
+                                    <td>@de.Item.Description</td>
+                                    <td>@(de.Item.Area + " M2")</td>
+                                    <td>@(de.Item.Weight + " KG")</td>
+                                    <td>@de.Cant</td>
+                                    <td><a href="javascript:void(0);" @onclick="@(args => { ModificarItem(de); })"><span class="fat fa-edit"></span>&nbsp;Modificar</a></td>
+                                    @if (!string.IsNullOrEmpty(de.Photo1Name))
+                                    {
+                                        <td><a href="javascript:void(0);" @onclick="@(args => { VerFoto(de,null,de.Photo1Name); })"><span class="fat fa-image"></span>&nbsp;Ver Fotografia</a></td>
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+                                    @if (!string.IsNullOrEmpty(de.Observation))
+                                    {
+                                        <td><a href="javascript:void(0);" @onclick="@(args=>{ ViewHistoryChangues(de); })"><span class="fat fa-book"></span></a></td>
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </RadzenFieldset>
+        }
+    </div>
+</div>

@@ -1,0 +1,395 @@
+﻿@page "/viewdetaildispatch"
+@using adesoft.adepos.webview.Pages;
+@using Microsoft.JSInterop;
+@using adesoft.adepos.webview.Data.Model.PL
+@using adesoft.adepos.webview.Data.DTO.PL
+
+@inject TransactionGenericService transactionService
+@inject DialogService dialogService
+@inject ItemService itemService
+@inject SecurityService securityService
+@inject NotificationService notificationService
+@inject TokenAuthenticationStateProvider AuthStateProvider
+@inject LogisticsService logisticsService;
+@inject Data.Interfaces.IPlantService plantService
+
+@code {
+    [Parameter]
+    public TransactionGeneric model { get; set; }
+
+    [Parameter]
+    public ViewDashBoardDispatchOrder view { get; set; }
+
+    [Parameter]
+    public bool CanWrite { get; set; }
+
+    List<DetailTransactionGeneric> listFilter = new List<DetailTransactionGeneric>();
+
+    List<DetailTransactionGeneric> listAll = new List<DetailTransactionGeneric>();
+
+    DateTime? dateorder { get; set; }
+
+    bool FilterOnlyPendient = false;
+    public UserApp userapp;
+
+    public List<DTOLogisticMasterData> customers;
+    public List<DTOLogisticMasterData> vendors;
+    public List<DTOLogisticMasterData> salesPersons;
+    public List<DTOLogisticMasterData> modules;
+    public List<DTOLogisticMasterData> cities;
+    public List<DTOLogisticMasterData> transports;
+    public List<DTOLogisticMasterData> vehicleTypes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string tooken = await AuthStateProvider.GetTokenAsync();
+            userapp = await securityService.GetUserAppByTooken(tooken);
+        }
+        catch
+        {
+
+        }
+        listAll = await transactionService.AgregarItems(model.Details);
+        listFilter = listAll.Where(x => x.InventarioPendiente > 0).ToList();
+        if (model.DateEnd != TransactionGeneric.DateAplazados)
+            dateorder = model.DateEnd;
+
+        this.customers = await logisticsService.GetCustomers();
+        this.vendors = await logisticsService.GetVendors();
+        this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+        this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
+        this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
+        this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+        this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+    }
+
+    void FilterItems(bool value)
+    {
+        FilterOnlyPendient = value;
+        if (value)
+        {
+            listFilter = listAll;
+        }
+        else
+        {
+            listFilter = listAll.Where(x => x.InventarioPendiente > 0).ToList();
+        }
+        StateHasChanged();
+    }
+
+    void ClickItem(Item item)
+    {
+        dialogService.Open<ViewRptDispatchItem>("Reservas Item : " + item.Description, new Dictionary<string, object>() { { "transactionGeneric", model }, { "ItemId", item.ItemId.ToString() }, { "FilterOnlyPendient", FilterOnlyPendient } }, new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+    void GenerateReportAll()
+    {
+        dialogService.Open<ViewRptDispatchItem>("Reservas Items de Orden # " + model.DocumentExtern, new Dictionary<string, object>() { { "transactionGeneric", model }, { "ItemId", "0" }, { "FilterOnlyPendient", FilterOnlyPendient } }, new DialogOptions() { Width = "1024px", Height = "600px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+    public void CancelView()
+    {
+        dialogService.Close();
+    }
+
+    void DeleteOrder()
+    {
+        view.DeleteCardByDispatch(model);
+    }
+
+    void DeleteOrder2()
+    {
+        view.DeleteCardByDispatch2(model);
+    }
+
+    void clickOrderManufacturing(DetailTransactionGeneric detail)
+    {
+
+        dialogService.Open<ViewListOrderManufacturing>("Ordenes de Fabricacion", new Dictionary<string, object>() { { "ItemId", detail.ItemId }, { "NameItem", detail.Item.Description }
+        ,{ "warehouseId", model.WarehouseOriginId }}, new DialogOptions() { Width = "1024px", Height = "350px", Left = "calc(50% - 500px)", Top = "calc(50% - 280px)" });
+    }
+
+    void SaveOrder()
+    {
+        if (dateorder != null)
+            model.DateEnd = dateorder.Value;
+        view.UpdateCardByDispatch(model);
+    }
+
+    void ChangueCant(DetailTransactionGeneric det, decimal value)
+    {
+        decimal cantanterior = det.Cant;
+        det.Cant = value;
+        det.ChanguedView = true;
+        ModificarItem(det, cantanterior);
+        // await transactionService.Update(det);
+
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    async void searchItem()
+    {
+        List<Item>
+    itemsSearch = await itemService.selectAll(new Item() { TransOption = 5 });
+        dialogService.Open<CtrlSearchItemProduct>("Busqueda", new Dictionary<string, object>() { { "lists", itemsSearch }, { "viewItem", this } }, new DialogOptions() { Width = "800px", Height = "530px", Left = "calc(50% - 400px)", Top = "10px" });
+    }
+
+    public void SelectSearchItem(Item itemselect)
+    {
+        if (listAll.Where(x => x.Item.ItemId == itemselect.ItemId).Count() > 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error!", Detail = "El item que intenta adicionar ya existe.", Duration = 2000 });
+            return;
+        }
+
+        DetailTransactionGeneric detTrans = new DetailTransactionGeneric();
+        dialogService.Close();
+        detTrans.Item = itemselect;
+        detTrans.ChanguedView = true;
+        detTrans.ItemId = itemselect.ItemId;
+        detTrans.Cant = itemselect.Cant;
+        listAll.Add(detTrans);
+        model.Details.Add(detTrans);
+        itemselect.Cant = 0;
+        FilterItems(true);
+        StateHasChanged();
+        ModificarItem(detTrans, 0);
+    }
+
+    void ModificarItem(DetailTransactionGeneric detPro, decimal CantAnterior)
+    {
+        dialogService.Open<ViewObservationModify>("Observacion Cambio", new Dictionary<string, object>() { { "objItem", detPro }, { "objViewCall", this }
+        , { "CantAnterior", CantAnterior }}, new DialogOptions() { Width = "600px", Height = "360px", Left = "calc(50% - 300px)", Top = "10px", ShowTitle = false });
+    }
+
+    async void OnSubmit(TransactionGeneric tra)
+    {
+        if (dateorder != null)
+            tra.DateEnd = dateorder.Value;
+        view.UpdateCardByDispatch(tra);
+    }
+
+    void SyncOrder()
+    {
+        if (string.IsNullOrEmpty(model.CustomerAccount))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe ingresar el Nombre del cliente.", Duration = 4000 });
+            return;
+        }
+
+        if (model.SalesPersonId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe ingresar el Comercial.", Duration = 4000 });
+            return;
+        }
+
+        if (model.ModuleId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe ingresar el Modulo.", Duration = 4000 });
+            return;
+        }
+
+        if (model.CityId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe ingresar la Ciudad.", Duration = 4000 });
+            return;
+        }
+
+        if (model.ReponsableTransId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe ingresar el Transporte a cargo de.", Duration = 4000 });
+            return;
+        }
+
+        if (model.VehicleTypeId == 0)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe ingresar el Tipo vehiculo.", Duration = 4000 });
+            return;
+        }
+
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            try
+            {
+                model.TransOption = 3;
+                this.model = await transactionService.Update(model);
+                this.model = this.plantService.SyncOrder(this.model);
+                view.UpdateCardByDispatch(this.model);                
+            }
+            catch (Exception ex)
+            {
+                dialogService.Close();
+
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            }
+        });
+    }
+
+    void ImportFile()
+    {
+        dialogService.Open<ViewImportFile>("Importar Documento"
+        , new Dictionary<string, object>() { { "model", this.model }, { "callView", view } }
+        , new DialogOptions() {  });
+    }
+}
+
+<RadzenTemplateForm name="formOrderImport" id="formOrderImport" Method="post" class="col-md-12" TItem="TransactionGeneric" Data="@model" Submit="@OnSubmit">
+    <div class="row navbar bg-light">
+        <div class="col-sm-12 pl-0 pr-0">
+            @if (CanWrite)
+            {
+                <input class="btn btn-primary" value="Guardar" type="submit" disabled=@this.model.Scheduled/>
+                @*<input class="btn btn-success" value="Despachado" @onclick="DeleteOrder" type="button" disabled=@this.model.Rescheduled/>*@
+                <input class="btn btn-danger" value="Eliminar" @onclick="DeleteOrder2" type="button" disabled=@this.model.Scheduled/> 
+                @if (model.DateEnd != TransactionGeneric.DateAplazados)
+                {
+                    <input class="btn btn-warning" value="Aplazar" @onclick="@(args => { dateorder = TransactionGeneric.DateAplazados; SaveOrder(); })" type="button" hidden=@this.model.Scheduled />
+                }
+                <input class="btn btn-secondary" value="Enviar a Programar" @onclick="SyncOrder" type="button" style="float:right" hidden=@this.model.Scheduled />
+            }
+        </div>
+    </div>
+    <div class="row pt-3">
+        <div class="col-sm-12">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="TextorderNum">Digite el numero de orden<b class="text-danger">*</b></label>
+                            <RadzenTextBox @bind-Value="model.DocumentExtern" Name="TextorderNum" class="form-control" placeholder="# de Orden" Disabled=@(this.model.Scheduled || !CanWrite) />
+                            <RadzenRequiredValidator Component="TextorderNum" Text="Numero de orden es requerido" Popup="true" />
+                        </div>
+                        <div class="form-group col-sm-2">
+                            @if (model.DateEnd == TransactionGeneric.DateAplazados)
+                            {
+                                <label>&nbsp;</label>
+                                <label class="d-block" style="background:orange;text-align:center;">APLAZADO</label>
+                            }
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputNameWork">Obra<b class="text-danger">*</b></label>
+                        <RadzenTextBox @bind-Value="model.NameWork" Name="TextNameWork" class="form-control" placeholder="Nombre de obra" Disabled=@(this.model.Scheduled || !CanWrite) />
+                        <RadzenRequiredValidator Component="TextNameWork" Text="Nombre de obra es requerido" Popup="true" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-4">
+                            <label for="identificationNum">NIT</label>
+                            <RadzenTextBox class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT" Disabled=@(this.model.Scheduled || !CanWrite)></RadzenTextBox>
+                        </div>
+                        <div class="form-group col-sm-8">
+                            <label for="customerName">Nombre cliente</label>
+                            <RadzenDropDown AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" Disabled=@(this.model.Scheduled || !CanWrite) />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="salesPeron">Comercial</label>
+                        <RadzenDropDown AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" Disabled=@(this.model.Scheduled || !CanWrite) />
+                    </div>
+                    <div class="form-group">
+                        <label for="module">Modulo</label>
+                        <RadzenDropDown AllowFiltering="true" Name="module" class="form-control" @bind-Value="model.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@modules" TextProperty="Description" ValueProperty="Id" Disabled=@(this.model.Scheduled || !CanWrite) />
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="city">Ciudad</label>
+                        <RadzenDropDown AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" Disabled=@(this.model.Scheduled || !CanWrite) />
+                    </div>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">Transporte a cargo de</label>
+                        <RadzenDropDown Name="city" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" Disabled=@(this.model.Scheduled || !CanWrite) />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="DispatchDate">Fecha despacho</label>
+                            <RadzenDatePicker Name="DispatchDate" @bind-Value="model.DateEnd" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="true" />
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="DispatchTime">Hora despacho</label>
+                            <RadzenDatePicker Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="model.DateEnd" id="DispatchTime" class="d-block" Disabled="true" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="Wight">Peso (Toneladas)</label>
+                            <RadzenNumeric TValue="decimal" Format="0.00" Name="Wight" id="Wight" @bind-Value="model.Wight" class="form-control" Disabled=@true></RadzenNumeric>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleType">Tipo vehículo</label>
+                        <RadzenDropDown AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Disabled=@(this.model.Scheduled || !CanWrite) />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row pt-3">
+        <div class="col-sm-12 p-0">
+            <div class="row navbar bg-light m-0">
+                <div class="col-sm-12 pl-0 pr-0">
+                    <input class="btn btn-success" name="BtnGenerateReport" @onclick="GenerateReportAll" value="Ver Reservas" type="button" />
+                    <input class="btn btn-primary" name="BtnAddItem" @onclick="searchItem" value="Adicionar Item" type="button" disabled=@this.model.Scheduled/>
+                    <input class="btn btn-secondary" @onclick="ImportFile" value="Importar Documento" type="button" disabled=@this.model.Scheduled/>
+                    <div class="form-group" style="float:right">
+                        <label for="checkAll">Mostrar Todos?</label>
+                        <RadzenCheckBox Name="checkAll" @bind-Value="FilterOnlyPendient" TValue="bool" Change="FilterItems" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid AllowFiltering="true" Style="font-size:10px;" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="5" AllowSorting="true" Data="@(listFilter.OrderBy(x=>x.DetailTransactionGenericId).ToList())" TItem="DetailTransactionGeneric">
+                <Columns>
+                    <RadzenGridColumn TItem="DetailTransactionGeneric" Width="130px" Property="Item.Barcode" Title="Codigo">
+                        <Template Context="data">
+                            @if (data.DetailTransactionGenericId == 0)
+                            {
+                                <label style="color:green;">@data.Item.Barcode</label>
+                            }
+                            else
+                            {
+                                <label>@data.Item.Barcode</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DetailTransactionGeneric" Property="Item.Description" Title="Descripcion">
+                        <Template Context="data">
+                            <label>@data.Item.Description</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DetailTransactionGeneric" Width="120px" Property="Cant" Title="Solicitado">
+                        <Template Context="data">
+                            <RadzenNumeric TValue="long" Value="(long)data.Cant" Style="-webkit-appearance: none;" ValueChanged="@(args=> { ChangueCant(data, (decimal)args); })" disabled=@this.model.Scheduled></RadzenNumeric>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DetailTransactionGeneric" Width="120px" Property="InventarioPendiente" Title="Pendiente">
+                        <Template Context="data">
+                            @if (data.InventarioPendiente > 0)
+                            {
+                                <label style="font-weight:bold; color:red;">@((long)data.InventarioPendiente)</label>
+                            }
+                            else
+                            {
+                                <label>@data.InventarioPendiente</label>
+                            }
+                            &#9;
+                            <a href="javascript:void(0)" @onclick="@(args=> { ClickItem(data.Item); })">&nbsp;Ver Reserva</a>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="DetailTransactionGeneric" Width="110px" Property="Auxnum" Title="Fabricacion">
+                        <Template Context="data">
+                            <RadzenLink @onclick="@(args=> { clickOrderManufacturing(data); })" Path="javascript:void(0)" Text="@(((long)data.Auxnum).ToString())"></RadzenLink>
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+    </div>
+</RadzenTemplateForm>

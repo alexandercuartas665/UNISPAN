@@ -1,0 +1,92 @@
+﻿@page "/ViewChangeOrderState"
+
+@using adesoft.adepos.webview.Data.DTO.PL;
+@using Microsoft.JSInterop;
+
+
+@inject DialogService dialogService;
+@inject LogisticsService logisticsService;
+@inject NotificationService notificationService;
+@inject NavigationManager navigationManager;
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    [Parameter]
+    public DTOOrder model { get; set; }
+
+    [Parameter]
+    public object viewEditOrder { get; set; }
+
+    public List<object> OrderStates { get; set; }
+
+    protected override void OnInitialized()
+    {
+        OrderStates = new List<object>()
+        {
+            new { Id = 1, Description = "Despachado" },
+            new { Id = 2, Description = "Re-Importar Productos" },
+            new { Id = 3, Description = "Aplazado" }
+        };
+    }
+
+    async void OnSubmit(DTOOrder order)
+    {
+        try
+        {
+            var orderState = this.OrderStates
+                .Where(os => os.GetType().GetProperty("Id").GetValue(os).Equals(order.OrderState))
+                .FirstOrDefault();
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Esta seguro de que desea cambiar el estado de la orden a {orderState.GetType().GetProperty("Description").GetValue(orderState)}"))
+            {
+                dialogService.Close();
+                return;
+            }
+
+            this.logisticsService.ChangeOrderState(order);
+
+            if (viewEditOrder is EditOrder)
+                ((EditOrder)viewEditOrder).loadOrder();
+
+            dialogService.Close();
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+        }
+    }
+
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+
+    public async void ChangeToDispach()
+    {
+        try
+        {
+            this.model.Ok = !this.model.Ok;
+            this.model = await logisticsService.CreateOrUpdateOrder(model);
+
+            //navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+        }
+    }
+}
+
+<RadzenTemplateForm name="formChangeOrderState" id="formChangeOrderState" Method="post" class="col-md-12" TItem="DTOOrder" Data="@model" Submit="@OnSubmit">
+    <div class="row">
+        <div class="col-sm-12">
+            <RadzenDropDown AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data=@OrderStates @bind-Value=@model.OrderState
+            TextProperty="Description" ValueProperty="Id" style="display: block" Class="w-100" Name="OrderState" />@*Change=@(args => OnChange(args)) />*@
+        </div>
+    </div>
+    <div class="row pt-3">
+        <div class="col-sm-12 text-end">
+            <RadzenButton ButtonType="ButtonType.Submit" Variant="Variant.Flat" Text="Cambiar" Style="width: 120px; float: right"></RadzenButton>
+        </div>
+    </div>
+</RadzenTemplateForm>

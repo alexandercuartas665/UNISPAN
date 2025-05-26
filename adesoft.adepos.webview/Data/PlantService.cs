@@ -200,6 +200,7 @@ namespace adesoft.adepos.webview.Data
                 City = _logisticMasterDataService.GetCityName(order.CityId),
                 ReponsableTransId = order.ReponsableTransId,
                 VehicleTypeId = order.VehicleTypeId,
+                Email = order.Email,
             };
         }
 

@@ -90,7 +90,8 @@ namespace adesoft.adepos.webview.Controller
                         CustomerAccount = order.CustomerAccount,
                         ModuleId = order.ModuleId,
                         CityId = order.CityId,
-                        ReponsableTransId = order.ReponsableTransId
+                        ReponsableTransId = order.ReponsableTransId,
+                        Email= order.Email
                     };
 
                     /*var pictures = _dbcontext.OrderPictures
@@ -187,7 +188,9 @@ namespace adesoft.adepos.webview.Controller
                         FVTransport = order.FVTransport,
                         Period = order.Period,
                         TransactionGenericId = order.TransactionGenericId,
-                        Status = order.Status
+                        Status = order.Status,
+                        Email = order.Email
+
                     };
 
                     if(order.Id.Equals(order.DispatchId))
@@ -902,7 +905,9 @@ namespace adesoft.adepos.webview.Controller
                     FVTransport = order.FVTransport,
                     Period = order.Period,
                     TransactionGenericId = order.TransactionGenericId,
-                    Status = order.Status
+                    Status = order.Status,
+                    Email = order.Email  
+                    
                 };
 
                 if (order.Id.Equals(order.DispatchId))
@@ -1678,7 +1683,7 @@ namespace adesoft.adepos.webview.Controller
                     DispatchId = dtoOrder.DispatchIdSelect != 0 ? dtoOrder.DispatchIdSelect : 0,
                     FVTransport = dtoOrder.FVTransport,
                     Period = dtoOrder.Period != null ? dtoOrder.Period.Value : DateTime.MinValue,
-
+                    Email = dtoOrder.Email,
                     Progress = 0,
                     Status = OrderStatus.None,
                     TransactionGenericId = dtoOrder.TransactionGenericId,

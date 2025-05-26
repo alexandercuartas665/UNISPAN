@@ -38,6 +38,22 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public string searchBy;
 
     class AmountTotal
@@ -152,10 +168,22 @@
     //ENVIA NOTIFICACION
     void SendNotification()
     {
+        // Cargar la configuración
+        IConfiguration configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory()) // Ruta base del proyecto
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true) // Archivo de configuración
+            .Build();
+        string ruta_anexo_despachos = configuration.GetValue<string>("AdjuntoDespacho");
+        string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
         StringBuilder reportContent = new StringBuilder();
         string ListaOrdenes = "";
         var selectedOrders = orders.Where(o => o.IsSelected).ToList();
         var ordersByClient = selectedOrders.GroupBy(o => o.CustomerName);
+        var llevaDespachos = 0;
+        var llevaDevoluciones = 0;
+        // Obtener todos los archivos PDF en el directorio
+        string[] archivosDespachos = Directory.GetFiles(ruta_anexo_despachos, "*.pdf");
+        string[] archivosDevoluciones = Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf");
         foreach (var clientGroup in ordersByClient)
         {
             reportContent.Clear();
@@ -167,6 +195,14 @@
             {
                 reportContent.AppendLine($"<br/>{GenerateOrderReport(order)}"); // o iterar si son múltiples
                 ListaOrdenes += "," + order.OrderId;
+                if (order.OrderType.ToString() == "Dispatch")
+                {
+                    llevaDespachos++;
+                }
+                else if (order.OrderType.ToString() == "Return")
+                {
+                    llevaDevoluciones++;
+                }
                 Console.WriteLine($" - Orden ID: {order.OrderId}");
             }
             var textocorreo = TextoParaCorreo(reportContent.ToString()); // o iterar si son múltiples
@@ -183,11 +219,28 @@
                     mailMessage.To.Add("sistemas@unispan.com.co");
                     mailMessage.To.Add("acuartas@bitcode.com.co");
                     mailMessage.IsBodyHtml = true;
+                    mailMessage.BodyEncoding = Encoding.UTF8;
                     //mailMessage.Body = $" {reportContent}  ";
                     mailMessage.Body = $" {textocorreo}  ";
                     mailMessage.Subject = $"PROGRAMACIÓN DESPACHO {ListaOrdenes}";
-                    Attachment attachment = new Attachment(@"C:\Users\acuartas\OneDrive - Bitcode IT Services S.A.S\Bitcode\18. Proyectos\035. Unispan\04. Proyeto EnviarCorreos\PLANTILLA DEVOLUCIONES.zip");
-                    mailMessage.Attachments.Add(attachment);
+                    // Adjuntar cada PDF al correo
+                    if (llevaDespachos != 0)
+                    {
+                        foreach (string archivo in archivosDespachos)
+                        {
+                            Attachment adjunto = new Attachment(archivo);
+                            mailMessage.Attachments.Add(adjunto);
+                        }
+                    }
+                    if (llevaDevoluciones != 0)
+                    {
+                        foreach (string archivo in archivosDevoluciones)
+                        {
+                            Attachment adjunto = new Attachment(archivo);
+                            mailMessage.Attachments.Add(adjunto);
+                        }
+                    }
+
                     client.Send(mailMessage);
                 });
             }
@@ -275,41 +328,53 @@
         var sb = new StringBuilder();
         // ESTILOS CSS
         string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
-        string headerStyle = "background-color: #3498db; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
+        string headerStyle = "background-color: #002060; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
         string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
         sb.AppendLine("<h2 style='color: #2c3e50; margin-bottom: 20px;'>REPORTE DE ORDEN</h2>");
         // TABLA CON MÚLTIPLES COLUMNAS
         sb.AppendLine($"<div style='overflow-x: auto;'>");
         sb.AppendLine($"<table style='{tableStyle}'>");
         // ENCABEZADOS
+        // Fila combinada para "CONTROL DE DESPACHOS" y "LUNES"
+        sb.Append("<tr>");
+        // Celda combinada para las primeras 8 columnas
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", "CONTROL DE DESPACHOS", 8);
+        // Celda combinada para las siguientes 4 columnas
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", $"{order.DispatchDateTime.Value:dddd}".ToUpper() + "<br>" + $"{order.DispatchDateTime.Value:dd/MM/yyyy}", 4);
+        sb.AppendLine("</tr>");
+
         sb.AppendLine("<tr>");
-        AddTableHeader(sb, headerStyle, "ID de Orden");
-        AddTableHeader(sb, headerStyle, "Número de Orden");
-        AddTableHeader(sb, headerStyle, "Tipo de Orden");
-        AddTableHeader(sb, headerStyle, "Cliente");
-        AddTableHeader(sb, headerStyle, "Fecha Despacho");
-        AddTableHeader(sb, headerStyle, "Vendedor");
-        AddTableHeader(sb, headerStyle, "Transporte");
-        AddTableHeader(sb, headerStyle, "Peso Total");
-        AddTableHeader(sb, headerStyle, "Ciudad");
-        AddTableHeader(sb, headerStyle, "Módulo");
-        AddTableHeader(sb, headerStyle, "Conformidad");
-        AddTableHeader(sb, headerStyle, "Última Modificación");
+        AddTableHeader(sb, headerStyle, "OBRAS");
+        AddTableHeader(sb, headerStyle, "CLIENTE");
+        AddTableHeader(sb, headerStyle, "ORDER DE DESPACHO");
+        AddTableHeader(sb, headerStyle, "#OP");
+        AddTableHeader(sb, headerStyle, "COMERCIAL");
+        AddTableHeader(sb, headerStyle, "MÓDULO");
+        AddTableHeader(sb, headerStyle, "CIUDAD");
+        AddTableHeader(sb, headerStyle, "TRANSPORTE A CARGO DE");
+
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "PESO (ton)");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "HORA DE CARGUE");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "OK");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "VEHICULO");
         sb.AppendLine("</tr>");
         // FILA DE DATOS
         sb.AppendLine("<tr>");
-        AddTableCell(sb, cellStyle, order.OrderId.ToString());
-        AddTableCell(sb, cellStyle, order.OrderNum);
-        AddTableCell(sb, cellStyle, order.OrderType.ToString());
+        AddTableCell(sb, cellStyle, order.Works);
         AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
-        AddTableCell(sb, cellStyle, order.DispatchDateTime?.ToString("dd/MM/yyyy HH:mm") ?? "N/A");
+        AddTableCell(sb, cellStyle, order.OrderNum);
+        AddTableCell(sb, cellStyle, order.OPNum);
         AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
-        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
-        AddTableCell(sb, cellStyle, $"{order.TotalPalletWeight} kg");
-        AddTableCell(sb, cellStyle, order.City);
         AddTableCell(sb, cellStyle, order.Module);
-        AddTableCell(sb, cellStyle, order.IsConform ?? "N/A");
-        AddTableCell(sb, cellStyle, order.ModifiedOn.ToString("dd/MM/yyyy HH:mm"));
+        AddTableCell(sb, cellStyle, order.City);
+        AddTableCell(sb, cellStyle, order.ReponsableTrans);
+        //INFORMACION DESPACHO
+        AddTableCell(sb, cellStyle, $"{order.TotalPalletWeight} kg");
+        AddTableCell(sb, cellStyle, @order.DispatchDateTime.Value.ToString("HH:mm"));
+        AddTableCell(sb, cellStyle, order.Ok ? "OK" : "NO");
+        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
+
+
         sb.AppendLine("</tr>");
         sb.AppendLine("</table>");
         sb.AppendLine("</div>");
@@ -323,13 +388,18 @@
     {
         sb.AppendLine($"<td style='{style}'>{value}</td>");
     }
+    private void AddTableHeaderWithColspan(StringBuilder sb, string style, string text, int colspan)
+    {
+        sb.AppendFormat("<th style='{0}; text-align: center;' colspan='{1}'>{2}</th>", style, colspan, text);
+    }
 
     #region Texto base correo
     public string TextoParaCorreo(string Tablas)
     {
         var sb = new StringBuilder();
-        sb.Append($@"<html><head>
-            <meta http-equiv=""Content-Type"" content=""text/html; charset=Windows-1252"">
+        sb.Append($@"<html>
+            <head>
+            <meta http-equiv=""Content-Type"" content=""text/html; charset=UTF-8"">
             <style type=""text/css"" style=""display:none;""> P {{margin - top:0;margin-bottom:0;}} </style>
             </head>
             <body dir=""ltr"">
@@ -351,31 +421,31 @@
             Se programa el cupo(s) solicitado(s) as :</div>{Tablas}<div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             &nbsp;</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            La fecha indicada, es el d a en que se recibe el veh culo en nuestra planta, la cual est  ubicada en Km 2 V a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
+            La fecha indicada es el día en que se recibe el vehículo en nuestra planta, la cual está  ubicada en Km 2 V a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            LOS VEH CULO PROGRAMADOS DESDE LAS 12:00, SER N DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL D A SIGUIENTE SE CONTINUAR  EL PROCESO DE ORGANIZACI N Y CLASIFICACI N DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
+            LOS VEHÍCULOS PROGRAMADOS DESDE LAS 12:00, SERÁN DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL DIA SIGUIENTE SE CONTINUAR  EL PROCESO DE ORGANIZACIÓN Y CLASIFICACIÓN DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
             <div style=""direction: ltr; text-align: center; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             <b>CONDICIONES Y REQUISITOS</b></div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            La siguiente informaci n es importante que se tenga en cuenta para cumplir con de los requisitos y condiciones de alistamiento y envi  del equipo:</div>
+            La siguiente información es importante que se tenga en cuenta para cumplir con de los requisitos y condiciones de alistamiento y envío  del equipo:</div>
             <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
             <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>PROGRAMACI N DEVOLUCIONES</b>: Las devoluciones deben ser programadas con cinco (5) d as h biles de anticipaci n, se recibe equipo en bodega de lunes a viernes (No festivos).</li></ul>
+            <b>PROGRAMACIÓN DEVOLUCIONES</b>: Las devoluciones deben ser programadas con cinco (5) días hábiles de anticipación, se recibe equipo en bodega de lunes a viernes (No festivos).</li></ul>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Si por alg n motivo no puede cumplir con la cita programada, por favor comunicarse con el Asesor de Obra de Unispan con la mayor antelaci n posible para proceder a reprogramar y liberar el cupo en nuestra planta para otro cliente.</div>
+            Si por algún motivo no puede cumplir con la cita programada, por favor comunicarse con el Asesor de Obra de Unispan con la mayor antelación posible para proceder a reprogramar y liberar el cupo en nuestra planta para otro cliente.</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Si inicialmente ha solicitado programar un determinado veh culo, por ejemplo una Tractomula, y por alguna raz n no consigue este veh culo y decide enviar el equipo en dos Dobletroques, por favor comun quese previamente con el  rea de operaciones
+            Si inicialmente ha solicitado programar un determinado vehículo, por ejemplo una Tractomula, y por alguna razón no consigue este vehículo y decide enviar el equipo en dos Dobletroques, por favor comuníquese previamente con él  crea de operaciones
             <span style=""color: rgb(5, 99, 193);""><u><a href=""mailto:diroperaciones@unispan.com.co"" id=""OWAd49d3ee8-a475-a0d0-9627-f7183e77d513"" class=""x_OWAAutoLink"" style=""color: rgb(5, 99, 193);"">diroperaciones@unispan.com.co</a></u></span>&nbsp;para que sea verificado si
-             es posible aceptar esta modificaci n, en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo veh culo, ya que para bajar cada carro se requiere espacio f sico y una cuadrilla de personal.</div>
+             es posible aceptar esta modificación, en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo vehiculo, ya que para bajar cada carro se requiere espacio físico y una cuadrilla de personal.</div>
             <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
             <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>VEH CULOS</b>: Todos los veh culos deben permitir retirar la carrocer a por ambos lados y venir cargados de acuerdo a la metodolog a adjunta
-            <b>PRO-P.LO-006 - PROCEDIMIENTO DE CARGUE.pdf</b>, este m todo es muy importante para poder descargar el equipo mec nicamente, brindando as  menores tiempos de atenci n a nuestros clientes y salvaguardando la seguridad del personal involucrado en esta labor.&nbsp;
-             No se aceptan devoluciones en Volquetas y se sugiere no emplear camas bajas, cami n gr a o veh culos que no dispongan de carrocer a, dado a la alta posibilidad de extraviar parte del equipo, en especial piezas peque as. Debido a la escases de veh culos Turbo
-             (4.0 Ton) que dispongan de carrocer a removible, ser  el  nico tipo de veh culo que se acepta con esta condici n. Lo invitamos a ver v deo sobre la Gu a para el cargue de equipos:
+            <b>VEHÍCULOS</b>: Todos los vehículos deben permitir retirar la carrocería por ambos lados y venir cargados de acuerdo a la metodología adjunta
+            <b>PRO-P.LO-006 - PROCEDIMIENTO DE CARGUE.pdf</b>, este método es muy importante para poder descargar el equipo mecánicamente, brindando as  menores tiempos de atención a nuestros clientes y salvaguardando la seguridad del personal involucrado en esta labor.&nbsp;
+             No se aceptan devoluciones en Volquetas y se sugiere no emplear camas bajas, camion gra o vehículos que no dispongan de carrocería, dado a la alta posibilidad de extraviar parte del equipo, en especial piezas pequeñas. Debido a la escasez de vehículos Turbo
+            (4.0 Ton) que dispongan de carrocería removible, ser  el  único tipo de vehículo que se acepta con esta condición. Lo invitamos a ver video sobre la Guía para el cargue de equipos:
             <span style=""color: rgb(5, 99, 193);""><u><a href=""https://www.youtube.com/watch?v=UTyIqQiTCsY"" id=""OWA2178799a-a6c4-d9da-043a-76d8e821ed2a"" class=""x_OWAAutoLink"" data-auth=""NotApplicable"" style=""color: rgb(5, 99, 193);"">https://www.youtube.com/watch?v=UTyIqQiTCsY</a></u></span></li></ul>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Si el equipo no llega de acuerdo a la metodolog a descrita para poder descargar el equipo mec nicamente, el cliente deber  asumir los siguientes costos por servicio de descargue manual de acuerdo al tipo de veh culo:</div>
+            Si el equipo no llega de acuerdo a la metodología descrita para poder descargar el equipo mecánicamente, el cliente debe  asumir los siguientes costos por servicio de descargue manual de acuerdo al tipo de vehículo:</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             &nbsp;</div>
             <div align=""center"">
@@ -384,7 +454,7 @@
             <tr>
             <td style=""direction: ltr; border-width: 1pt; border-style: solid; border-color: initial; padding: 0cm 5.4pt; width: 119.6pt;"">
             <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>TIPO DE VEH CULO</b></div>
+            <b>TIPO DE VEHÍCULO</b></div>
             </td>
             <td style=""direction: ltr; border-top: 1pt solid; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; width: 65.1pt;"">
             <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
@@ -459,29 +529,29 @@
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             &nbsp;</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>*</b>NO EXISTIR  COBRO PARA VEH CULOS TURBO QUE LLEGUEN A DEVOLVER EQUIPO SIN LA METODOLOG A ESTABLECIDA PARA SER DESCARGADOS MEDIANTE MONTACARGA, PERO SI EL EQUIPO VIENE EN P SIMO ESTADO DE ORGANIZACI N, S  TENDR  COBRO POR $240.000 + Iva.</div>
+            <b>*</b>NO EXISTIR  COBRO PARA VEHÍCULOS TURBO QUE LLEGUEN A DEVOLVER EQUIPO SIN LA METODOLOGÍA A ESTABLECIDA PARA SER DESCARGADOS MEDIANTE MONTACARGA, PERO SI EL EQUIPO VIENE EN PÉSIMO ESTADO DE ORGANIZACIÓN, SE TENDRÁ  COBRO POR $240.000 + IVA.</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             &nbsp;</div>
             <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px; flex-direction: column; display: flex;"">
             <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <div style=""direction: ltr;""><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operaci n, debido que al cargarlo de esta forma,
+            <div style=""direction: ltr;""><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operación, debido a que al cargarlo de esta forma,
              las piezas se desplazan.</div>
             </li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); align-self: center;"">
             <div style=""direction: ltr; text-align: center;""><img id=""x_image_0"" size=""1181026"" contenttype=""image/png"" style=""max-width: 1867px;"" data-outlook-trace=""F:2|T:2"" src=""http://manager.unispan.com.co/Images/imagen_despachos.png""></div>
             </li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>FUNCIONARIO DE OBRA</b>: Se recomienda enviar un funcionario de la obra para que valide los conteos en la planta Unispan, notificar previamente por mail, los datos del funcionario que env e la obra, el cual debe presentarse con sus respectivos EPP y Planilla
-             de Seguridad Vigente (Unispan asumir  los gastos de vi ticos del funcionario que envi  la obra, con previa coordinaci n de Unispan, para no superar los topes establecidos en los gastos y presentar los respectivos soportes legales para el reembolso), de acuerdo
-             a lo especificado en el documento adjunto <b>VIATICOS FUNCIONARIOS.pdf</b>.&nbsp; En caso de no enviar funcionario, tener en cuenta que no se aceptar n reclamos por diferencias de cantidad entre el listado enviado por la obra y el conteo que se realice en la planta
-             Unispan (solo se recibe en la planta; una vez el equipo se descargue, clasifique y organice por referencias; para poder contar con precisi n y validar las condiciones de limpieza y estado de cada elemento del equipo.)</li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>ESTADO DEL EQUIPO</b>: Los elementos deben devolverse libres de residuos de concreto, implementar limpieza mec nica (copagrata, esp tula, viruta met lica etc.) de lo contrario se generar n cobros por limpieza.&nbsp;</li></ul>
+            <b>FUNCIONARIO DE OBRA</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operación, debido a que al cargarlo de esta forma,Se recomienda enviar un funcionario de la obra para que valide los conteos en la planta Unispan, notificar previamente por mail, los datos del funcionario que envíe la obra, el cual debe presentarse con sus respectivos EPP y Planilla
+             de Seguridad Vigente (Unispan asumir  los gastos de viáticos del funcionario que envía  la obra, con previa coordinación de Unispan, para no superar los topes establecidos en los gastos y presentar los respectivos soportes legales para el reembolso), de acuerdo
+             a lo especificado en el documento adjunto <b>VIÁTICOS FUNCIONARIOS.pdf</b>.&nbsp; En caso de no enviar funcionario, tener en cuenta que no se aceptarán reclamos por diferencias de cantidad entre el listado enviado por la obra y el conteo que se realice en la planta
+             Unispan (solo se recibe en la planta; una vez el equipo se descargue, clasifique y organice por referencias; para poder contar con precisión y validar las condiciones de limpieza y estado de cada elemento del equipo.)</li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
+            <b>ESTADO DEL EQUIPO</b>: Los elementos deben devolverse libres de residuos de concreto, implementar limpieza mecánica (copagrata, espátula, viruta metálica etc.) de lo contrario se generaran cobros por limpieza.&nbsp;</li></ul>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            No aplicar ACPM o alg n antiadherente a los elementos que se vayan a devolver, podr  generarse un cobro por el lavado del equipo. Tampoco aplicar alg n tipo de sustancia como ( cidos) que corroen, oxidan y afectan la composici n de los materiales del equipo,
+            No aplicar ACPM o algún antiadherente a los elementos que se vayan a devolver, podrá  generarse un cobro por el lavado del equipo. Tampoco aplicar algún tipo de sustancia como (ácidos) que corroen, oxidan y afectan la composición de los materiales del equipo,
              pudiendo clasificar el equipo afectado como irreparable.</div>
             <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
             <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 8pt 36pt;"">
-            <b>PACKING LIST</b>: Debe enviarse un listado claro y preciso de los elementos que se devuelven con los nombres t cnicos del equipo. Para lo cual se adjuntan &nbsp;<b>MANUAL ELPIS.pdf</b>&nbsp;(Plataforma para acceder a consultar los saldos de equipo que dispone la obra
-             por cada frente, puede consultar los movimientos, valores de reposici n, peso en Kg) y
-            <b>MANUAL DEL USUARIO.pdf</b>&nbsp;(Documento para identificaci n de los elementos empleados en los diferentes sistemas).</li></ul>
+            <b>PACKING LIST</b>: Debe enviarse un listado claro y preciso de los elementos que se devuelven con los nombres técnicos del equipo. Para lo cual se adjuntan &nbsp;<b>MANUAL ELPIS.pdf</b>&nbsp;(Plataforma para acceder a consultar los saldos de equipo que dispone la obra
+             por cada frente, puede consultar los movimientos, valores de reposición, peso en Kg) y
+            <b>MANUAL DEL USUARIO.pdf</b>&nbsp;(Documento para identificación de los elementos empleados en los diferentes sistemas).</li></ul>
             <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             <br>
             </div>

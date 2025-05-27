@@ -25,6 +25,11 @@ namespace adesoft.adepos.webview.Data
             _wwwrootDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         }
 
+        public async Task<string> ImportFile(DTOOrder model)
+        {
+            return await Task.FromResult(_logisticsController.ImportFile(model));
+        }
+
         public async Task AddOrderReportFilter(DTOOrderReportFilter filter)
         {
             await Task.Run(new Action(() => { _logisticsController.AddOrderReportFilter(filter); }));
@@ -81,6 +86,7 @@ namespace adesoft.adepos.webview.Data
         {
             return await Task.FromResult(_logisticsController.GetVendors());
         }
+
 
         public async Task<DTOLogisticMasterData> CreateOrUpdateVendor(DTOLogisticMasterData dtoVendor)
         {

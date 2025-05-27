@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO.Compression;
 using adesoft.adepos.webview.Data.DTO.PL;
+using adesoft.adepos.webview.Bussines;
 
 namespace adesoft.adepos.webview.Controller
 {
@@ -1201,6 +1202,64 @@ namespace adesoft.adepos.webview.Controller
             }
         }
 
+
+        public string ImportFile(DTOOrder OrderUpload)
+        {
+
+            using var transaction = _dbcontext.Database.BeginTransaction();
+            try
+            {
+                var order = _dbcontext.Orders.Where(o => o.OrderType == OrderUpload.OrderType && o.Id == OrderUpload.OrderId).FirstOrDefault();
+                if (order is null)
+                {
+                    throw new Exception("La orden seleccionada no existe.");
+                }
+                var imageStorePath = this._configuration.GetValue<string>("Logistics:attachments");
+                var directory = string.Format("{0}/{1}", imageStorePath, string.Format("Idx{0}_{1}", OrderUpload.OrderId, OrderUpload.OrderNum));
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                /*
+                var fileNamePath = string.Format("{0}/{1}", directory, dtoPicture.Name);
+                var picture = new OrderPicture()
+                {
+                    OrderId = dtoPicture.OrderId,
+                    Name = dtoPicture.Name,
+                    OrderType = dtoPicture.OrderType,
+                    Path = fileNamePath
+                };
+                var bytes = Convert.FromBase64String(dtoPicture.DataBase64.Replace("data:image/jpeg;base64,", "").Replace("data:image/png;base64,", ""));
+                using (var imageFile = new FileStream(fileNamePath, FileMode.Create))
+                {
+                    imageFile.Write(bytes, 0, bytes.Length);
+                    imageFile.Flush();
+                    _dbcontext.OrderPictures.Add(picture);
+                    _dbcontext.SaveChanges();
+                    _dbcontext.DetachAll();
+                }
+                _dbcontext.SaveChanges();
+                _dbcontext.DetachAll();
+                order.Sync = true;
+                order.SyncDateTime = DateTime.Now;
+                order.ErrorMessage = "";
+                _dbcontext.Orders.Update(order);
+                _dbcontext.SaveChanges();
+                _dbcontext.DetachAll();
+                transaction.Commit();
+                */
+                return "ok";
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return "error";
+            }
+
+
+        }
+
+
         [HttpPost("UploadImage/{orderNum}")]
         public IActionResult UploadImage([FromBody] DTOOrderPicture dtoPicture, string orderNum)
         {            
@@ -1212,41 +1271,12 @@ namespace adesoft.adepos.webview.Controller
                 {
                     throw new Exception("La orden seleccionada no existe.");
                 }
-                
-                //var orderUploadControl = _dbcontext.OrderUploadControl.Where(c => c.Id == dtoPicture.UploadOrderId).FirstOrDefault();
-                //if(orderUploadControl is null)
-                //{
-                //    orderUploadControl = new OrderUploadControl()
-                //    {                        
-                //        Id = dtoPicture.UploadOrderId,
-                //        OrderId = dtoPicture.OrderId,
-                //        OrderType = dtoPicture.OrderType,
-                //        ImagesPending = dtoPicture.Counter,
-                //        ImagesUploaded = 0,
-                //        SyncDateTime = DateTime.Now
-                //    };
-                    
-                //    _dbcontext.OrderUploadControl.Add(orderUploadControl);
-
-                //    _dbcontext.SaveChanges();
-                //    _dbcontext.DetachAll();
-                //}
-                //else
-                //{                    
-                //    if (orderUploadControl.ImagesPending.Equals(orderUploadControl.ImagesUploaded))
-                //    {                        
-                //        throw new Exception("La orden ya no tiene imagenes pendientes.");
-                //    }
-                //}
-                
                 var imageStorePath = this._configuration.GetValue<string>("Logistics:ImageStorePath");
-
                 var directory = string.Format("{0}/{1}", imageStorePath, string.Format("Idx{0}_{1}", dtoPicture.OrderId, orderNum));
                 if (!Directory.Exists(directory))
                 {                    
                     Directory.CreateDirectory(directory);
                 }
-
                 var fileNamePath = string.Format("{0}/{1}", directory, dtoPicture.Name);
                 var picture = new OrderPicture()
                 {
@@ -1255,36 +1285,24 @@ namespace adesoft.adepos.webview.Controller
                     OrderType = dtoPicture.OrderType,
                     Path = fileNamePath
                 };
-                
                 var bytes = Convert.FromBase64String(dtoPicture.DataBase64.Replace("data:image/jpeg;base64,", "").Replace("data:image/png;base64,", ""));
                 using (var imageFile = new FileStream(fileNamePath, FileMode.Create))
                 {
                     imageFile.Write(bytes, 0, bytes.Length);
                     imageFile.Flush();
-
                     _dbcontext.OrderPictures.Add(picture);
-
                     _dbcontext.SaveChanges();
                     _dbcontext.DetachAll();
                 }
-
-                //orderUploadControl.ImagesUploaded++;
-                //_dbcontext.OrderUploadControl.Update(orderUploadControl);
-
                 _dbcontext.SaveChanges();
                 _dbcontext.DetachAll();
-
                 order.Sync = true;
                 order.SyncDateTime = DateTime.Now;
                 order.ErrorMessage = "";
-
                 _dbcontext.Orders.Update(order);
-
                 _dbcontext.SaveChanges();
                 _dbcontext.DetachAll();                
-
                 transaction.Commit();
-
                 return Ok(new { IsUpload = true });
             }
             catch (Exception ex)

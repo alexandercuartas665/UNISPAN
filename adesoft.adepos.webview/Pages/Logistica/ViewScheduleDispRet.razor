@@ -23,37 +23,6 @@
 @inject CompanyService companyService
 
 @code {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public string searchBy;
 
     class AmountTotal
@@ -655,325 +624,132 @@
         </div>
     </div>
 </div>
-<div class="order-table-scroll fixed-content-grid ">
+<div class="order-table-scroll">
     <div class="order-table-wrap">
-        @{
-            if (this.scheduleDisRet.ModuleId == 1)
-            {
-                <table>
-                    <thead>
-                        <tr class="thead-title-bold row-fixed-1">
-                            <th colspan="7" class="col-title-totalTon"><span>SUMA TONELADAS PROGRAMADAS ---></span></th>
-                            <th class="col-totalTon">@(string.Format("{0}Ton", this.totalTon.ToString("0.00")))</th>
+        <table>
+            @* --- CABECERAS --- *@
+            <thead>
+                @* Fila 1: Totales *@
+                <tr class="row-fixed-1 thead-title-bold">
+                    <th colspan="9" class="col-title-totalTon">
+                        <span>SUMA TONELADAS PROGRAMADAS ---></span>
+                    </th>
+                    <th class="col-totalTon">@(string.Format("{0}Ton", totalTon.ToString("0.00")))</th>
+                    @for (int i = 0; i < days; i++)
+                    {
+                        <th colspan="4" class="col-totalTonXDay">
                             @{
-                                for (int i = 0; i < days; i++)
-                                {
-                                    <th colspan="4" class="col-totalTonXDay">
-                                        @{
-                                            var totalAmount = amountTotals.Where(t => t.date.Equals(fromDate.AddDays(i).ToString("dd/MM/yyyy"))).FirstOrDefault();
-                                            if (!(totalAmount is null))
-                                            {
-                                                <span>@(string.Format("{0}Ton", totalAmount.total.ToString("0.00")))</span>
-                                            }
-                                            else
-                                            {
-                                                <span>@(string.Format("0.00Ton"))</span>
-                                            }
-                                        }
-                                    </th>
-                                }
+                                var totalAmount = amountTotals.FirstOrDefault(t => t.date == fromDate.AddDays(i).ToString("dd/MM/yyyy"));
+                                <span>@(totalAmount != null ? $"{totalAmount.total:0.00}Ton" : "0.00Ton")</span>
                             }
-                            <th colspan="2" style="background-color: white;"></th>
-                        </tr>
-                        @*<tr>
-                                <th colspan="8" class="col-banner">
-                                    <img src="@this.banner.Value" />
-                                </th>
-                            </tr>*@
-                        <tr class="thead-title-bold row-fixed-2">
-                            <th colspan="8" class="col-title">@(this.scheduleDisRet.ModuleId == 1 ? "CONTROL DE DESPACHOS" : "CONTROL DE DEVOLUCIONES")</th>
-                            @{
-                                for (int i = 0; i < days; i++)
+                        </th>
+                    }
+                    <th colspan="2" style="background-color: white;"></th>
+                </tr>
+
+                @* Fila 2: Título principal *@
+                <tr class="row-fixed-2 thead-title-bold">
+                    <th colspan="9" class="col-title">
+                        @(scheduleDisRet.ModuleId == 1 ? "CONTROL DE DESPACHOS" : "CONTROL DE DEVOLUCIONES")
+                    </th>
+                    @for (int i = 0; i < days; i++)
+                    {
+                        <th colspan="4">
+                            <span>@fromDate.AddDays(i).ToString("dddd").ToUpper()</span>
+                            <br />
+                            <span>@fromDate.AddDays(i).ToString("d-MMMM-yyyy").ToUpper()</span>
+                        </th>
+                    }
+                    <th colspan="2" style="background-color: #9BBB59; color: black;">DESPACHOS PENDIENTES POR DEFINIR FECHA</th>
+                </tr>
+
+                @* Fila 3: Encabezados de columnas *@
+                <tr class="row-fixed-3 thead-title-nobold">
+                    <th class="col-checkbox">
+                        <input type="checkbox" id="selectAll" @onchange="ToggleSelectAll" />
+                    </th>
+                    <th class="col-work">OBRAS</th>
+                    <th class="col-customerName">CLIENTE</th>
+                    <th class="col-orderId">ORDEN DE<br>DESPACHO</th>
+                    <th class="col-opNum"># OP</th>
+                    <th class="col-salesPerson">COMERCIAL</th>
+                    <th class="col-module">MÓDULO</th>
+                    <th class="col-city">CIUDAD</th>
+                    <th class="col-transport">TRANSPORTE A<br>CARGO DE</th>
+                    @for (int i = 0; i < days; i++)
+                    {
+                        <th class="col-wight">PESO<br>(Ton)</th>
+                        <th class="col-time">HORA DE<br>CARGUE</th>
+                        <th>OK</th>
+                        <th>VEHÍCULO</th>
+                    }
+                    <th class="col-wight2">PESO<br>(Ton)</th>
+                    <th>OBSERVACIONES</th>
+                </tr>
+            </thead>
+
+            @* --- CUERPO DE LA TABLA --- *@
+            <tbody>
+                @if (orders != null)
+                {
+                    @foreach (var order in orders)
+                    {
+                        <tr>
+                            @* Checkbox *@
+                            <td class="col-checkbox">
+                                <input type="checkbox" @bind="order.IsSelected" />
+                            </td>
+
+                            @* Columnas fijas *@
+                            <td class="col-work">@order.Works</td>
+                            <td class="col-customerName">@order.CustomerName</td>
+                            <td class="col-orderId">
+                                @if (searchOrder || createOrUpdate)
                                 {
-                                    <th colspan="4">
-                                        @{
-                                            <span>@fromDate.AddDays(i).ToString("dddd").ToUpper()</span>
-                                            <br />
-                                            <span>@fromDate.AddDays(i).ToString("d-MMMM-yyyy").ToUpper()</span>
-                                        }
-                                    </th>
+                                    <a @onclick="@(() => EditOrder(order.OrderId))">@order.OrderNum</a>
                                 }
-                            }
-                            <th colspan="2" style="background-color: #9BBB59; color: black;">DESPACHOS PENDIENTES POR DEFINIR FECHA</th>
-                        </tr>
-                        <tr class="thead-title-nobold row-fixed-3">
-                            <!-- Columna para el checkbox "Seleccionar Todo" -->
-                            <th>
-                                <input class="col-work" type="checkbox" id="selectAll" @onchange="ToggleSelectAll" />
-                            </th>
-                            <th class="col-work">OBRAS</th>
-                            <th class="col-customerName">CLIENTE</th>
-                            <th class="col-orderId"><span>ORDEN DE</span><br /><span>DESPACHO</span></th>
-                            <th class="col-opNum"># OP</th>
-                            <th class="col-salesPerson">COMERCIAL</th>
-                            <th class="col-module">MODULÓ</th>
-                            <th class="col-city">CIUDAD</th>
-                            <th class="col-transport"><span>TRANSPORTE A</span><br /><span>CARGO DE</span></th>
-                            @{
-                                for (int i = 0; i < days; i++)
+                                else
                                 {
-                                    <th class="col-wight"><span>PESO</span><br /><span>(Ton)</span></th>
-                                    <th class="col-time"><span>Hora de</span><br /><span>cargue</span></th>
-                                    <th>OK</th>
-                                    <th>VEHICULO</th>
+                                    @order.OrderNum
                                 }
-                            }
-                            <th class="col-wight2"><span>PESO</span><br /><span>(Ton)</span></th>
-                            <th>OBSERVACIONES</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            if (!(orders is null))
+                            </td>
+                            <td class="col-opNum">@order.OPNum</td>
+                            <td class="col-salesPerson">@order.SalesPerson</td>
+                            <td class="col-module">@order.Module</td>
+                            <td class="col-city">@order.City</td>
+                            <td class="col-transport">@order.ReponsableTrans</td>
+
+                            @* Columnas dinámicas (días) *@
+                            @for (int i = 0; i < days; i++)
                             {
-                                foreach (var order in orders)
+                                var curDate = fromDate.AddDays(i);
+                                @if (order.DispatchDateTime?.ToString("dd-MM-yyyy") == curDate.ToString("dd-MM-yyyy"))
                                 {
-                                    <tr>
-                                        <!-- Columna para checkbox individual -->
-                                        <td>
-                                            <input type="checkbox" name="selectedOrders" class="orderCheckbox" @bind="order.IsSelected" />
-                                        </td>
-                                        @{
-                                            if (order.Status.Equals(OrderStatus.Paused))
-                                            {
-                                                if (order.DispatchDateTime.Value.ToString("yyyy").Equals("0001"))
-                                                {
-                                                    <td class="col-work" style="background: red; color: white; padding: 0px !important;">
-                                                        <div style="border: 4px solid #ffc107; display: inline-block; width: 100%; height: 28px">
-                                                            <span style="display: inline-block; margin: 2px 5px;">@order.Works</span>
-                                                        </div>
-                                                    </td>
-                                                }
-                                                else
-                                                {
-                                                    <td class="col-work" style="background: #ffc107; color: black">@order.Works</td>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                if (order.DispatchDateTime.Value.ToString("yyyy").Equals("0001"))
-                                                {
-                                                    <td class="col-work" style="background: red; color: white">@order.Works</td>
-                                                }
-                                                else
-                                                {
-                                                    <td class="col-work">@order.Works</td>
-                                                }
-                                            }
-                                        }
-                                        <td class="col-customerName">@order.CustomerName</td>
-                                        <td class="col-orderId">
-                                            @{
-                                                if (this.searchOrder || this.createOrUpdate)
-                                                {
-                                                    <a href="" @onclick="@(args => { this.EditOrder(order.OrderId); })">
-                                                        @{
-                                                            if (order.DispatchParent)
-                                                            {
-                                                                <span style="color: red; font-weight:bold; font-size: 12px">*</span>
-                                                            }
-                                                            if (!string.IsNullOrEmpty(order.OrderNum))
-                                                            {
-                                                                var orderNumList = order.OrderNum.Split(',');
-                                                                foreach (var orderNum in orderNumList)
-                                                                {
-                                                                    <span>@orderNum</span>
-                                                                    <br />
-                                                                }
-                                                            }
-                                                        }
-                                                    </a>
-                                                }
-                                                else
-                                                {
-                                                    <span>@order.OrderNum</span>
-                                                }
-                                            }
-                                        </td>
-                                        <td class="col-opNum">@order.OPNum</td>
-                                        <td class="col-salesPerson">@order.SalesPerson</td>
-                                        <td class="col-module">@order.Module</td>
-                                        <td class="col-city">@order.City</td>
-                                        <td class="col-transport">@order.ReponsableTrans</td>
-                                        @{
-                                            fromDate = this.scheduleDisRet.FromDate;
-                                            for (int i = 0; i < days; i++)
-                                            {
-                                                var curDate = fromDate.AddDays(i);
-                                                if (order.DispatchDateTime.Value.ToString("dd-MM-yyyy").Equals(curDate.ToString("dd-MM-yyyy")))
-                                                {
-                                                    if (order.DispatchParent || (order.OrderId != order.DispatchId))
-                                                    {
-                                                        <td style="background: yellow;">@order.Wight</td>
-                                                    }
-                                                    else
-                                                    {
-                                                        <td>@order.Wight</td>
-                                                    }
-                                                    <td><span>@order.DispatchDateTime.Value.ToString("HH:mm")</span></td>
-                                                    <td>
-                                                        @{
-                                                            if (order.Ok)
-                                                            {
-                                                                <span>OK</span>
-                                                            }
-                                                        }
-                                                    </td>
-                                                    <td>@order.VehicleType</td>
-                                                }
-                                                else
-                                                {
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                }
-                                            }
-                                            if (order.DispatchDateTime.Equals(DateTime.MinValue))
-                                            {
-                                                <td>@order.Wight</td>
-                                                <td>@order.Comment</td>
-                                            }
-                                            else
-                                            {
-                                                <td></td>
-                                                <td></td>
-                                            }
-                                        }
-                                    </tr>
+                                    <td class="col-wight">@order.Wight</td>
+                                    <td class="col-time">@order.DispatchDateTime?.ToString("HH:mm")</td>
+                                    <td>@(order.Ok ? "OK" : "")</td>
+                                    <td>@order.VehicleType</td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
                                 }
                             }
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <table>
-                    <thead>
-                        <tr class="thead-title-bold row-fixed-1">
-                            <th colspan="4" class="col-ret-title-totalTon"><span>SUMA TONELADAS PROGRAMADAS ---></span></th>
-                            <th class="col-ret-totalTon">@(string.Format("{0}Ton", this.totalTon.ToString("0.00")))</th>
-                            @{
-                                for (int i = 0; i < days; i++)
-                                {
-                                    <th colspan="3" class="col-totalTonXDay">
-                                        @{
-                                            var totalAmount = amountTotals.Where(t => t.date.Equals(fromDate.AddDays(i).ToString("dd/MM/yyyy"))).FirstOrDefault();
-                                            if (!(totalAmount is null))
-                                            {
-                                                <span>@(string.Format("{0}Ton", totalAmount.total.ToString("0.00")))</span>
-                                            }
-                                            else
-                                            {
-                                                <span>@(string.Format("0.00Ton"))</span>
-                                            }
-                                        }
-                                    </th>
-                                }
-                            }
+
+                            @* Columnas finales *@
+                            <td class="col-wight2">@order.TotalPalletWeight</td>
+                            <td>@order.Comment</td>
                         </tr>
-                        <tr class="thead-title-bold row-fixed-2">
-                            <th colspan="5" class="col-ret-title">@(this.scheduleDisRet.ModuleId == 1 ? "CONTROL DE DESPACHOS" : "CONTROL DE DEVOLUCIONES")</th>
-                            @{
-                                for (int i = 0; i < days; i++)
-                                {
-                                    <th colspan="3">
-                                        @{
-                                            <span>@fromDate.AddDays(i).ToString("dddd").ToUpper()</span>
-                                            <br />
-                                            <span>@fromDate.AddDays(i).ToString("d-MMMM-yyyy").ToUpper()</span>
-                                        }
-                                    </th>
-                                }
-                            }
-                        </tr>
-                        <tr class="thead-title-nobold row-fixed-3">
-                            <th class="col-ret-work">OBRAS</th>
-                            <th class="col-ret-customerName">CLIENTE</th>
-                            <th class="col-ret-city">CIUDAD</th>
-                            <th class="col-ret-salesPerson">COMERCIAL</th>
-                            <th class="col-transportdev"><span>TRANSPORTE A</span><br /><span>CARGO DE</span></th>
-                            @{
-                                for (int i = 0; i < days; i++)
-                                {
-                                    <th class="col-wight"><span>PESO</span><br /><span>(Ton)</span></th>
-                                    <th class="col-time"><span>Hora de</span><br /><span>cargue</span></th>
-                                    <th>OK</th>
-                                }
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            if (!(orders is null))
-                            {
-                                foreach (var order in orders)
-                                {
-                                    <tr>
-                                        <td class="col-ret-work">
-                                            @{
-                                                if (this.searchOrder || this.createOrUpdate)
-                                                {
-                                                    <a href="" @onclick="@(args => { this.EditOrder(order.OrderId); })">@order.Works</a>
-                                                }
-                                                else
-                                                {
-                                                    <span>@order.Works</span>
-                                                }
-                                            }
-                                        </td>
-                                        @*<td class="col-ret-orderId">@order.OrderNum</td>*@
-                                        <td class="col-ret-customerName">@order.CustomerName</td>
-                                        <td class="col-ret-city">@order.City</td>
-                                        <td class="col-ret-salesPerson">@order.SalesPerson</td>
-                                        <td class="col-transportdev">@order.ReponsableTrans</td>
-                                        @{
-                                            fromDate = this.scheduleDisRet.FromDate;
-                                            for (int i = 0; i < days; i++)
-                                            {
-                                                var curDate = fromDate.AddDays(i);
-                                                if (order.ReturnDateTime.Value.ToString("dd-MM-yyyy").Equals(curDate.ToString("dd-MM-yyyy")))
-                                                {
-                                                    <td>@order.Wight</td>
-                                                    <td><span>@order.ReturnDateTime.Value.ToString("HH:mm")</span></td>
-                                                    <td>
-                                                        @{
-                                                            if (order.Ok)
-                                                            {
-                                                                <span>OK</span>
-                                                            }
-                                                        }
-                                                    </td>
-                                                }
-                                                else
-                                                {
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                }
-                                            }
-                                        }
-                                    </tr>
-                                }
-                            }
-                        }
-                    </tbody>
-                </table>
-            }
-        }
+                    }
+                }
+            </tbody>
+        </table>
     </div>
 </div>
+@* === FIN TABLA FIJA === *@
 <div class="form-row">
     <iframe id="iframeReport" frameborder="0" style="height:700px;width:100%;"></iframe>
 </div>

@@ -773,7 +773,61 @@ namespace adesoft.adepos.webview.Controller
             {
                 throw ex;
             }
-        }        
+        }
+
+
+        [HttpPost("ImportAttachment")]
+        public IActionResult ImportAttachment([FromBody] DTOOrderAttachment dto)
+        {
+            using var transaction = _dbcontext.Database.BeginTransaction();
+            try
+            {
+                var order = _dbcontext.Orders
+                    .FirstOrDefault(o => o.OrderType == dto.OrderType && o.Id == dto.OrderId);
+                if (order == null)
+                    return BadRequest("Orden no encontrada.");
+
+                if (dto.FileBytes == null || dto.FileBytes.Length == 0
+                 || string.IsNullOrEmpty(dto.FileName))
+                    return BadRequest("Archivo inválido.");
+
+                // Carpeta de attachments
+                var basePath = _configuration.GetValue<string>("Logistics:AttachmentsPath");
+                var dir = Path.Combine(basePath, $"Idx{dto.OrderId}_{order.OrderNum}");
+                Directory.CreateDirectory(dir);
+
+                // Guarda el archivo
+                var filePath = Path.Combine(dir, dto.FileName);
+                System.IO.File.WriteAllBytes(filePath, dto.FileBytes);
+
+                // Registra en OrderPictures
+                var picture = new OrderPicture
+                {
+                    OrderId = dto.OrderId,
+                    OrderType = dto.OrderType,
+                    Name = dto.FileName,
+                    Path = filePath
+                };
+                _dbcontext.OrderPictures.Add(picture);
+
+                // Marca orden sincronizada
+                order.Sync = true;
+                order.SyncDateTime = DateTime.Now;
+                order.ErrorMessage = string.Empty;
+                _dbcontext.Orders.Update(order);
+
+                _dbcontext.SaveChanges();
+                transaction.Commit();
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return BadRequest(new { success = false, error = ex.Message });
+            }
+        }
+
 
         [HttpGet("getPendingTransportOrders")]
         public List<DTOOrder> GetPendingTransportOrders()

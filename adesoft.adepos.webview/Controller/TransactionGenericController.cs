@@ -62,7 +62,6 @@ namespace adesoft.adepos.webview.Controller
         {
             TransactionGenericBussines transBuss = new TransactionGenericBussines(_configuration, _dbcontext);
             transactionGeneric = transBuss.CreateOrUpdateFromFile(transactionGeneric);
-            
             return transactionGeneric;
         }
 

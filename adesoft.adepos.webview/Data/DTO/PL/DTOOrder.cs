@@ -2,6 +2,7 @@
 using adesoft.adepos.webview.Data.Model.PL;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -153,6 +154,14 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         public bool VersionChange { get; set; }
 
         public ICollection<DTOPickingStatusDetail> PickingStatusDetails { get; set; }
+
+        [NotMapped]
+
+        public byte[] AuxTest { get; set; }
+
+        [NotMapped]
+
+        public string NombreArchivo { get; set; }
     }    
 
     public class DTOSharedOrder

@@ -6,6 +6,10 @@
 @using System.Text;
 @using System.Net.Mail;
 @using System.Net;
+@using Microsoft.AspNetCore.Components.Forms;
+@using Radzen;
+@using Radzen.Blazor;
+
 
 @inject DialogService dialogService;
 @inject LogisticsService logisticsService;
@@ -19,885 +23,900 @@
 @inject CompanyService companyService
 
 @code {
-	[Parameter]
-	public string strFromDate { get; set; }
+    [Parameter]
+    public string strFromDate { get; set; }
 
-	[Parameter]
-	public string strToDate { get; set; }
+    [Parameter]
+    public string strToDate { get; set; }
 
-	[Parameter]
-	public int orderType { get; set; }
+    [Parameter]
+    public int orderType { get; set; }
 
-	[Parameter]
-	public long orderId { get; set; }
+    [Parameter]
+    public long orderId { get; set; }
 
-	[Parameter]
-	public bool edit { get; set; }
+    [Parameter]
+    public bool edit { get; set; }
 
-	public DTOOrder model;
-	private List<DTOOrderPicture> pictures;
-	public List<DTOLogisticMasterData> customers;
-	public List<DTOLogisticMasterData> vendors;
-	public List<DTOLogisticMasterData> salesPersons;
-	public List<DTOLogisticMasterData> modules;
-	public List<DTOLogisticMasterData> cities;
-	public List<DTOLogisticMasterData> transports;
-	public List<DTOLogisticMasterData> vehicleTypes;
+    public DTOOrder model;
+    private List<DTOOrderPicture> pictures;
+    public List<DTOLogisticMasterData> customers;
+    public List<DTOLogisticMasterData> vendors;
+    public List<DTOLogisticMasterData> salesPersons;
+    public List<DTOLogisticMasterData> modules;
+    public List<DTOLogisticMasterData> cities;
+    public List<DTOLogisticMasterData> transports;
+    public List<DTOLogisticMasterData> vehicleTypes;
 
-	public List<DTOSharedOrder> sharedOrders;
-	public DTOOrder MailOrders;
+    public List<DTOSharedOrder> sharedOrders;
+    public DTOOrder MailOrders;
 
-	public DateTime? time;
+    public DateTime? time;
 
-	private bool exportToExcel = false;
-	private bool createOrUpdate = false;
-	private bool deleteOrder = false;
-	private bool editFields = false;
-	private bool searchOrder = false;
-	private bool viewInvoice = false;
-	private bool reSync = false;
-	private bool isOk = false;
+    private bool exportToExcel = false;
+    private bool createOrUpdate = false;
+    private bool deleteOrder = false;
+    private bool editFields = false;
+    private bool searchOrder = false;
+    private bool viewInvoice = false;
+    private bool reSync = false;
+    private bool isOk = false;
 
-	public int TabSelected = 0;
-	public int page = 1;
+    public int TabSelected = 0;
+    public int page = 1;
 
-	public string Observations;
+    public string Observations;
 
-	protected override async Task OnInitializedAsync()
-	{
-		await this.loadOrder();
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        await this.loadOrder();
+    }
 
-	public async Task loadOrder()
-	{
-		this.dialogService.OnClose += CloseNewCustomer;
-		this.pictures = new List<DTOOrderPicture>();
-		this.model = new DTOOrder();
-		this.model.OrderType = (OrderType)orderType;
+    public async Task loadOrder()
+    {
+        this.dialogService.OnClose += CloseNewCustomer;
+        this.pictures = new List<DTOOrderPicture>();
+        this.model = new DTOOrder();
+        this.model.OrderType = (OrderType)orderType;
 
-		await this.getSecurity();
+        await this.getSecurity();
 
-		dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
-		Task.Run(async () =>
-		{
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
 
-			this.customers = await logisticsService.GetCustomers();
-			this.vendors = await logisticsService.GetVendors();
-			this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
-			this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
-			this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
-			this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
-			this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+            this.customers = await logisticsService.GetCustomers();
+            this.vendors = await logisticsService.GetVendors();
+            this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+            this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
+            this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
+            this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+            this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
 
-			if (orderId != 0)
-			{
-				this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
-				this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
-				this.page += 1;
+            if (orderId != 0)
+            {
+                this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
+                this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
+                this.page += 1;
 
-				if ((OrderType)this.orderType == OrderType.Dispatch)
-				{
-					this.time = this.model.DispatchDateTime;
-				}
-				else if ((OrderType)this.orderType == OrderType.Return)
-				{
-					this.time = this.model.ReturnDateTime;
-				}
+                if ((OrderType)this.orderType == OrderType.Dispatch)
+                {
+                    this.time = this.model.DispatchDateTime;
+                }
+                else if ((OrderType)this.orderType == OrderType.Return)
+                {
+                    this.time = this.model.ReturnDateTime;
+                }
 
-				this.getOrders();
+                this.getOrders();
 
-				this.editFields = edit;
-			}
-			else
-			{
-				this.time = new DateTime();
-				this.editFields = true;
-			}
+                this.editFields = edit;
+            }
+            else
+            {
+                this.time = new DateTime();
+                this.editFields = true;
+            }
 
-			dialogService.Close();
-			this.InvokeAsync(() =>
-			{
-				StateHasChanged();
-			});
-		});
-	}
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+    }
 
-	async private Task loadPictures()
-	{
-		dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
-		Task.Run(async () =>
-		{
-			var pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
-			this.pictures.AddRange(pictures);
-			this.page += 1;
+    async private Task loadPictures()
+    {
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            var pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
+            this.pictures.AddRange(pictures);
+            this.page += 1;
 
-			dialogService.Close();
-			this.InvokeAsync(() =>
-			{
-				StateHasChanged();
-			});
-		});
-	}
+            dialogService.Close();
+            this.InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+    }
 
-	private async Task getSecurity()
-	{
-		var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
-		string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
-		var listactionapp = await securityService.GetActionsPermission(tooken);
-		listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
+    private async Task getSecurity()
+    {
+        var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
+        string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var listactionapp = await securityService.GetActionsPermission(tooken);
+        listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
 
-		ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsSearchOrder")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.searchOrder = opt.IsActive;
-		}
+        ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsSearchOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.searchOrder = opt.IsActive;
+        }
 
-		opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsCreateOrEditOrder")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.createOrUpdate = opt.IsActive;
-		}
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsCreateOrEditOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.createOrUpdate = opt.IsActive;
+        }
 
-		opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsDeleteOrder")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.deleteOrder = opt.IsActive;
-		}
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsDeleteOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.deleteOrder = opt.IsActive;
+        }
 
-		opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsExportOrder")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.exportToExcel = opt.IsActive;
-		}
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsExportOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.exportToExcel = opt.IsActive;
+        }
 
-		opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsViewInvoice")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.viewInvoice = opt.IsActive;
-		}
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsViewInvoice")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.viewInvoice = opt.IsActive;
+        }
 
-		opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsReSyncOrder")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.reSync = opt.IsActive;
-		}
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsReSyncOrder")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.reSync = opt.IsActive;
+        }
 
-		opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsIsOk")).FirstOrDefault();
-		if (!(opt is null))
-		{
-			this.isOk = opt.IsActive;
-		}
-	}
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsIsOk")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.isOk = opt.IsActive;
+        }
+    }
 
-	public async void SelectedChangeTab(int tabselected)
-	{
-		TabSelected = tabselected;
-	}
+    public async void SelectedChangeTab(int tabselected)
+    {
+        TabSelected = tabselected;
+    }
 
-	public async void Cancel()
-	{
-		navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
-	}
+    public async void Cancel()
+    {
+        navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
+    }
 
-	async void ShowNotification(NotificationMessage message)
-	{
-		notificationService.Notify(message);
-	}
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
 
-	public async Task DeleteOrder(DTOOrder dtoOrder)
-	{
-		try
-		{
-			if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro de eliminar la orden de {0}?", this.orderType == 1 ? "despacho" : "devolución")))
-				return;
+    public async Task DeleteOrder(DTOOrder dtoOrder)
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro de eliminar la orden de {0}?", this.orderType == 1 ? "despacho" : "devolución")))
+                return;
 
-			if (this.model.DispatchParent || (this.model.OrderId != this.model.DispatchId))
-				throw new Exception(string.Format("La orden de {0} no pudo ser eliminada, comparte vehiculo con otra orden.", this.orderType == 1 ? "despacho" : "devolución"));
+            if (this.model.DispatchParent || (this.model.OrderId != this.model.DispatchId))
+                throw new Exception(string.Format("La orden de {0} no pudo ser eliminada, comparte vehiculo con otra orden.", this.orderType == 1 ? "despacho" : "devolución"));
 
-			var deleteOrder = await this.logisticsService.DeleteOrder(dtoOrder);
-			if (deleteOrder)
-				navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
-			else
-				throw new Exception(string.Format("La orden de {0} no pudo ser eliminada.", this.orderType == 1 ? "despacho" : "devolución"));
-		}
-		catch (Exception ex)
-		{
-			ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
-			throw;
-		}
-	}
+            var deleteOrder = await this.logisticsService.DeleteOrder(dtoOrder);
+            if (deleteOrder)
+                navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
+            else
+                throw new Exception(string.Format("La orden de {0} no pudo ser eliminada.", this.orderType == 1 ? "despacho" : "devolución"));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
 
-	public void getOrders()
-	{
-		this.sharedOrders = logisticsService.GetSharedOrders((OrderType)orderType, orderId, this.model.VehicleTypeId, this.model.DispatchDateTime.Value);
-	}
+    public void getOrders()
+    {
+        this.sharedOrders = logisticsService.GetSharedOrders((OrderType)orderType, orderId, this.model.VehicleTypeId, this.model.DispatchDateTime.Value);
+    }
 
-	public void changeField()
-	{
-		this.time = this.model.DispatchDateTime != null ? time : DateTime.MinValue;
-		this.model.DispatchDateTime = this.model.DispatchDateTime != null ? this.model.DispatchDateTime : DateTime.MinValue;
+    public void changeField()
+    {
+        this.time = this.model.DispatchDateTime != null ? time : DateTime.MinValue;
+        this.model.DispatchDateTime = this.model.DispatchDateTime != null ? this.model.DispatchDateTime : DateTime.MinValue;
 
-		this.getOrders();
-		this.model.DispatchIdSelect = 0;
-	}
+        this.getOrders();
+        this.model.DispatchIdSelect = 0;
+    }
 
-	public async Task ReSyncOrder(DTOOrder dtoOrder)
-	{
-		try
-		{
-			if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro que desea agregar mas capturas a la orden de {0}?", this.orderType == 1 ? "despacho" : "devolución")))
-				return;
+    public async Task ReSyncOrder(DTOOrder dtoOrder)
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro que desea agregar mas capturas a la orden de {0}?", this.orderType == 1 ? "despacho" : "devolución")))
+                return;
 
-			var reSyncOrder = await this.logisticsService.ReSyncOrder(dtoOrder);
-			if (reSyncOrder)
-				navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
-			else
-				throw new Exception(string.Format("La orden de {0} no puede ser re-sincronizada.", this.orderType == 1 ? "despacho" : "devolución"));
-		}
-		catch (Exception ex)
-		{
-			ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
-			throw;
-		}
-	}
+            var reSyncOrder = await this.logisticsService.ReSyncOrder(dtoOrder);
+            if (reSyncOrder)
+                navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
+            else
+                throw new Exception(string.Format("La orden de {0} no puede ser re-sincronizada.", this.orderType == 1 ? "despacho" : "devolución"));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
 
-	void OnChangeCapital(string value)
-	{
-		this.model.Works = value.ToUpper();
-	}
+    void OnChangeCapital(string value)
+    {
+        this.model.Works = value.ToUpper();
+    }
 
-	public async void SaveOrder()
-	{
-		try
-		{
-			if (orderType == 1)
-			{
-				if (model.OrderNum == "" || model.CustomerAccount == "" || model.Works == "")
-				{
-					ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios.", Duration = 4000 });
-					return;
-				}
-			}
-			else
-			{
-				if (model.Works == "")
-				{
-					ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios.", Duration = 4000 });
-					return;
-				}
-			}
+    public async void SaveOrder()
+    {
+        try
+        {
+            if (orderType == 1)
+            {
+                if (model.OrderNum == "" || model.CustomerAccount == "" || model.Works == "")
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios.", Duration = 4000 });
+                    return;
+                }
+            }
+            else
+            {
+                if (model.Works == "")
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios.", Duration = 4000 });
+                    return;
+                }
+            }
 
-			if ((OrderType)this.orderType == OrderType.Dispatch)
-			{
-				if (this.model.DispatchDateTime != null)
-					this.model.DispatchDateTime = this.model.DispatchDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
-			}
-			else if ((OrderType)this.orderType == OrderType.Return)
-			{
-				this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
-			}
+            if ((OrderType)this.orderType == OrderType.Dispatch)
+            {
+                if (this.model.DispatchDateTime != null)
+                    this.model.DispatchDateTime = this.model.DispatchDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
+            }
+            else if ((OrderType)this.orderType == OrderType.Return)
+            {
+                this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
+            }
 
-			this.model = await logisticsService.CreateOrUpdateOrder(model);
+            this.model = await logisticsService.CreateOrUpdateOrder(model);
 
-			navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
-		}
-		catch (Exception ex)
-		{
-			ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
-		}
-	}
+            navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+        }
+    }
 
-	public async void CopyAndEdit()
-	{
-		try
-		{
-			this.model.OrderId = 0;
-			this.model = await logisticsService.CreateOrUpdateOrder(model);
+    public async void CopyAndEdit()
+    {
+        try
+        {
+            this.model.OrderId = 0;
+            this.model = await logisticsService.CreateOrUpdateOrder(model);
 
-			this.orderId = this.model.OrderId;
-			this.editFields = true;
+            this.orderId = this.model.OrderId;
+            this.editFields = true;
 
-			navigationManager.NavigateTo(string.Format("editOrder/{0}/{1}/{2}/{3}/{4}", this.strFromDate, this.strToDate, this.orderType, this.model.OrderId, true));
-		}
-		catch (Exception ex)
-		{
-			ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
-		}
-	}
+            navigationManager.NavigateTo(string.Format("editOrder/{0}/{1}/{2}/{3}/{4}", this.strFromDate, this.strToDate, this.orderType, this.model.OrderId, true));
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+        }
+    }
 
-	async void ShowNewCustomer()
-	{
-		dialogService.Open<ViewCustomers>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
-	}
+    async void ShowNewCustomer()
+    {
+        dialogService.Open<ViewCustomers>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+    }
 
-	async void CloseNewCustomer(dynamic result)
-	{
-		string errorMessage = string.Empty; // Variable para almacenar el error
-		try
-		{
-			this.customers = await logisticsService.GetCustomers();
-			await InvokeAsync(() => { StateHasChanged(); });
-		}
-		catch (Exception ex)
-		{
-			errorMessage = $"Error al cargar clientes: {ex.Message}";
-			// Opcional: Registrar el error completo en consola para diagnóstico
-			Console.WriteLine($"Error completo: {ex}");
-		}
-	}
+    async void CloseNewCustomer(dynamic result)
+    {
+        string errorMessage = string.Empty; // Variable para almacenar el error
+        try
+        {
+            this.customers = await logisticsService.GetCustomers();
+            await InvokeAsync(() => { StateHasChanged(); });
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar clientes: {ex.Message}";
+            // Opcional: Registrar el error completo en consola para diagnóstico
+            Console.WriteLine($"Error completo: {ex}");
+        }
+    }
 
-	void ChangeOrderState()
-	{
-		dialogService.Open<ViewChangeOrderState>("Cambiar Estado"
-			, new Dictionary<string, object>() { { "model", this.model }, { "viewEditOrder", this } }
-			, new DialogOptions() { });
-	}
+    void ChangeOrderState()
+    {
+        dialogService.Open<ViewChangeOrderState>("Cambiar Estado"
+            , new Dictionary<string, object>() { { "model", this.model }, { "viewEditOrder", this } }
+            , new DialogOptions() { });
+    }
 
 
 
-	public string GenerateOrderReport(DTOOrder order)
-	{
-		var sb = new StringBuilder();
-		// ESTILOS CSS
-		string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
-		string headerStyle = "background-color: #3498db; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
-		string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
-		sb.AppendLine("<h2 style='color: #2c3e50; margin-bottom: 20px;'>REPORTE DE ORDEN</h2>");
-		// TABLA CON MÚLTIPLES COLUMNAS
-		sb.AppendLine($"<div style='overflow-x: auto;'>");
-		sb.AppendLine($"<table style='{tableStyle}'>");
-		// ENCABEZADOS
-		sb.AppendLine("<tr>");
-		AddTableHeader(sb, headerStyle, "ID de Orden");
-		AddTableHeader(sb, headerStyle, "Número de Orden");
-		AddTableHeader(sb, headerStyle, "Tipo de Orden");
-		AddTableHeader(sb, headerStyle, "Cliente");
-		AddTableHeader(sb, headerStyle, "Fecha Despacho");
-		AddTableHeader(sb, headerStyle, "Vendedor");
-		AddTableHeader(sb, headerStyle, "Transporte");
-		AddTableHeader(sb, headerStyle, "Peso Total");
-		AddTableHeader(sb, headerStyle, "Ciudad");
-		AddTableHeader(sb, headerStyle, "Módulo");
-		AddTableHeader(sb, headerStyle, "Conformidad");
-		AddTableHeader(sb, headerStyle, "Última Modificación");
-		sb.AppendLine("</tr>");
-		// FILA DE DATOS
-		sb.AppendLine("<tr>");
-		AddTableCell(sb, cellStyle, order.OrderId.ToString());
-		AddTableCell(sb, cellStyle, order.OrderNum);
-		AddTableCell(sb, cellStyle, order.OrderType.ToString());
-		AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
-		AddTableCell(sb, cellStyle, order.DispatchDateTime?.ToString("dd/MM/yyyy HH:mm") ?? "N/A");
-		AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
-		AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
-		AddTableCell(sb, cellStyle, $"{order.TotalPalletWeight} kg");
-		AddTableCell(sb, cellStyle, order.City);
-		AddTableCell(sb, cellStyle, order.Module);
-		AddTableCell(sb, cellStyle, order.IsConform ?? "N/A");
-		AddTableCell(sb, cellStyle, order.ModifiedOn.ToString("dd/MM/yyyy HH:mm"));
-		sb.AppendLine("</tr>");
+    public string GenerateOrderReport(DTOOrder order)
+    {
+        var sb = new StringBuilder();
+        // ESTILOS CSS
+        string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
+        string headerStyle = "background-color: #3498db; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
+        string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
+        sb.AppendLine("<h2 style='color: #2c3e50; margin-bottom: 20px;'>REPORTE DE ORDEN</h2>");
+        // TABLA CON MÚLTIPLES COLUMNAS
+        sb.AppendLine($"<div style='overflow-x: auto;'>");
+        sb.AppendLine($"<table style='{tableStyle}'>");
+        // ENCABEZADOS
+        sb.AppendLine("<tr>");
+        AddTableHeader(sb, headerStyle, "ID de Orden");
+        AddTableHeader(sb, headerStyle, "Número de Orden");
+        AddTableHeader(sb, headerStyle, "Tipo de Orden");
+        AddTableHeader(sb, headerStyle, "Cliente");
+        AddTableHeader(sb, headerStyle, "Fecha Despacho");
+        AddTableHeader(sb, headerStyle, "Vendedor");
+        AddTableHeader(sb, headerStyle, "Transporte");
+        AddTableHeader(sb, headerStyle, "Peso Total");
+        AddTableHeader(sb, headerStyle, "Ciudad");
+        AddTableHeader(sb, headerStyle, "Módulo");
+        AddTableHeader(sb, headerStyle, "Conformidad");
+        AddTableHeader(sb, headerStyle, "Última Modificación");
+        sb.AppendLine("</tr>");
+        // FILA DE DATOS
+        sb.AppendLine("<tr>");
+        AddTableCell(sb, cellStyle, order.OrderId.ToString());
+        AddTableCell(sb, cellStyle, order.OrderNum);
+        AddTableCell(sb, cellStyle, order.OrderType.ToString());
+        AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
+        AddTableCell(sb, cellStyle, order.DispatchDateTime?.ToString("dd/MM/yyyy HH:mm") ?? "N/A");
+        AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
+        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
+        AddTableCell(sb, cellStyle, $"{order.TotalPalletWeight} kg");
+        AddTableCell(sb, cellStyle, order.City);
+        AddTableCell(sb, cellStyle, order.Module);
+        AddTableCell(sb, cellStyle, order.IsConform ?? "N/A");
+        AddTableCell(sb, cellStyle, order.ModifiedOn.ToString("dd/MM/yyyy HH:mm"));
+        sb.AppendLine("</tr>");
 
-		sb.AppendLine("</table>");
-		sb.AppendLine("</div>");
+        sb.AppendLine("</table>");
+        sb.AppendLine("</div>");
 
-		return sb.ToString();
-	}
-	private void AddTableHeader(StringBuilder sb, string style, string header)
-	{
-		sb.AppendLine($"<th style='{style}'>{header}</th>");
-	}
-	private void AddTableCell(StringBuilder sb, string style, string value)
-	{
-		sb.AppendLine($"<td style='{style}'>{value}</td>");
-	}
+        return sb.ToString();
+    }
+    private void AddTableHeader(StringBuilder sb, string style, string header)
+    {
+        sb.AppendLine($"<th style='{style}'>{header}</th>");
+    }
+    private void AddTableCell(StringBuilder sb, string style, string value)
+    {
+        sb.AppendLine($"<td style='{style}'>{value}</td>");
+    }
 
-	async Task OnImportPdf()
-	{
-		if (string.IsNullOrEmpty(model.OrderId.ToString()))
-		{
-			notificationService.Notify(new NotificationMessage
-				{
-					Severity = NotificationSeverity.Error,
-					Summary = "ERROR",
-					Detail = "Por favor seleccionar un archivo PDF.",
-					Duration = 4000
-				});
-			return;
-		}
 
-		dialogService.Close();
-		dialogService.Open<DialogProgressBar>(
-			null,
-			new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
-			new DialogOptions
-				{
-					ShowTitle = false,
-					Width = "300px",
-					Height = "20px",
-					Left = "calc(50% - 150px)",
-					Top = "calc(50% - 200px)"
-				}
-		);
+    private async Task OnFileUpload(Radzen.UploadChangeEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault(); // Obtener el primer archivo
 
-		try
-		{
-			//OPCION DE IMPORTACIÓN DE PDF
-			//model = await logisticsService.ImportFile(model);
 
-			notificationService.Notify(new NotificationMessage
-				{
-					Severity = NotificationSeverity.Success,
-					Summary = "OK",
-					Detail = "PDF importado correctamente.",
-					Duration = 3000
-				});
-		}
-		catch (Exception ex)
-		{
-			notificationService.Notify(new NotificationMessage
-				{
-					Severity = NotificationSeverity.Error,
-					Summary = "ERROR",
-					Detail = $"Falló la importación: {ex.Message}",
-					Duration = 5000
-				});
-		}
-		finally
-		{
-			dialogService.Close();
-			await InvokeAsync(StateHasChanged);
-		}
-	}
+
+    }
+
+
+    async Task OnImportPdf()
+    {
+        if (model.AuxTest == null || model.AuxTest.Length == 0)
+        {
+            notificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "ERROR",
+                    Detail = "Por favor seleccionar un archivo PDF.",
+                    Duration = 4000
+                });
+            return;
+        }
+
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(
+            null,
+            new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
+            new DialogOptions
+                {
+                    ShowTitle = false,
+                    Width = "300px",
+                    Height = "20px",
+                    Left = "calc(50% - 150px)",
+                    Top = "calc(50% - 200px)"
+                }
+        );
+
+        try
+        {
+            //OPCION DE IMPORkTACIÓN DE PDF
+            await logisticsService.ImportFile(model);
+            notificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "OK",
+                    Detail = "PDF importado correctamente.",
+                    Duration = 3000
+                });
+        }
+        catch (Exception ex)
+        {
+            notificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "ERROR",
+                    Detail = $"Falló la importación: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+        finally
+        {
+            dialogService.Close();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 }
 
 <nav class="navbar navbar-light bg-transparent justify-content-between">
-	@{
-		if (this.orderId != 0)
-		{
-			switch (this.orderType)
-			{
-				case 1:
-					<h4>Editar despacho</h4>
-					break;
+    @{
+        if (this.orderId != 0)
+        {
+            switch (this.orderType)
+            {
+                case 1:
+                    <h4>Editar despacho</h4>
+                    break;
 
-				case 2:
-					<h4>Editar devolución</h4>
-					break;
-			}
-		}
-		else
-		{
-			switch (this.orderType)
-			{
-				case 1:
-					<h4>Nuevo despacho</h4>
-					break;
+                case 2:
+                    <h4>Editar devolución</h4>
+                    break;
+            }
+        }
+        else
+        {
+            switch (this.orderType)
+            {
+                case 1:
+                    <h4>Nuevo despacho</h4>
+                    break;
 
-				case 2:
-					<h4>Nueva devolución</h4>
-					break;
-			}
-		}
-	}
-	<div class="form-inline">
-		@{
-			if (this.model.Status.Equals(OrderStatus.Paused))
-			{
-				<span class="badge badge-warning mr-5">En Pausa</span>
-			}
-		}
-		<button class="btn btn-light mr-3" @onclick="@(args => { Cancel(); })">Regresar</button>
-		@{
-			if (this.createOrUpdate)
-			{
-				if (this.orderId != 0)
-				{
-					<button class="btn btn-danger mr-3" @onclick="@(args => { DeleteOrder(this.model); })" hidden="@(!this.deleteOrder)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Eliminar</button>
-					if (this.model.Sync)
-					{
-						<button class="btn btn-success mr-3" @onclick="@(args => { ReSyncOrder(this.model); })" hidden="@(!this.reSync)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Re-Sincronizar</button>
-					}
-					@*if (!this.model.Ok)
+                case 2:
+                    <h4>Nueva devolución</h4>
+                    break;
+            }
+        }
+    }
+    <div class="form-inline">
+        @{
+            if (this.model.Status.Equals(OrderStatus.Paused))
+            {
+                <span class="badge badge-warning mr-5">En Pausa</span>
+            }
+        }
+        <button class="btn btn-light mr-3" @onclick="@(args => { Cancel(); })">Regresar</button>
+        @{
+            if (this.createOrUpdate)
+            {
+                if (this.orderId != 0)
+                {
+                    <button class="btn btn-danger mr-3" @onclick="@(args => { DeleteOrder(this.model); })" hidden="@(!this.deleteOrder)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Eliminar</button>
+                    if (this.model.Sync)
+                    {
+                        <button class="btn btn-success mr-3" @onclick="@(args => { ReSyncOrder(this.model); })" hidden="@(!this.reSync)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Re-Sincronizar</button>
+                    }
+                    @*if (!this.model.Ok)
                     {
                     }
                     else
                     {
                         <button class="btn btn-warning mr-3" @onclick="@(args => { SaveOrderOk(); })" hidden="@(!this.isOk)">Desmarcar OK</button>
                     }*@
-					<button class="btn btn-info mr-3" @onclick="@(args => { CopyAndEdit(); })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Copiar y Editar</button>
-					<button class="btn btn-info mr-3" @onclick="@(args => { this.editFields = !this.editFields; })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Editar</button>
-					<button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })" hidden="@(!this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Guardar</button>
-				}
-				else
-				{
-					<button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Guardar</button>
-				}
-			}
-		}
-	</div>
+                    <button class="btn btn-info mr-3" @onclick="@(args => { CopyAndEdit(); })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Copiar y Editar</button>
+                    <button class="btn btn-info mr-3" @onclick="@(args => { this.editFields = !this.editFields; })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Editar</button>
+                    <button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })" hidden="@(!this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Guardar</button>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Guardar</button>
+                }
+            }
+        }
+    </div>
 </nav>
 <RadzenTabs Change="SelectedChangeTab" SelectedIndex="TabSelected" Style="font-size:11px;">
-	<Tabs>
-		<RadzenTabsItem Text="Orden">
-			<div class="row">
-				@{
-					if (this.orderType == 1)
-					{
-						<div class="col-sm-6">
-							<div class="form-row">
-								<div class="form-group col-sm-6">
-									<label for="orderId">No. Order<b class="text-danger">*</b></label>
-									<RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.OrderNum" Placeholder="Ingrese el número de orden" class="form-control"></RadzenTextBox>
-								</div>
-							</div>
-							<div class="form-group">
-								<label for="works">Obra<b class="text-danger">*</b></label>
-								<RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => this.model.Works = __value?.ToUpper(), this.model.Works?.ToUpper())"></RadzenTextBox>
-							</div>
-							<div class="form-row">
-								<div class="form-group col-sm-3">
-									<label for="identificationNum">NIT<b class="text-danger">*</b></label>
-									<RadzenTextBox Disabled="@(!this.editFields)" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
-								</div>
-								<div class="form-group col-sm-8">
-									<label for="customerName">Nombre cliente<b class="text-danger">*</b></label>
-									<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
-								</div>
-								<div class="form-group col-sm-1">
-									<label class="d-block">&nbsp;</label>
-									<NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args=>{ ShowNewCustomer();})">
-										+
-									</NavLink>
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-group col-sm-6">
-									<label for="OPNum"># OP</label>
-									<RadzenTextBox class="form-control" Name="OPNum" @bind-Value="model.OPNum" Placeholder="Ingrese el # OP" Disabled="@(!this.editFields)"></RadzenTextBox>
-								</div>
-							</div>
-							<div class="form-group">
-								<label for="salesPeron">Comercial</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-group">
-								<label for="module">Modulo</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="module" class="form-control" @bind-Value="model.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@modules" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-group">
-								<label for="city">Ciudad</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-group">
-								<label for="exampleInputEmail1">Transporte a cargo de</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" Name="city" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-row">
-								<div class="form-group col-sm-6">
-									<label for="DispatchDate">Fecha despacho</label>
-									@{
-										if (this.model.DispatchIdSelect != 0)
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="true" Change="changeField" />
-										}
-										else
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="@(!this.editFields)" Change="changeField" />
-										}
-									}
-								</div>
-								<div class="form-group col-sm-6">
-									<label for="DispatchTime">Hora despacho</label>
-									@{
-										if (this.model.DispatchIdSelect != 0)
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" Disabled="true" />
-										}
-										else
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" Disabled="@(!this.editFields)" />
-										}
-									}
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-group col-sm-6">
-									<label for="Wight">Peso (Toneladas)</label>
-									<RadzenNumeric TValue="decimal" Format="0.00" Name="Wight" id="Wight" @bind-Value="model.Wight" class="form-control" Disabled="true"></RadzenNumeric>
-								</div>
-							</div>
-							<div class="form-group">
-								<label for="vehicleType">Tipo vehículo</label>
-								@{
-									if (this.model.DispatchIdSelect != 0)
-									{
-										<RadzenDropDown Disabled="true" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
-									}
-									else
-									{
-										<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
-									}
-								}
-							</div>
-							@{
-								if (!this.model.DispatchParent)
-								{
-									<div class="form-group ">
-										<label for="dispatchWith">Compartir vehiculo con</label>
-										<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderNum" ValueProperty="OrderId" />
-									</div>
-								}
-							}
-						</div>
-					}
-					else
-					{
-						<div class="col-sm-6">
-							<div class="form-group">
-								<label for="works">Obra<b class="text-danger">*</b></label>
-								<RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)"></RadzenTextBox>
-							</div>
-							<div class="form-row">
-								<div class="form-group col-sm-3">
-									<label for="identificationNum">NIT<b class="text-danger">*</b></label>
-									<RadzenTextBox Disabled="@(!this.editFields)" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
-								</div>
-								<div class="form-group col-sm-8">
-									<label for="customerName">Nombre cliente<b class="text-danger">*</b></label>
-									<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
-								</div>
-								<div class="form-group col-sm-1">
-									<label class="d-block">&nbsp;</label>
-									<NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args=>{ ShowNewCustomer();})">
-										+
-									</NavLink>
-								</div>
-							</div>
+    <Tabs>
+        <RadzenTabsItem Text="Orden">
+            <div class="row">
+                @{
+                    if (this.orderType == 1)
+                    {
+                        <div class="col-sm-6">
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="orderId">No. Order<b class="text-danger">*</b></label>
+                                    <RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.OrderNum" Placeholder="Ingrese el número de orden" class="form-control"></RadzenTextBox>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="works">Obra<b class="text-danger">*</b></label>
+                                <RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => this.model.Works = __value?.ToUpper(), this.model.Works?.ToUpper())"></RadzenTextBox>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-3">
+                                    <label for="identificationNum">NIT<b class="text-danger">*</b></label>
+                                    <RadzenTextBox Disabled="@(!this.editFields)" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
+                                </div>
+                                <div class="form-group col-sm-8">
+                                    <label for="customerName">Nombre cliente<b class="text-danger">*</b></label>
+                                    <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                                </div>
+                                <div class="form-group col-sm-1">
+                                    <label class="d-block">&nbsp;</label>
+                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args=>{ ShowNewCustomer();})">
+                                        +
+                                    </NavLink>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="OPNum"># OP</label>
+                                    <RadzenTextBox class="form-control" Name="OPNum" @bind-Value="model.OPNum" Placeholder="Ingrese el # OP" Disabled="@(!this.editFields)"></RadzenTextBox>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="salesPeron">Comercial</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group">
+                                <label for="module">Modulo</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="module" class="form-control" @bind-Value="model.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@modules" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group">
+                                <label for="city">Ciudad</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleInputEmail1">Transporte a cargo de</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" Name="city" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="DispatchDate">Fecha despacho</label>
+                                    @{
+                                        if (this.model.DispatchIdSelect != 0)
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="true" Change="changeField" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="@(!this.editFields)" Change="changeField" />
+                                        }
+                                    }
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="DispatchTime">Hora despacho</label>
+                                    @{
+                                        if (this.model.DispatchIdSelect != 0)
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" Disabled="true" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" Disabled="@(!this.editFields)" />
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="Wight">Peso (Toneladas)</label>
+                                    <RadzenNumeric TValue="decimal" Format="0.00" Name="Wight" id="Wight" @bind-Value="model.Wight" class="form-control" Disabled="true"></RadzenNumeric>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="vehicleType">Tipo vehículo</label>
+                                @{
+                                    if (this.model.DispatchIdSelect != 0)
+                                    {
+                                        <RadzenDropDown Disabled="true" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
+                                    }
+                                    else
+                                    {
+                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
+                                    }
+                                }
+                            </div>
+                            @{
+                                if (!this.model.DispatchParent)
+                                {
+                                    <div class="form-group ">
+                                        <label for="dispatchWith">Compartir vehiculo con</label>
+                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderNum" ValueProperty="OrderId" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label for="works">Obra<b class="text-danger">*</b></label>
+                                <RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)"></RadzenTextBox>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-3">
+                                    <label for="identificationNum">NIT<b class="text-danger">*</b></label>
+                                    <RadzenTextBox Disabled="@(!this.editFields)" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
+                                </div>
+                                <div class="form-group col-sm-8">
+                                    <label for="customerName">Nombre cliente<b class="text-danger">*</b></label>
+                                    <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                                </div>
+                                <div class="form-group col-sm-1">
+                                    <label class="d-block">&nbsp;</label>
+                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args=>{ ShowNewCustomer();})">
+                                        +
+                                    </NavLink>
+                                </div>
+                            </div>
 
-							<div class="form-group">
-								<label for="salesPeron">Comercial</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-group">
-								<label for="city">Ciudad</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-group">
-								<label for="exampleInputEmail1">Transporte a cargo de</label>
-								<RadzenDropDown Disabled="@(!this.editFields)" Name="city" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" />
-							</div>
-							<div class="form-row">
-								<div class="form-group col-sm-6">
-									<label for="ReturnDate">Fecha devolución</label>
-									@{
-										if (this.model.DispatchIdSelect != 0)
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Disabled="true" Change="changeField" />
-										}
-										else
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Disabled="@(!this.editFields)" Change="changeField" />
-										}
-									}
-								</div>
-								<div class="form-group col-sm-6">
-									<label for="ReturnTime">Hora devolución</label>
-									@{
-										if (this.model.DispatchIdSelect != 0)
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" Disabled="true" />
-										}
-										else
-										{
-											<RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" Disabled="@(!this.editFields)" />
-										}
-									}
-								</div>
-							</div>
+                            <div class="form-group">
+                                <label for="salesPeron">Comercial</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group">
+                                <label for="city">Ciudad</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleInputEmail1">Transporte a cargo de</label>
+                                <RadzenDropDown Disabled="@(!this.editFields)" Name="city" class="form-control" @bind-Value="model.ReponsableTransId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@transports" TextProperty="Description" ValueProperty="Id" />
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="ReturnDate">Fecha devolución</label>
+                                    @{
+                                        if (this.model.DispatchIdSelect != 0)
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Disabled="true" Change="changeField" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Disabled="@(!this.editFields)" Change="changeField" />
+                                        }
+                                    }
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="ReturnTime">Hora devolución</label>
+                                    @{
+                                        if (this.model.DispatchIdSelect != 0)
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" Disabled="true" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" Disabled="@(!this.editFields)" />
+                                        }
+                                    }
+                                </div>
+                            </div>
 
-							<div class="form-row">
-								<div class="form-group col-sm-6">
-									<label for="Wight">Peso (Toneladas)</label>
-									<RadzenNumeric Disabled="@(!this.editFields)" Format="F" Name="Wight" id="Wight" TValue="Decimal" @bind-Value="model.Wight" class="form-control"></RadzenNumeric>
-								</div>
-							</div>
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="Wight">Peso (Toneladas)</label>
+                                    <RadzenNumeric Disabled="@(!this.editFields)" Format="F" Name="Wight" id="Wight" TValue="Decimal" @bind-Value="model.Wight" class="form-control"></RadzenNumeric>
+                                </div>
+                            </div>
 
-							<div class="form-group">
-								<label for="vehicleType">Tipo vehículo</label>
-								@{
-									if (this.model.DispatchIdSelect != 0)
-									{
-										<RadzenDropDown Disabled="true" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
-									}
-									else
-									{
-										<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
-									}
-								}
-							</div>
-							@{
-								if (!this.model.DispatchParent)
-								{
-									<div class="form-group ">
-										<label for="dispatchWith">Compartir vehiculo con</label>
-										<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderNum" ValueProperty="OrderId" />
-									</div>
-								}
-							}
+                            <div class="form-group">
+                                <label for="vehicleType">Tipo vehículo</label>
+                                @{
+                                    if (this.model.DispatchIdSelect != 0)
+                                    {
+                                        <RadzenDropDown Disabled="true" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
+                                    }
+                                    else
+                                    {
+                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
+                                    }
+                                }
+                            </div>
+                            @{
+                                if (!this.model.DispatchParent)
+                                {
+                                    <div class="form-group ">
+                                        <label for="dispatchWith">Compartir vehiculo con</label>
+                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderNum" ValueProperty="OrderId" />
+                                    </div>
+                                }
+                            }
 
-						</div>
-					}
-				}
-				<div class="col-sm-6">
-					<div class="form-group">
-						<label for="observations">Observaciones</label>
-						<RadzenTextArea Disabled="@(!this.editFields)" Name="observations" @bind-Value="model.Comment" Placeholder="Ingrese observaciones" class="form-control"></RadzenTextArea>
-					</div>
-					<div class="form-group">
-						<label for="observations">Email</label>
-						<RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA CORREOS CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
-					</div>
+                        </div>
+                    }
+                }
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="observations">Observaciones</label>
+                        <RadzenTextArea Disabled="@(!this.editFields)" Name="observations" @bind-Value="model.Comment" Placeholder="Ingrese observaciones" class="form-control"></RadzenTextArea>
+                    </div>
+                    <div class="form-group">
+                        <label for="observations">Email</label>
+                        <RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA CORREOS CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
+                    </div>
+                    <!-- SUBIR ARCHIVOS -->
+                    <div class="form-group">
+                        <label for="inputPdf">Documento PDF</label>
+                        <RadzenFileInput Name="inputPdf"
+                                         TValue="byte[]"
+                                         Accept="application/pdf"
+                                         ChooseText="Seleccionar PDF"
+                                         @bind-Value="model.AuxTest"
+                                         @ref="fileInputRef"
+                                         Change="@(() => OnFileSelected())" />
+                    </div>
+                    <div class="form-group text-end">
+                        <RadzenButton Text="Importar PDF" Icon="upload" Style="margin-top: .5rem;" Disabled="@(!editFields
+                                || model.AuxTest == null
+                                || model.AuxTest.Length == 0)" Click="OnImportPdf" />
+                    </div>
+                    <!-- SUBIR ARCHIVOS -->
+                    <table class="table mt-3">
+                        <thead>
+                            <tr>
+                                <th style="width: 200px">Fecha</th>
+                                <th>Comentario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                foreach (var comment in model.Comments)
+                                {
+                                    <tr>
+                                        <td>@(comment.CreatedDatetTime.ToString("dd/MM/yyyy"))</td>
+                                        <td>@(comment.Comment)</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <hr style="color: #0056b2;" class="p-0" />
+            <div class="col-sm-12 p-0">
+                @{
+                    if (this.pictures.Count != 0)
+                    {
+                        <nav class="navbar bg-light">
+                            <div class="container-fluid p-0">
+                                @{
+                                    if (this.pictures.Count != 0)
+                                    {
+                                        <a href="@string.Format("./api/logistics/downloadZip/{0}/{1}", model.OrderId, model.OrderNum)" class="btn btn-outline-secondary">Descargar ZIP</a>
+                                    }
 
-					<!--
-					<div class="form-group">
-						<label for="inputPdf">Documento PDF</label>
-						<RadzenFileInput Name="inputPdf" Accept="application/pdf" ChooseText="Seleccionar PDF" @bind-Value="model.AuxTest" TValue="string" Disabled="@(!editFields)" />
-					</div>
-					<div class="form-group text-end">
-						<RadzenButton Text="Importar PDF" Icon="upload" Style="margin-top: .5rem;" Disabled="@(!editFields || string.IsNullOrEmpty(model.AuxTest))" Click="OnImportPdf" />
-					</div>
-					-->
+                                    if (this.model.Sync)
+                                    {
+                                        if (this.model.Sync)
+                                        {
+                                            <span class="navbar-text">
+                                                <b>Última fecha de sincronización: @this.model.SyncDateTime.ToString()</b>
+                                            </span>
+                                        }
+                                    }
+                                }
+                            </div>
+                        </nav>
+                    }
+                }
+                <div class="d-flex flex-row flex-wrap justify-content-start pt-2">
+                    @{
+                        if (this.pictures.Count != 0)
+                        {
+                            foreach (var picture in this.pictures)
+                            {
+                                <div class="d-flex flex-column" style="max-width: 260px; padding-right: 10px; padding-bottom: 10px;">
+                                    <div class="card text-right" style="width: 18rem;">
+                                        <img src="@picture.DataBase64" alt="Alternate Text" class="img-fluid" />
+                                        <div class="card-body">
+                                            <a href="@string.Format("./api/logistics/download/{0}/{1}", picture.OrderId, picture.Name)" class="btn btn-outline-secondary">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
+                                                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
 
-					<table class="table mt-3">
-						<thead>
-							<tr>
-								<th style="width: 200px">Fecha</th>
-								<th>Comentario</th>
-							</tr>
-						</thead>
-						<tbody>
-							@{
-								foreach (var comment in model.Comments)
-								{
-									<tr>
-										<td>@(comment.CreatedDatetTime.ToString("dd/MM/yyyy"))</td>
-										<td>@(comment.Comment)</td>
-									</tr>
-								}
-							}
-						</tbody>
-					</table>
-				</div>
-			</div>
-			<hr style="color: #0056b2;" class="p-0" />
-			<div class="col-sm-12 p-0">
-				@{
-					if (this.pictures.Count != 0)
-					{
-						<nav class="navbar bg-light">
-							<div class="container-fluid p-0">
-								@{
-									if (this.pictures.Count != 0)
-									{
-										<a href="@string.Format("./api/logistics/downloadZip/{0}/{1}", model.OrderId, model.OrderNum)" class="btn btn-outline-secondary">Descargar ZIP</a>
-									}
-
-									if (this.model.Sync)
-									{
-										if (this.model.Sync)
-										{
-											<span class="navbar-text">
-												<b>Última fecha de sincronización: @this.model.SyncDateTime.ToString()</b>
-											</span>
-										}
-									}
-								}
-							</div>
-						</nav>
-					}
-				}
-				<div class="d-flex flex-row flex-wrap justify-content-start pt-2">
-					@{
-						if (this.pictures.Count != 0)
-						{
-							foreach (var picture in this.pictures)
-							{
-								<div class="d-flex flex-column" style="max-width: 260px; padding-right: 10px; padding-bottom: 10px;">
-									<div class="card text-right" style="width: 18rem;">
-										<img src="@picture.DataBase64" alt="Alternate Text" class="img-fluid" />
-										<div class="card-body">
-											<a href="@string.Format("./api/logistics/download/{0}/{1}", picture.OrderId, picture.Name)" class="btn btn-outline-secondary">
-												<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
-													<path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
-													<path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
-												</svg>
-											</a>
-										</div>
-									</div>
-								</div>
-							}
-
-							if (!this.model.CounterPictures.Equals(this.pictures.Count))
-							{
-								<div class="w-100" style="text-align:center">
-									<button class="btn btn-primary" @onclick="@(args => { loadPictures(); })">Cargar mas imagenes</button>
-								</div>
-							}
-						}
-						else
-						{
-							<p>La order no tiene images sincronizadas.</p>
-						}
-					}
-				</div>
-			</div>
-		</RadzenTabsItem>
-		<RadzenTabsItem Text="Facturación" Visible="@((this.orderType == 1) && (this.viewInvoice))">
-			<div class="row">
-				<div class="col-sm-6">
-					<h4 class="mb-3">Información del proveedor</h4>
-					<div class="form-row">
-						<div class="form-group col-sm-3">
-							<label for="VendorAccount">NIT</label>
-							<RadzenTextBox class="form-control" Name="VendorAccount" @bind-Value="model.VendorAccount" Placeholder="Ingrese el NIT" Disabled="@(!this.editFields)"></RadzenTextBox>
-						</div>
-						<div class="form-group col-sm-9">
-							<label for="vendorName">Nombre proveedor</label>
-							<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vendorName" class="form-control" @bind-Value="model.VendorAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vendors" TextProperty="Description" ValueProperty="IdentificationNum" />
-						</div>
-					</div>
-					<hr class="mb-4" />
-					<h4 class="mb-3">Información del vehículo</h4>
-					<div class="form-group">
-						<label for="vehicleType">Tipo vehículo</label>
-						<RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" />
-					</div>
-					<div class="form-group">
-						<label for="PlateNum">Placa</label>
-						<RadzenTextBox Disabled="@(!this.editFields)" Name="PlateNum" @bind-Value="model.PlateNum" Placeholder="Ingrese la placa" class="form-control"></RadzenTextBox>
-					</div>
-					<div class="form-group">
-						<label for="DriverName">Conductor</label>
-						<RadzenTextBox Disabled="@(!this.editFields)" Name="DriverName" @bind-Value="model.DriverName" Placeholder="Ingrese el nombre del conductor" class="form-control"></RadzenTextBox>
-					</div>
-					<hr class="mb-4" />
-					<h4 class="mb-3">Información de factura</h4>
-					<div class="form-group">
-						<label for="InvoiceDate">Fecha factura</label>
-						<RadzenDatePicker Disabled="@(!this.editFields)" Name="InvoiceDate" @bind-Value="model.InvoiceDate" DateFormat="dd/MM/yyyy" id="InvoiceDate" class="d-block" />
-					</div>
-					<div class="form-group">
-						<label for="InvoiceNum">Numero factura</label>
-						<RadzenTextBox Disabled="@(!this.editFields)" Name="InvoiceNum" @bind-Value="model.InvoiceNum" Placeholder="Ingrese el numero de factura" class="form-control"></RadzenTextBox>
-					</div>
-					<div class="form-row">
-						<div class="form-group col-sm-6">
-							<label for="InvoiceAmount">Valor factura</label>
-							<RadzenNumeric Disabled="@(!this.editFields)" Format="C0" Name="InvoiceAmount" id="InvoiceAmount" TValue="Decimal" @bind-Value="model.InvoiceAmount" class="form-control"></RadzenNumeric>
-						</div>
-					</div>
-				</div>
-			</div>
-		</RadzenTabsItem>
-	</Tabs>
+                            if (!this.model.CounterPictures.Equals(this.pictures.Count))
+                            {
+                                <div class="w-100" style="text-align:center">
+                                    <button class="btn btn-primary" @onclick="@(args => { loadPictures(); })">Cargar mas imagenes</button>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p>La order no tiene images sincronizadas.</p>
+                        }
+                    }
+                </div>
+            </div>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Facturación" Visible="@((this.orderType == 1) && (this.viewInvoice))">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h4 class="mb-3">Información del proveedor</h4>
+                    <div class="form-row">
+                        <div class="form-group col-sm-3">
+                            <label for="VendorAccount">NIT</label>
+                            <RadzenTextBox class="form-control" Name="VendorAccount" @bind-Value="model.VendorAccount" Placeholder="Ingrese el NIT" Disabled="@(!this.editFields)"></RadzenTextBox>
+                        </div>
+                        <div class="form-group col-sm-9">
+                            <label for="vendorName">Nombre proveedor</label>
+                            <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vendorName" class="form-control" @bind-Value="model.VendorAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vendors" TextProperty="Description" ValueProperty="IdentificationNum" />
+                        </div>
+                    </div>
+                    <hr class="mb-4" />
+                    <h4 class="mb-3">Información del vehículo</h4>
+                    <div class="form-group">
+                        <label for="vehicleType">Tipo vehículo</label>
+                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" />
+                    </div>
+                    <div class="form-group">
+                        <label for="PlateNum">Placa</label>
+                        <RadzenTextBox Disabled="@(!this.editFields)" Name="PlateNum" @bind-Value="model.PlateNum" Placeholder="Ingrese la placa" class="form-control"></RadzenTextBox>
+                    </div>
+                    <div class="form-group">
+                        <label for="DriverName">Conductor</label>
+                        <RadzenTextBox Disabled="@(!this.editFields)" Name="DriverName" @bind-Value="model.DriverName" Placeholder="Ingrese el nombre del conductor" class="form-control"></RadzenTextBox>
+                    </div>
+                    <hr class="mb-4" />
+                    <h4 class="mb-3">Información de factura</h4>
+                    <div class="form-group">
+                        <label for="InvoiceDate">Fecha factura</label>
+                        <RadzenDatePicker Disabled="@(!this.editFields)" Name="InvoiceDate" @bind-Value="model.InvoiceDate" DateFormat="dd/MM/yyyy" id="InvoiceDate" class="d-block" />
+                    </div>
+                    <div class="form-group">
+                        <label for="InvoiceNum">Numero factura</label>
+                        <RadzenTextBox Disabled="@(!this.editFields)" Name="InvoiceNum" @bind-Value="model.InvoiceNum" Placeholder="Ingrese el numero de factura" class="form-control"></RadzenTextBox>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-6">
+                            <label for="InvoiceAmount">Valor factura</label>
+                            <RadzenNumeric Disabled="@(!this.editFields)" Format="C0" Name="InvoiceAmount" id="InvoiceAmount" TValue="Decimal" @bind-Value="model.InvoiceAmount" class="form-control"></RadzenNumeric>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </RadzenTabsItem>
+    </Tabs>
 </RadzenTabs>

@@ -25,7 +25,7 @@ namespace adesoft.adepos.webview.Data
         public LogisticsService(LogisticsController logisticsController, IHttpClientFactory httpClientFactory)
         {
             _logisticsController = logisticsController;
-            _httpClient = httpClientFactory.CreateClient();
+            _httpClient = httpClientFactory.CreateClient("api");
             _wwwrootDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         }
 
@@ -132,16 +132,19 @@ namespace adesoft.adepos.webview.Data
             return _logisticsController.ChangeOrderState(dtoOrder);
         }
 
-        public async Task<bool> UploadAttachment(long orderId, OrderType orderType, string fileName, byte[] fileBytes)
+        public Task<bool> UploadAttachment(long orderId, OrderType orderType, string nombreArchivo, byte[] archivo)
         {
             var dto = new DTOOrderAttachment
             {
                 OrderId = orderId,
                 OrderType = orderType,
-                FileName = fileName,
-                FileBytes = fileBytes
+                FileName = nombreArchivo,
+                FileBytes = archivo
             };
-
+            return ImportAttachment(dto);
+        }
+        private async Task<bool> ImportAttachment(DTOOrderAttachment dto)
+        {
             var response = await _httpClient.PostAsJsonAsync("api/Logistics/ImportAttachment", dto);
             return response.IsSuccessStatusCode;
         }

@@ -779,53 +779,75 @@ namespace adesoft.adepos.webview.Controller
         [HttpPost("ImportAttachment")]
         public IActionResult ImportAttachment([FromBody] DTOOrderAttachment dto)
         {
-            using var transaction = _dbcontext.Database.BeginTransaction();
             try
             {
-                var order = _dbcontext.Orders
-                    .FirstOrDefault(o => o.OrderType == dto.OrderType && o.Id == dto.OrderId);
-                if (order == null)
-                    return BadRequest("Orden no encontrada.");
+                if (dto == null)
+                    return BadRequest("No se recibió información del archivo.");
 
-                if (dto.FileBytes == null || dto.FileBytes.Length == 0
-                 || string.IsNullOrEmpty(dto.FileName))
-                    return BadRequest("Archivo inválido.");
+                if (dto.FileBytes == null || dto.FileBytes.Length == 0)
+                    return BadRequest("El archivo está vacío.");
 
-                // Carpeta de attachments
-                var basePath = _configuration.GetValue<string>("Logistics:AttachmentsPath");
-                var dir = Path.Combine(basePath, $"Idx{dto.OrderId}_{order.OrderNum}");
-                Directory.CreateDirectory(dir);
+                if (string.IsNullOrWhiteSpace(dto.FileName))
+                    return BadRequest("El nombre del archivo es obligatorio.");
+
+                // Ruta donde guardar el archivo
+                var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments");
+                if (!Directory.Exists(uploads))
+                    Directory.CreateDirectory(uploads);
+
+                // Nombre seguro de archivo
+                var safeFileName = Path.GetFileName(dto.FileName);
+                var filePath = Path.Combine(uploads, safeFileName);
 
                 // Guarda el archivo
-                var filePath = Path.Combine(dir, dto.FileName);
                 System.IO.File.WriteAllBytes(filePath, dto.FileBytes);
 
-                // Registra en OrderPictures
-                var picture = new OrderPicture
-                {
-                    OrderId = dto.OrderId,
-                    OrderType = dto.OrderType,
-                    Name = dto.FileName,
-                    Path = filePath
-                };
-                _dbcontext.OrderPictures.Add(picture);
+                // Aquí puedes guardar la referencia en la base de datos si lo necesitas
 
-                // Marca orden sincronizada
-                order.Sync = true;
-                order.SyncDateTime = DateTime.Now;
-                order.ErrorMessage = string.Empty;
-                _dbcontext.Orders.Update(order);
-
-                _dbcontext.SaveChanges();
-                transaction.Commit();
-
-                return Ok(new { success = true });
+                return Ok(true);
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
-                return BadRequest(new { success = false, error = ex.Message });
+                // Loguea el error en consola para depuración
+                Console.WriteLine($"[ImportAttachment] Error: {ex.Message}\n{ex.StackTrace}");
+
+                // Devuelve el error al cliente
+                return StatusCode(500, $"Error al guardar el archivo: {ex.Message}");
             }
+        }
+
+
+        [HttpPost("uploadAttachment")]
+        public async Task<IActionResult> UploadAttachment([FromForm] IFormFile file, [FromForm] long orderId, [FromForm] OrderType orderType)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Archivo no recibido");
+
+            // Guarda el archivo en disco o base de datos
+            var uploads = Path.Combine("Uploads", "OrderAttachments");
+            if (!Directory.Exists(uploads))
+                Directory.CreateDirectory(uploads);
+
+            var filePath = Path.Combine(uploads, file.FileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Guardar la referencia en la base de datos si se necesita
+            var picture = new OrderPicture
+            {
+                OrderId = orderId,
+                OrderType = orderType,
+                Name = file.FileName,
+                Path = filePath
+            };
+
+            _dbcontext.OrderPictures.Add(picture);
+            await _dbcontext.SaveChangesAsync();
+
+            return Ok(true);
         }
 
 

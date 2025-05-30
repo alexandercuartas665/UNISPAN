@@ -44,9 +44,15 @@ namespace adesoft.adepos.webview
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddHttpClient(); // <- habilita IHttpClientFactory
-            services.AddScoped<LogisticsController>();
-            services.AddScoped<LogisticsService>();
+            var apiBaseUrl = Configuration.GetSection("Api:BaseUrl").Value;
+
+            services.AddHttpClient("api", client =>
+            {
+                client.BaseAddress = new Uri(apiBaseUrl);
+            });
+
+
+
 
             //services.AddCors(options => options.AddPolicy("Cors", builder =>
             //{

@@ -791,7 +791,7 @@ namespace adesoft.adepos.webview.Controller
                     return BadRequest("El nombre del archivo es obligatorio.");
 
                 // Ruta donde guardar el archivo
-                var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments");
+                var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", dto.OrderId.ToString() );
                 if (!Directory.Exists(uploads))
                     Directory.CreateDirectory(uploads);
 

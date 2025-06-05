@@ -9,8 +9,6 @@
 @using Microsoft.AspNetCore.Components.Forms;
 @using Radzen;
 @using Radzen.Blazor;
-
-
 @inject DialogService dialogService;
 @inject LogisticsService logisticsService;
 @inject NotificationService notificationService;
@@ -20,25 +18,17 @@
 @inject IJSRuntime JSRuntime
 @inject TokenAuthenticationStateProvider autenticationstate;
 @inject CompanyService companyService
-
 @code {
-
     [Parameter]
     public string strFromDate { get; set; }
-
     [Parameter]
     public string strToDate { get; set; }
-
     [Parameter]
     public int orderType { get; set; }
-
     [Parameter]
     public long orderId { get; set; }
-
     [Parameter]
     public bool edit { get; set; }
-
-
     public DTOOrder model;
     private List<DTOOrderPicture> pictures;
     public List<DTOLogisticMasterData> customers;
@@ -48,12 +38,9 @@
     public List<DTOLogisticMasterData> cities;
     public List<DTOLogisticMasterData> transports;
     public List<DTOLogisticMasterData> vehicleTypes;
-
     public List<DTOSharedOrder> sharedOrders;
     public DTOOrder MailOrders;
-
     public DateTime? time;
-
     private bool exportToExcel = false;
     private bool createOrUpdate = false;
     private bool deleteOrder = false;
@@ -62,36 +49,26 @@
     private bool viewInvoice = false;
     private bool reSync = false;
     private bool isOk = false;
-   	private RadzenFileInput<byte[]> fileInputRef; // Referencia al componente RadzenFileInput
-   
-     
-
+    private RadzenFileInput<byte[]> fileInputRef; // Referencia al componente RadzenFileInput
     public int TabSelected = 0;
     public int page = 1;
-
     public string Observations;
-
+    private List<string> attachmentFiles = new List<string>();
     protected override async Task OnInitializedAsync()
     {
         await this.loadOrder();
         editFields = true;
     }
-
-
-
     public async Task loadOrder()
     {
         this.dialogService.OnClose += CloseNewCustomer;
         this.pictures = new List<DTOOrderPicture>();
         this.model = new DTOOrder();
         this.model.OrderType = (OrderType)orderType;
-
         await this.getSecurity();
-
         dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
         Task.Run(async () =>
         {
-
             this.customers = await logisticsService.GetCustomers();
             this.vendors = await logisticsService.GetVendors();
             this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
@@ -99,13 +76,11 @@
             this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
             this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
             this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
-
             if (orderId != 0)
             {
                 this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
                 this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
                 this.page += 1;
-
                 if ((OrderType)this.orderType == OrderType.Dispatch)
                 {
                     this.time = this.model.DispatchDateTime;
@@ -114,17 +89,15 @@
                 {
                     this.time = this.model.ReturnDateTime;
                 }
-
                 this.getOrders();
-
                 this.editFields = edit;
+                LoadAttachmentFiles();
             }
             else
             {
                 this.time = new DateTime();
                 this.editFields = true;
             }
-
             dialogService.Close();
             this.InvokeAsync(() =>
             {
@@ -132,7 +105,6 @@
             });
         });
     }
-
     async private Task loadPictures()
     {
         dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
@@ -141,7 +113,6 @@
             var pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
             this.pictures.AddRange(pictures);
             this.page += 1;
-
             dialogService.Close();
             this.InvokeAsync(() =>
             {
@@ -149,82 +120,68 @@
             });
         });
     }
-
     private async Task getSecurity()
     {
         var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
         string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
         var listactionapp = await securityService.GetActionsPermission(tooken);
         listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
-
         ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsSearchOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.searchOrder = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsCreateOrEditOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.createOrUpdate = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsDeleteOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.deleteOrder = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsExportOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.exportToExcel = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsViewInvoice")).FirstOrDefault();
         if (!(opt is null))
         {
             this.viewInvoice = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsReSyncOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.reSync = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsIsOk")).FirstOrDefault();
         if (!(opt is null))
         {
             this.isOk = opt.IsActive;
         }
     }
-
     public async void SelectedChangeTab(int tabselected)
     {
         TabSelected = tabselected;
     }
-
     public async void Cancel()
     {
         navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
     }
-
     async void ShowNotification(NotificationMessage message)
     {
         notificationService.Notify(message);
     }
-
     public async Task DeleteOrder(DTOOrder dtoOrder)
     {
         try
         {
             if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro de eliminar la orden de {0}?", this.orderType == 1 ? "despacho" : "devolución")))
                 return;
-
             if (this.model.DispatchParent || (this.model.OrderId != this.model.DispatchId))
                 throw new Exception(string.Format("La orden de {0} no pudo ser eliminada, comparte vehiculo con otra orden.", this.orderType == 1 ? "despacho" : "devolución"));
-
             var deleteOrder = await this.logisticsService.DeleteOrder(dtoOrder);
             if (deleteOrder)
                 navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
@@ -237,28 +194,23 @@
             throw;
         }
     }
-
     public void getOrders()
     {
         this.sharedOrders = logisticsService.GetSharedOrders((OrderType)orderType, orderId, this.model.VehicleTypeId, this.model.DispatchDateTime.Value);
     }
-
     public void changeField()
     {
         this.time = this.model.DispatchDateTime != null ? time : DateTime.MinValue;
         this.model.DispatchDateTime = this.model.DispatchDateTime != null ? this.model.DispatchDateTime : DateTime.MinValue;
-
         this.getOrders();
         this.model.DispatchIdSelect = 0;
     }
-
     public async Task ReSyncOrder(DTOOrder dtoOrder)
     {
         try
         {
             if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro que desea agregar mas capturas a la orden de {0}?", this.orderType == 1 ? "despacho" : "devolución")))
                 return;
-
             var reSyncOrder = await this.logisticsService.ReSyncOrder(dtoOrder);
             if (reSyncOrder)
                 navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
@@ -271,12 +223,10 @@
             throw;
         }
     }
-
     void OnChangeCapital(string value)
     {
         this.model.Works = value.ToUpper();
     }
-
     public async void SaveOrder()
     {
         try
@@ -297,7 +247,6 @@
                     return;
                 }
             }
-
             if ((OrderType)this.orderType == OrderType.Dispatch)
             {
                 if (this.model.DispatchDateTime != null)
@@ -307,9 +256,7 @@
             {
                 this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
             }
-
             this.model = await logisticsService.CreateOrUpdateOrder(model);
-
             navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
         }
         catch (Exception ex)
@@ -317,17 +264,14 @@
             ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
         }
     }
-
     public async void CopyAndEdit()
     {
         try
         {
             this.model.OrderId = 0;
             this.model = await logisticsService.CreateOrUpdateOrder(model);
-
             this.orderId = this.model.OrderId;
             this.editFields = true;
-
             navigationManager.NavigateTo(string.Format("editOrder/{0}/{1}/{2}/{3}/{4}", this.strFromDate, this.strToDate, this.orderType, this.model.OrderId, true));
         }
         catch (Exception ex)
@@ -335,7 +279,6 @@
             ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
         }
     }
-
     async Task OnFileInputChange(object value)
     {
         // Se dispara cuando el usuario selecciona un PDF.
@@ -354,12 +297,10 @@
             StateHasChanged();
         }
     }
-
     async void ShowNewCustomer()
     {
         dialogService.Open<ViewCustomers>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
     }
-
     async void CloseNewCustomer(dynamic result)
     {
         string errorMessage = string.Empty; // Variable para almacenar el error
@@ -375,16 +316,12 @@
             Console.WriteLine($"Error completo: {ex}");
         }
     }
-
     void ChangeOrderState()
     {
         dialogService.Open<ViewChangeOrderState>("Cambiar Estado"
             , new Dictionary<string, object>() { { "model", this.model }, { "viewEditOrder", this } }
             , new DialogOptions() { });
     }
-
-
-
     public string GenerateOrderReport(DTOOrder order)
     {
         var sb = new StringBuilder();
@@ -426,10 +363,8 @@
         AddTableCell(sb, cellStyle, order.IsConform ?? "N/A");
         AddTableCell(sb, cellStyle, order.ModifiedOn.ToString("dd/MM/yyyy HH:mm"));
         sb.AppendLine("</tr>");
-
         sb.AppendLine("</table>");
         sb.AppendLine("</div>");
-
         return sb.ToString();
     }
     private void AddTableHeader(StringBuilder sb, string style, string header)
@@ -440,33 +375,23 @@
     {
         sb.AppendLine($"<td style='{style}'>{value}</td>");
     }
-
-
     private async Task OnFileUpload(Radzen.UploadChangeEventArgs e)
     {
         var file = e.Files.FirstOrDefault(); // Obtener el primer archivo
-
-
-
     }
-
-
     async Task OnImportPdf()
     {
         if (model.AuxTest == null || model.AuxTest.Length == 0) return;
-
-       dialogService.Open<DialogProgressBar>(null,
-           new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
-           new DialogOptions
-           {
-               ShowTitle = false,
-               Width = "300px",
-               Height = "20px",
-               Left = "calc(50% - 150px)",
-               Top = "calc(50% - 200px)"
-           });
-
-
+        dialogService.Open<DialogProgressBar>(null,
+            new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
+            new DialogOptions
+                {
+                    ShowTitle = false,
+                    Width = "300px",
+                    Height = "20px",
+                    Left = "calc(50% - 150px)",
+                    Top = "calc(50% - 200px)"
+                });
         try
         {
             bool ok = await logisticsService.UploadAttachment(
@@ -475,7 +400,6 @@
                 model.NombreArchivo,
                 model.AuxTest
             );
-
             if (ok)
             {
                 notificationService.Notify(new NotificationMessage
@@ -485,7 +409,6 @@
                         Detail = $"PDF '{model.NombreArchivo}' importado.",
                         Duration = 3000
                     });
-
                 // Refresca galería
                 pictures = await logisticsService.GetPictures(
                     model.OrderType, model.OrderId, 1, 10
@@ -510,12 +433,61 @@
         finally
         {
             dialogService.Close();
+            LoadAttachmentFiles(); 
             await InvokeAsync(StateHasChanged);
         }
     }
- 
-}
+    #region Mostrar tabla con los archivos PDF
+    private void LoadAttachmentFiles()
+    {
+        var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", model.OrderId.ToString());
+        if (Directory.Exists(orderFolder))
+        {
+            attachmentFiles = Directory.GetFiles(orderFolder)
+                                      .Select(Path.GetFileName)
+                                      .ToList();
+        }
+        else
+        {
+            attachmentFiles = new List<string>();
+        }
+    }
 
+    private async Task DeleteAttachment(string fileName)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", $"¿Está seguro de eliminar el archivo {fileName}?"))
+            return;
+        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", model.OrderId.ToString());
+        string filePath = Path.Combine(basePath, orderId.ToString(), fileName);
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                LoadAttachmentFiles(); // Recargar lista
+                notificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Éxito",
+                        Detail = "Archivo eliminado",
+                        Duration = 3000
+                    });
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            notificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = $"Error eliminando archivo: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+    #endregion
+}
 <nav class="navbar navbar-light bg-transparent justify-content-between">
     @{
         if (this.orderId != 0)
@@ -525,7 +497,6 @@
                 case 1:
                     <h4>Editar despacho</h4>
                     break;
-
                 case 2:
                     <h4>Editar devolución</h4>
                     break;
@@ -538,7 +509,6 @@
                 case 1:
                     <h4>Nuevo despacho</h4>
                     break;
-
                 case 2:
                     <h4>Nueva devolución</h4>
                     break;
@@ -719,7 +689,6 @@
                                     </NavLink>
                                 </div>
                             </div>
-
                             <div class="form-group">
                                 <label for="salesPeron">Comercial</label>
                                 <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
@@ -760,14 +729,12 @@
                                     }
                                 </div>
                             </div>
-
                             <div class="form-row">
                                 <div class="form-group col-sm-6">
                                     <label for="Wight">Peso (Toneladas)</label>
                                     <RadzenNumeric Disabled="@(!this.editFields)" Format="F" Name="Wight" id="Wight" TValue="Decimal" @bind-Value="model.Wight" class="form-control"></RadzenNumeric>
                                 </div>
                             </div>
-
                             <div class="form-group">
                                 <label for="vehicleType">Tipo vehículo</label>
                                 @{
@@ -790,7 +757,6 @@
                                     </div>
                                 }
                             }
-
                         </div>
                     }
                 }
@@ -809,22 +775,54 @@
                                      Accept="application/pdf"
                                      ChooseText="Seleccionar PDF"
                                      @bind-Value="model.AuxTest"
-									 @bind-FileName="model.NombreArchivo"
+                                     @bind-FileName="model.NombreArchivo"
                                      Change="OnFileInputChange" />
-
                     @if (!string.IsNullOrEmpty(model.NombreArchivo))
                     {
                         <div class="alert alert-info mt-2">
                             Archivo seleccionado: <strong>@model.NombreArchivo</strong>
                         </div>
                     }
-
                     <RadzenButton Text="Importar PDF"
                                   Icon="upload"
                                   Disabled="@(editFields || model.AuxTest == null || model.AuxTest.Length == 0)"
                                   Click="@OnImportPdf" />
-
                     <!-- SUBIR ARCHIVOS -->
+                    <!-- TABLA ARCHIVOS CARGADOS -->
+                    <div class="col-sm-12 p-0 mt-4">
+                        <h5>Archivos Adjuntos</h5>
+
+                        @if (attachmentFiles.Count == 0)
+                        {
+                            <p>No hay archivos adjuntos para esta orden</p>
+                        }
+                        else
+                        {
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre del Archivo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var file in attachmentFiles)
+                                    {
+                                        <tr>
+                                            <td>@file</td>
+                                            <td>
+                                                <button class="btn btn-danger btn-sm"
+                                                        @onclick="@(() => DeleteAttachment(file))">
+                                                    Eliminar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                    <!-- TABLA ARCHIVOS CARGADOS -->
                     <table class="table mt-3">
                         <thead>
                             <tr>
@@ -858,7 +856,6 @@
                                     {
                                         <a href="@string.Format("./api/logistics/downloadZip/{0}/{1}", model.OrderId, model.OrderNum)" class="btn btn-outline-secondary">Descargar ZIP</a>
                                     }
-
                                     if (this.model.Sync)
                                     {
                                         if (this.model.Sync)
@@ -893,7 +890,6 @@
                                     </div>
                                 </div>
                             }
-
                             if (!this.model.CounterPictures.Equals(this.pictures.Count))
                             {
                                 <div class="w-100" style="text-align:center">

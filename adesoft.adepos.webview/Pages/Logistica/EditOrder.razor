@@ -322,6 +322,7 @@
             , new Dictionary<string, object>() { { "model", this.model }, { "viewEditOrder", this } }
             , new DialogOptions() { });
     }
+    #region Generar html para gestionar el correo
     public string GenerateOrderReport(DTOOrder order)
     {
         var sb = new StringBuilder();
@@ -329,7 +330,6 @@
         string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
         string headerStyle = "background-color: #3498db; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
         string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
-        sb.AppendLine("<h2 style='color: #2c3e50; margin-bottom: 20px;'>REPORTE DE ORDEN</h2>");
         // TABLA CON MÚLTIPLES COLUMNAS
         sb.AppendLine($"<div style='overflow-x: auto;'>");
         sb.AppendLine($"<table style='{tableStyle}'>");
@@ -375,6 +375,8 @@
     {
         sb.AppendLine($"<td style='{style}'>{value}</td>");
     }
+    #endregion
+    #region Importacion de archivos pdf a la orden
     private async Task OnFileUpload(Radzen.UploadChangeEventArgs e)
     {
         var file = e.Files.FirstOrDefault(); // Obtener el primer archivo
@@ -433,10 +435,11 @@
         finally
         {
             dialogService.Close();
-            LoadAttachmentFiles(); 
+            LoadAttachmentFiles();
             await InvokeAsync(StateHasChanged);
         }
     }
+    #endregion
     #region Mostrar tabla con los archivos PDF
     private void LoadAttachmentFiles()
     {
@@ -457,7 +460,7 @@
     {
         if (!await JSRuntime.InvokeAsync<bool>("confirm", $"¿Está seguro de eliminar el archivo {fileName}?"))
             return;
-        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", model.OrderId.ToString());
+        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments");
         string filePath = Path.Combine(basePath, orderId.ToString(), fileName);
         try
         {
@@ -772,6 +775,7 @@
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"
                                      TValue="byte[]"
+                                     Disabled="@(!this.editFields)"
                                      Accept="application/pdf"
                                      ChooseText="Seleccionar PDF"
                                      @bind-Value="model.AuxTest"
@@ -785,7 +789,7 @@
                     }
                     <RadzenButton Text="Importar PDF"
                                   Icon="upload"
-                                  Disabled="@(editFields || model.AuxTest == null || model.AuxTest.Length == 0)"
+                                  Disabled="@(model.AuxTest == null || model.AuxTest.Length == 0)"
                                   Click="@OnImportPdf" />
                     <!-- SUBIR ARCHIVOS -->
                     <!-- TABLA ARCHIVOS CARGADOS -->

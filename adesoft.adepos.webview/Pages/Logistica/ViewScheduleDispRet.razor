@@ -9,53 +9,40 @@
 @using System.Text;
 @using System.Net.Mail;
 @using System.Net;
-
 @inject LogisticsService logisticsService;
 @inject ParameterService parameterService;
 @inject DialogService dialogService;
 @inject NotificationService notificationService;
 @inject NavigationManager navigationManager;
 @inject IHttpContextAccessor httpContextAccessor
-
 @inject IJSRuntime JSRuntime
 @inject TokenAuthenticationStateProvider autenticationstate;
 @inject SecurityService securityService
 @inject CompanyService companyService
-
 @code {
     public string searchBy;
-
     class AmountTotal
     {
         public decimal total { get; set; }
-
         public string date { get; set; }
     }
-
     [Parameter]
     public string strFromDate { get; set; }
-
     [Parameter]
     public string strToDate { get; set; }
-
     [Parameter]
     public int orderType { get; set; }
-
     private DTOViewScheduleDispRet scheduleDisRet;
     private List<DTOOrder> orders;
     private List<AmountTotal> amountTotals;
     private Parameter banner;
-
     private bool exportToExcel = false;
     private bool createOrUpdate = false;
     private bool searchOrder = false;
-
-
     private decimal totalTon = 0;
     private int initDay = 0;
     private double days = 0;
     private DateTime fromDate;
-
     protected override async Task OnInitializedAsync()
     {
         var user = httpContextAccessor.HttpContext.User.Identity;
@@ -63,48 +50,39 @@
             this.scheduleDisRet = new DTOViewScheduleDispRet(DateTime.ParseExact(strFromDate, "dd-MM-yyyy", null), DateTime.ParseExact(strToDate, "dd-MM-yyyy", null));
         else
             this.scheduleDisRet = new DTOViewScheduleDispRet();
-
         this.scheduleDisRet.ModuleId = orderType;
         this.banner = new Parameter() { Value = "" };
         //this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate);
         //this.SearchOrder();
-
         await this.GetSecurity();
-
         this.SearchOrder();
     }
-
     private async Task GetSecurity()
     {
         var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
         string tooken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
         var listactionapp = await securityService.GetActionsPermission(tooken);
         listactionapp = listactionapp.Where(x => x.HavePermission != false && x.MenuId == 0).ToList();
-
         ActionApp opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsSearchOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.searchOrder = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsCreateOrEditOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.createOrUpdate = opt.IsActive;
         }
-
         opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsExportOrder")).FirstOrDefault();
         if (!(opt is null))
         {
             this.exportToExcel = opt.IsActive;
         }
     }
-
     void EditOrder(long orderId)
     {
         navigationManager.NavigateTo(string.Format("editOrder/{0}/{1}/{2}/{3}/{4}", this.scheduleDisRet.FromDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ToDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ModuleId, orderId, (orderId != 0 ? false : true)));
     }
-
     void ExportToExcel()
     {
         this.days = (this.scheduleDisRet.ToDate - this.scheduleDisRet.FromDate).TotalDays + 1;
@@ -133,8 +111,75 @@
             }
         }
     }
-
-    //ENVIA NOTIFICACION
+    async void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+    async void SearchOrder()
+    {
+        dialogService.Close();
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+        Task.Run(async () =>
+        {
+            this.initDay = this.scheduleDisRet.FromDate.Day;
+            this.totalTon = 0;
+            this.days = (this.scheduleDisRet.ToDate - this.scheduleDisRet.FromDate).TotalDays + 1;
+            this.fromDate = this.scheduleDisRet.FromDate;
+            amountTotals = new List<AmountTotal>();
+            this.banner = await parameterService.SelectByIdentify(this.scheduleDisRet.ModuleId == 1 ? "LogisticsBannerDispatchs" : "LogisticsBannerReturns");
+            try
+            {
+                this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, searchBy);
+                foreach (var order in this.orders)
+                {
+                    this.totalTon += order.Wight;
+                    AmountTotal amountTotal = null;
+                    string date = "";
+                    if (this.scheduleDisRet.ModuleId == 1)
+                    {
+                        date = order.DispatchDateTime.Value.ToString("dd/MM/yyyy");
+                        amountTotal = amountTotals.Where(t => t.date.Equals(date)).FirstOrDefault();
+                    }
+                    else
+                    {
+                        date = order.ReturnDateTime.Value.ToString("dd/MM/yyyy");
+                        amountTotal = amountTotals.Where(t => t.date.Equals(date)).FirstOrDefault();
+                    }
+                    if (amountTotal is null)
+                    {
+                        this.amountTotals.Add(new AmountTotal()
+                            {
+                                date = date,
+                                total = order.Wight
+                            });
+                    }
+                    else
+                    {
+                        amountTotal.total += order.Wight;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                dialogService.Close();
+                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+                throw;
+            }
+            this.InvokeAsync(() =>
+            {
+                dialogService.Close();
+                StateHasChanged();
+            });
+        });
+    }
+    async void keySearchBy(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            this.SearchOrder();
+        }
+    }
+    #region  enviar notificacion de correo
     void SendNotification()
     {
         // Cargar la configuración
@@ -146,6 +191,7 @@
         string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
         StringBuilder reportContent = new StringBuilder();
         string ListaOrdenes = "";
+        string ListaCorreos = "";
         var selectedOrders = orders.Where(o => o.IsSelected).ToList();
         var ordersByClient = selectedOrders.GroupBy(o => o.CustomerName);
         var llevaDespachos = 0;
@@ -157,13 +203,15 @@
         {
             reportContent.Clear();
             ListaOrdenes = "";
+            ListaCorreos = "";
             var clientName = clientGroup.Key;
             var ordersForClient = clientGroup.ToList();
-            Console.WriteLine($"Cliente: {clientName}");
+            List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
             foreach (var order in ordersForClient)
             {
                 reportContent.AppendLine($"<br/>{GenerateOrderReport(order)}"); // o iterar si son múltiples
                 ListaOrdenes += "," + order.OrderId;
+                ListaCorreos += ";" + order.Email;
                 if (order.OrderType.ToString() == "Dispatch")
                 {
                     llevaDespachos++;
@@ -173,6 +221,19 @@
                     llevaDevoluciones++;
                 }
                 Console.WriteLine($" - Orden ID: {order.OrderId}");
+                //PREPARA UN LISTADO DE TODOS LOS ARCHIVOS QUE SE DEBEN INCLUIR TENIENDO EN CUENTA CADA ORDEN
+                var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", order.OrderId.ToString());
+                if (Directory.Exists(orderFolder))
+                {
+                    foreach (var filePath in Directory.GetFiles(orderFolder))
+                    {
+                        string fileNameReal = Path.GetFileName(filePath);
+                        string fileNameEspecial = order.OPNum + "_" + fileNameReal; // Puedes personalizar esto
+                        attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
+                    }
+                }
+
+
             }
             var textocorreo = TextoParaCorreo(reportContent.ToString()); // o iterar si son múltiples
             try
@@ -187,6 +248,15 @@
                     mailMessage.From = new MailAddress("formularios@unispan.com.co");
                     mailMessage.To.Add("sistemas@unispan.com.co");
                     mailMessage.To.Add("acuartas@bitcode.com.co");
+                    //AGREGA LOS CORREOS DE LOS CLIENTES QUE ESTAN EN LA VARIABLE ListaCorreos
+                    if (!string.IsNullOrEmpty(ListaCorreos))
+                    {
+                        var correos = ListaCorreos.Split(';').Where(c => !string.IsNullOrEmpty(c)).ToList();
+                        foreach (var correo in correos)
+                        {
+                            mailMessage.To.Add(correo);
+                        }
+                    };
                     mailMessage.IsBodyHtml = true;
                     mailMessage.BodyEncoding = Encoding.UTF8;
                     //mailMessage.Body = $" {reportContent}  ";
@@ -209,7 +279,13 @@
                             mailMessage.Attachments.Add(adjunto);
                         }
                     }
-
+                    // adjunta los archivos PDF almanecados en la carpeta de cada orden
+                    foreach (var item in attachmentFiles)
+                    {
+                        Attachment adjunto = new Attachment(item.Item1);
+                        adjunto.ContentDisposition.FileName = item.Item2;
+                        mailMessage.Attachments.Add(adjunto);
+                    }
                     client.Send(mailMessage);
                 });
             }
@@ -218,79 +294,7 @@
             }
         }
     }
-    async void ShowNotification(NotificationMessage message)
-    {
-        notificationService.Notify(message);
-    }
-    async void SearchOrder()
-    {
-        dialogService.Close();
-        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
-        Task.Run(async () =>
-        {
-            this.initDay = this.scheduleDisRet.FromDate.Day;
-            this.totalTon = 0;
-            this.days = (this.scheduleDisRet.ToDate - this.scheduleDisRet.FromDate).TotalDays + 1;
-            this.fromDate = this.scheduleDisRet.FromDate;
-            amountTotals = new List<AmountTotal>();
-
-            this.banner = await parameterService.SelectByIdentify(this.scheduleDisRet.ModuleId == 1 ? "LogisticsBannerDispatchs" : "LogisticsBannerReturns");
-
-            try
-            {
-                this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, searchBy);
-                foreach (var order in this.orders)
-                {
-                    this.totalTon += order.Wight;
-                    AmountTotal amountTotal = null;
-                    string date = "";
-                    if (this.scheduleDisRet.ModuleId == 1)
-                    {
-                        date = order.DispatchDateTime.Value.ToString("dd/MM/yyyy");
-                        amountTotal = amountTotals.Where(t => t.date.Equals(date)).FirstOrDefault();
-                    }
-                    else
-                    {
-                        date = order.ReturnDateTime.Value.ToString("dd/MM/yyyy");
-                        amountTotal = amountTotals.Where(t => t.date.Equals(date)).FirstOrDefault();
-                    }
-
-                    if (amountTotal is null)
-                    {
-                        this.amountTotals.Add(new AmountTotal()
-                            {
-                                date = date,
-                                total = order.Wight
-                            });
-                    }
-                    else
-                    {
-                        amountTotal.total += order.Wight;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                dialogService.Close();
-                ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
-                throw;
-            }
-
-            this.InvokeAsync(() =>
-            {
-                dialogService.Close();
-                StateHasChanged();
-            });
-        });
-    }
-    async void keySearchBy(KeyboardEventArgs e)
-    {
-        if (e.Code == "Enter" || e.Code == "NumpadEnter")
-        {
-            this.SearchOrder();
-        }
-    }
-
+    #endregion
     #region Preparar correos
     public string GenerateOrderReport(DTOOrder order)
     {
@@ -299,7 +303,6 @@
         string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
         string headerStyle = "background-color: #002060; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
         string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
-        sb.AppendLine("<h2 style='color: #2c3e50; margin-bottom: 20px;'>REPORTE DE ORDEN</h2>");
         // TABLA CON MÚLTIPLES COLUMNAS
         sb.AppendLine($"<div style='overflow-x: auto;'>");
         sb.AppendLine($"<table style='{tableStyle}'>");
@@ -311,7 +314,6 @@
         // Celda combinada para las siguientes 4 columnas
         AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", $"{order.DispatchDateTime.Value:dddd}".ToUpper() + "<br>" + $"{order.DispatchDateTime.Value:dd/MM/yyyy}", 4);
         sb.AppendLine("</tr>");
-
         sb.AppendLine("<tr>");
         AddTableHeader(sb, headerStyle, "OBRAS");
         AddTableHeader(sb, headerStyle, "CLIENTE");
@@ -321,7 +323,6 @@
         AddTableHeader(sb, headerStyle, "MÓDULO");
         AddTableHeader(sb, headerStyle, "CIUDAD");
         AddTableHeader(sb, headerStyle, "TRANSPORTE A CARGO DE");
-
         AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "PESO (ton)");
         AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "HORA DE CARGUE");
         AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "OK");
@@ -342,8 +343,6 @@
         AddTableCell(sb, cellStyle, @order.DispatchDateTime.Value.ToString("HH:mm"));
         AddTableCell(sb, cellStyle, order.Ok ? "OK" : "NO");
         AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
-
-
         sb.AppendLine("</tr>");
         sb.AppendLine("</table>");
         sb.AppendLine("</div>");
@@ -361,7 +360,6 @@
     {
         sb.AppendFormat("<th style='{0}; text-align: center;' colspan='{1}'>{2}</th>", style, colspan, text);
     }
-
     #region Texto base correo
     public string TextoParaCorreo(string Tablas)
     {
@@ -569,10 +567,7 @@
         return sb.ToString();
     }
     #endregion
-
     #endregion
-
-
 }
 <div class="row">
     <div class="col-sm-5">
@@ -646,7 +641,6 @@
                     }
                     <th colspan="2" style="background-color: white;"></th>
                 </tr>
-
                 @* Fila 2: Título principal *@
                 <tr class="row-fixed-2 thead-title-bold">
                     <th colspan="9" class="col-title">
@@ -662,7 +656,6 @@
                     }
                     <th colspan="2" style="background-color: #9BBB59; color: black;">DESPACHOS PENDIENTES POR DEFINIR FECHA</th>
                 </tr>
-
                 @* Fila 3: Encabezados de columnas *@
                 <tr class="row-fixed-3 thead-title-nobold">
                     <th class="col-checkbox">
@@ -687,7 +680,6 @@
                     <th>OBSERVACIONES</th>
                 </tr>
             </thead>
-
             @* --- CUERPO DE LA TABLA --- *@
             <tbody>
                 @if (orders != null)
@@ -699,7 +691,6 @@
                             <td class="col-checkbox">
                                 <input type="checkbox" @bind="order.IsSelected" />
                             </td>
-
                             @* Columnas fijas *@
                             <td class="col-work">@order.Works</td>
                             <td class="col-customerName">@order.CustomerName</td>
@@ -718,7 +709,6 @@
                             <td class="col-module">@order.Module</td>
                             <td class="col-city">@order.City</td>
                             <td class="col-transport">@order.ReponsableTrans</td>
-
                             @* Columnas dinámicas (días) *@
                             @for (int i = 0; i < days; i++)
                             {
@@ -738,7 +728,6 @@
                                     <td></td>
                                 }
                             }
-
                             @* Columnas finales *@
                             <td class="col-wight2">@order.TotalPalletWeight</td>
                             <td>@order.Comment</td>

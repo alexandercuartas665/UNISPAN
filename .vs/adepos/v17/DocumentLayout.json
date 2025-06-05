@@ -3,16 +3,20 @@
   "WorkspaceRootPath": "C:\\Desarrollo\\UNISPAN\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\desarrollo\\unispan\\adesoft.adepos.webview\\pages\\logistica\\viewscheduledispret.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\pages\\logistica\\viewscheduledispret.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\desarrollo\\unispan\\adesoft.adepos.webview\\pages\\logistica\\editorder.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\pages\\logistica\\editorder.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\desarrollo\\unispan\\adesoft.adepos.webview\\data\\logisticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\logisticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\desarrollo\\unispan\\adesoft.adepos.webview\\controller\\logisticscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\controller\\logisticscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\desarrollo\\unispan\\adesoft.adepos.webview\\data\\logisticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\logisticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\desarrollo\\unispan\\adesoft.adepos.webview\\data\\dto\\dtoorderattachments.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -34,7 +38,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Bookmark",
@@ -62,7 +66,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "ViewScheduleDispRet.razor",
+              "DocumentMoniker": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
+              "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
+              "ToolTip": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
+              "RelativeToolTip": "adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
+              "ViewState": "AgIAAOgAAAAAAAAAAAAjwPAAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-05T15:06:17.301Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "LogisticsService.cs",
               "DocumentMoniker": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Data\\LogisticsService.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\LogisticsService.cs",
@@ -75,20 +92,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "EditOrder.razor",
               "DocumentMoniker": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
               "ToolTip": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
               "RelativeToolTip": "adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
-              "ViewState": "AgIAAKYBAAAAAAAAAAAjwLMBAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAALEBAAAAAAAAAAAjwMYBAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-05-26T21:41:36.739Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "DTOOrder.cs",
               "DocumentMoniker": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
@@ -101,7 +118,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "DTOOrderPicture.cs",
               "DocumentMoniker": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\DTOOrderPicture.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\DTO\\DTOOrderPicture.cs",
@@ -113,7 +130,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "DTOOrderAttachments.cs",
               "DocumentMoniker": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\DTOOrderAttachments.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\DTO\\DTOOrderAttachments.cs",
@@ -132,7 +149,7 @@
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Controller\\LogisticsController.cs",
               "ToolTip": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Controller\\LogisticsController.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Controller\\LogisticsController.cs",
-              "ViewState": "AgIAAAwDAAAAAAAAAAAAABkDAACPAAAAAAAAAA==",
+              "ViewState": "AgIAAPcCAAAAAAAAAAAqwBIDAABHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-05-26T15:52:59.969Z",
               "EditorCaption": ""

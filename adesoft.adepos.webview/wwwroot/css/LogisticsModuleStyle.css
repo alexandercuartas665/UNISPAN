@@ -1,4 +1,5 @@
-﻿.thead-title-bold {    
+﻿/* ========== [ESTILOS ORIGINALES] ========== */
+.thead-title-bold {
     background: #002060;
     color: white;
     font-weight: bold;
@@ -17,7 +18,7 @@
     color: white;
     font-weight: bold;
     text-align: center;
-    width:50px;
+    width: 50px;
     min-width: 50px;
     max-width: 50px;
 }
@@ -65,7 +66,7 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 850px;    
+    left: 850px;
     position: sticky;
     z-index: 50;
     background-color: #3B548C;
@@ -85,18 +86,30 @@
     z-index: 50;
 }
 
-.col-banner img {
-    width: 100%;
-    height: 100%
+    .col-banner img {
+        width: 100%;
+        height: 100%;
+    }
+
+/* ========== [COLUMNAS FIJAS CORREGIDAS] ========== */
+.col-checkbox {
+    min-width: 30px !important;
+    width: 30px !important;
+    max-width: 30px !important;
+    left: 0 !important;
+    position: sticky !important;
+    z-index: 150;
+    background-color: white;
+    border-right: 1px solid black !important;
 }
 
 .col-work {
     min-width: 200px;
     width: 200px;
     max-width: 200px;
-    left: 0;
-    position: sticky;
-    z-index: 50;
+    left: 30px !important; /* 30px (checkbox) */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -104,9 +117,9 @@
     min-width: 180px;
     width: 180px;
     max-width: 180px;
-    left: 200px;
-    position: sticky;
-    z-index: 50;
+    left: 230px !important; /* 30 + 200 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -114,9 +127,9 @@
     min-width: 120px;
     width: 120px;
     max-width: 120px;
-    left: 380px;
-    position: sticky;
-    z-index: 50;
+    left: 410px !important; /* 230 + 180 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -124,9 +137,9 @@
     min-width: 50px;
     width: 50px;
     max-width: 50px;
-    left: 500px;
-    position: sticky;
-    z-index: 50;
+    left: 530px !important; /* 410 + 120 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -134,9 +147,9 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 550px;
-    position: sticky;
-    z-index: 50;
+    left: 580px !important; /* 530 + 50 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -144,9 +157,9 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 650px;
-    position: sticky;
-    z-index: 50;
+    left: 680px !important; /* 580 + 100 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -154,9 +167,9 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 750px;
-    position: sticky;
-    z-index: 50;
+    left: 780px !important; /* 680 + 100 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
@@ -164,31 +177,21 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 850px;
-    position: sticky;
-    z-index: 50;
+    left: 880px !important; /* 780 + 100 */
+    position: sticky !important;
+    z-index: 150;
     background-color: white;
 }
 
-
-.col-transportdev {
-    min-width: 100px;
-    width: 100px;
-    max-width: 100px;
-    left: 850px;
-    position: sticky;
-    z-index: 50;
-    background-color: white;
-}
-
-
+/* ========== [CABECERAS FIJAS] ========== */
 .row-fixed-1 {
     height: 28px;
     min-height: 28px;
     max-height: 28px;
     top: 0px;
     position: sticky;
-    z-index: 99;
+    z-index: 200; /* Mayor prioridad */
+    background: #002060 !important;
 }
 
 .row-fixed-2 {
@@ -197,7 +200,8 @@
     max-height: 45px;
     top: 28px;
     position: sticky;
-    z-index: 99;
+    z-index: 200;
+    background: #002060 !important;
 }
 
 .row-fixed-3 {
@@ -206,7 +210,18 @@
     max-height: 45px;
     top: 73px;
     position: sticky;
-    z-index: 99;
+    z-index: 180; /* Debajo de cabeceras */
+    background-color: white;
+}
+
+/* ========== [ESTILOS RESTANTES (INALTERADOS)] ========== */
+.col-transportdev {
+    min-width: 100px;
+    width: 100px;
+    max-width: 100px;
+    left: 850px;
+    position: sticky;
+    z-index: 50;
     background-color: white;
 }
 
@@ -219,10 +234,10 @@
     z-index: 50;
 }
 
-.col-ret-banner img {
-    width: 100%;
-    height: 100%
-}
+    .col-ret-banner img {
+        width: 100%;
+        height: 100%;
+    }
 
 .col-ret-title {
     min-width: 650px;
@@ -305,7 +320,6 @@
     background-color: #3B548C;
 }
 
-/*Fixed content*/
 .fixed-content-header {
     top: 15px;
     bottom: 0;
@@ -326,6 +340,7 @@
     max-width: calc(100vw - 280px);
     margin: auto;
     font-size: 11px;
+    overflow-x: auto;
 }
 
 .order-table-wrap {
@@ -336,14 +351,14 @@
 
 .order-table-scroll table {
     width: 100%;
-    
     margin: auto;
     border-collapse: separate;
     border-spacing: 0;
 }
 
-.order-table-scroll th, .order-table-scroll td {
-    padding: 5px 10px;    
+.order-table-scroll th,
+.order-table-scroll td {
+    padding: 5px 10px;
     white-space: nowrap;
     vertical-align: top;
     border: 1px solid black;
@@ -354,13 +369,9 @@
     display: block;
 }
 
-.banner img {
-    height: 140px;
-}
-
-/*.container-sdr-main {
-    width: calc(100vw - 100px);
-}*/
+    .banner img {
+        height: 140px;
+    }
 
 .list-group-works {
     max-height: calc(100vh - 190px);
@@ -372,4 +383,12 @@
     max-height: calc(100vh - 240px);
     overflow: scroll;
     -webkit-overflow-scrolling: touch;
+}
+
+/* ========== [AJUSTES FINALES] ========== */
+.col-checkbox input[type="checkbox"] {
+    margin: 0 auto;
+    display: block;
+    transform: scale(1.2);
+    cursor: pointer;
 }

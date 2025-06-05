@@ -16,13 +16,13 @@
 @inject NotificationService notificationService;
 @inject NavigationManager navigationManager;
 @inject IHttpContextAccessor httpContextAccessor;
-
 @inject SecurityService securityService
 @inject IJSRuntime JSRuntime
 @inject TokenAuthenticationStateProvider autenticationstate;
 @inject CompanyService companyService
 
 @code {
+
     [Parameter]
     public string strFromDate { get; set; }
 
@@ -37,6 +37,7 @@
 
     [Parameter]
     public bool edit { get; set; }
+
 
     public DTOOrder model;
     private List<DTOOrderPicture> pictures;
@@ -56,11 +57,14 @@
     private bool exportToExcel = false;
     private bool createOrUpdate = false;
     private bool deleteOrder = false;
-    private bool editFields = false;
+    private bool editFields = true; // Permite editar los campos del formulario, se cambia a true
     private bool searchOrder = false;
     private bool viewInvoice = false;
     private bool reSync = false;
     private bool isOk = false;
+   	private RadzenFileInput<byte[]> fileInputRef; // Referencia al componente RadzenFileInput
+   
+     
 
     public int TabSelected = 0;
     public int page = 1;
@@ -70,7 +74,10 @@
     protected override async Task OnInitializedAsync()
     {
         await this.loadOrder();
+        editFields = true;
     }
+
+
 
     public async Task loadOrder()
     {
@@ -329,6 +336,25 @@
         }
     }
 
+    async Task OnFileInputChange(object value)
+    {
+        // Se dispara cuando el usuario selecciona un PDF.
+        async Task OnFileSelected(Radzen.UploadChangeEventArgs args)
+        {
+            var file = args?.Files?.FirstOrDefault();
+            if (file != null)
+            {
+                model.NombreArchivo = file.Name;
+            }
+            else
+            {
+                model.NombreArchivo = null;
+                model.AuxTest = null;
+            }
+            StateHasChanged();
+        }
+    }
+
     async void ShowNewCustomer()
     {
         dialogService.Open<ViewCustomers>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
@@ -427,43 +453,49 @@
 
     async Task OnImportPdf()
     {
-        if (model.AuxTest == null || model.AuxTest.Length == 0)
-        {
-            notificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "ERROR",
-                    Detail = "Por favor seleccionar un archivo PDF.",
-                    Duration = 4000
-                });
-            return;
-        }
+        if (model.AuxTest == null || model.AuxTest.Length == 0) return;
 
-        dialogService.Close();
-        dialogService.Open<DialogProgressBar>(
-            null,
-            new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
-            new DialogOptions
-                {
-                    ShowTitle = false,
-                    Width = "300px",
-                    Height = "20px",
-                    Left = "calc(50% - 150px)",
-                    Top = "calc(50% - 200px)"
-                }
-        );
+       dialogService.Open<DialogProgressBar>(null,
+           new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
+           new DialogOptions
+           {
+               ShowTitle = false,
+               Width = "300px",
+               Height = "20px",
+               Left = "calc(50% - 150px)",
+               Top = "calc(50% - 200px)"
+           });
+
 
         try
         {
-            //OPCION DE IMPORkTACIÓN DE PDF
-            await logisticsService.ImportFile(model);
-            notificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "OK",
-                    Detail = "PDF importado correctamente.",
-                    Duration = 3000
-                });
+            bool ok = await logisticsService.UploadAttachment(
+                model.OrderId,
+                model.OrderType,
+                model.NombreArchivo,
+                model.AuxTest
+            );
+
+            if (ok)
+            {
+                notificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "OK",
+                        Detail = $"PDF '{model.NombreArchivo}' importado.",
+                        Duration = 3000
+                    });
+
+                // Refresca galería
+                pictures = await logisticsService.GetPictures(
+                    model.OrderType, model.OrderId, 1, 10
+                );
+                page = 2;
+            }
+            else
+            {
+                throw new Exception("La subida falló en el servidor.");
+            }
         }
         catch (Exception ex)
         {
@@ -471,7 +503,7 @@
                 {
                     Severity = NotificationSeverity.Error,
                     Summary = "ERROR",
-                    Detail = $"Falló la importación: {ex.Message}",
+                    Detail = ex.Message,
                     Duration = 5000
                 });
         }
@@ -481,6 +513,7 @@
             await InvokeAsync(StateHasChanged);
         }
     }
+ 
 }
 
 <nav class="navbar navbar-light bg-transparent justify-content-between">
@@ -771,21 +804,26 @@
                         <RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA CORREOS CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
                     </div>
                     <!-- SUBIR ARCHIVOS -->
-                    <div class="form-group">
-                        <label for="inputPdf">Documento PDF</label>
-                        <RadzenFileInput Name="inputPdf"
-                                         TValue="byte[]"
-                                         Accept="application/pdf"
-                                         ChooseText="Seleccionar PDF"
-                                         @bind-Value="model.AuxTest"
-                                         @ref="fileInputRef"
-                                         Change="@(() => OnFileSelected())" />
-                    </div>
-                    <div class="form-group text-end">
-                        <RadzenButton Text="Importar PDF" Icon="upload" Style="margin-top: .5rem;" Disabled="@(!editFields
-                                || model.AuxTest == null
-                                || model.AuxTest.Length == 0)" Click="OnImportPdf" />
-                    </div>
+                    <RadzenFileInput Name="inputPdf"
+                                     TValue="byte[]"
+                                     Accept="application/pdf"
+                                     ChooseText="Seleccionar PDF"
+                                     @bind-Value="model.AuxTest"
+									 @bind-FileName="model.NombreArchivo"
+                                     Change="OnFileInputChange" />
+
+                    @if (!string.IsNullOrEmpty(model.NombreArchivo))
+                    {
+                        <div class="alert alert-info mt-2">
+                            Archivo seleccionado: <strong>@model.NombreArchivo</strong>
+                        </div>
+                    }
+
+                    <RadzenButton Text="Importar PDF"
+                                  Icon="upload"
+                                  Disabled="@(editFields || model.AuxTest == null || model.AuxTest.Length == 0)"
+                                  Click="@OnImportPdf" />
+
                     <!-- SUBIR ARCHIVOS -->
                     <table class="table mt-3">
                         <thead>

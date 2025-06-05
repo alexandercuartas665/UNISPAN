@@ -43,7 +43,16 @@ namespace adesoft.adepos.webview
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            
+
+            var apiBaseUrl = Configuration.GetSection("Api:BaseUrl").Value;
+
+            services.AddHttpClient("api", client =>
+            {
+                client.BaseAddress = new Uri(apiBaseUrl);
+            });
+
+
+
 
             //services.AddCors(options => options.AddPolicy("Cors", builder =>
             //{

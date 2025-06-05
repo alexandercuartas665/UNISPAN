@@ -11,17 +11,21 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using adesoft.adepos.webview.Data.DTO.PL;
 using adesoft.adepos.webview.Data.Model;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace adesoft.adepos.webview.Data
 {
     public class LogisticsService
     {
         private readonly LogisticsController _logisticsController;
-        private readonly string _wwwrootDirectory; 
+        private readonly string _wwwrootDirectory;
+        private readonly HttpClient _httpClient;
 
-        public LogisticsService(LogisticsController logisticsController)
+        public LogisticsService(LogisticsController logisticsController, IHttpClientFactory httpClientFactory)
         {
             _logisticsController = logisticsController;
+            _httpClient = httpClientFactory.CreateClient("api");
             _wwwrootDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         }
 
@@ -126,6 +130,23 @@ namespace adesoft.adepos.webview.Data
         public DTOOrder ChangeOrderState(DTOOrder dtoOrder)
         {
             return _logisticsController.ChangeOrderState(dtoOrder);
+        }
+
+        public Task<bool> UploadAttachment(long orderId, OrderType orderType, string nombreArchivo, byte[] archivo)
+        {
+            var dto = new DTOOrderAttachment
+            {
+                OrderId = orderId,
+                OrderType = orderType,
+                FileName = nombreArchivo,
+                FileBytes = archivo
+            };
+            return ImportAttachment(dto);
+        }
+        private async Task<bool> ImportAttachment(DTOOrderAttachment dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/Logistics/ImportAttachment", dto);
+            return response.IsSuccessStatusCode;
         }
     }
 }

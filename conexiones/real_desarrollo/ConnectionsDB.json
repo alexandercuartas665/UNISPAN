@@ -1,0 +1,7 @@
+ [
+  {
+    "Name": "UnisPanPro",
+    "CuentaN": "1004",
+    "Connection": "Data Source=UNISAPP\\SQLEXPRESS;Initial Catalog=UnisPanTest;Persist Security Info=True;User ID=sa;Password=Unispan2019;MultipleActiveResultSets=True"
+  }
+] 

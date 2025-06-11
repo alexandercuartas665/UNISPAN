@@ -615,26 +615,26 @@
                                 <div class="form-group col-sm-6">
                                     <label for="DispatchDate">Fecha despacho</label>
                                     @{
-                                        if (this.model.DispatchIdSelect != 0)
+                                        if (!this.editFields)
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="true" Change="changeField" />
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Change="changeField" Disabled="true" />
                                         }
                                         else
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Disabled="@(!this.editFields)" Change="changeField" />
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchDate" @bind-Value="model.DispatchDateTime" DateFormat="dd/MM/yyyy" id="DispatchDate" class="d-block" Change="changeField" />
                                         }
                                     }
                                 </div>
                                 <div class="form-group col-sm-6">
                                     <label for="DispatchTime">Hora despacho</label>
                                     @{
-                                        if (this.model.DispatchIdSelect != 0)
+                                        if (!this.editFields)
                                         {
                                             <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" Disabled="true" />
                                         }
                                         else
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" Disabled="@(!this.editFields)" />
+                                            <RadzenDatePicker TValue="DateTime?" Name="DispatchTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="DispatchTime" class="d-block" />
                                         }
                                     }
                                 </div>
@@ -648,13 +648,13 @@
                             <div class="form-group">
                                 <label for="vehicleType">Tipo vehículo</label>
                                 @{
-                                    if (this.model.DispatchIdSelect != 0)
+                                    if (!this.editFields)
                                     {
                                         <RadzenDropDown Disabled="true" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
                                     }
                                     else
                                     {
-                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
+                                        <RadzenDropDown  AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
                                     }
                                 }
                             </div>
@@ -774,10 +774,11 @@
                     </div>
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"
+                        
                                      TValue="byte[]"
                                      Disabled="@(!this.editFields)"
-                                     Accept="application/pdf"
-                                     ChooseText="Seleccionar PDF"
+                                     Accept="*/*"
+                                     ChooseText="Seleccionar Archivo"
                                      @bind-Value="model.AuxTest"
                                      @bind-FileName="model.NombreArchivo"
                                      Change="OnFileInputChange" />
@@ -787,7 +788,7 @@
                             Archivo seleccionado: <strong>@model.NombreArchivo</strong>
                         </div>
                     }
-                    <RadzenButton Text="Importar PDF"
+                    <RadzenButton Text="Importar Archivos"
                                   Icon="upload"
                                   Disabled="@(model.AuxTest == null || model.AuxTest.Length == 0)"
                                   Click="@OnImportPdf" />

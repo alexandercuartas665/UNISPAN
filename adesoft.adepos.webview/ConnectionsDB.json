@@ -1,7 +1,7 @@
-[
+ [
   {
     "Name": "UnisPanPro",
     "CuentaN": "1004",
-    "Connection": "Data Source=localhost, 1433;Initial Catalog=UnisPanPro;Persist Security Info=True;User ID=sa;Password=Maravilla1;MultipleActiveResultSets=True"
+    "Connection": "Data Source=172.16.110.7\\SQLEXPRESS;Initial Catalog=UnisPanTest;Persist Security Info=True;User ID=sa;Password=Unispan2019;MultipleActiveResultSets=True"
   }
 ] 

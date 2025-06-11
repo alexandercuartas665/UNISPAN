@@ -193,12 +193,21 @@
         string ListaOrdenes = "";
         string ListaCorreos = "";
         var selectedOrders = orders.Where(o => o.IsSelected).ToList();
-        var ordersByClient = selectedOrders.GroupBy(o => o.CustomerName);
+        //var ordersByClient = selectedOrders.GroupBy(o => o.Works);
+        var ordersByClient = selectedOrders.GroupBy(o => o.IsSelected);
         var llevaDespachos = 0;
         var llevaDevoluciones = 0;
         // Obtener todos los archivos PDF en el directorio
-        string[] archivosDespachos = Directory.GetFiles(ruta_anexo_despachos, "*.pdf");
-        string[] archivosDevoluciones = Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf");
+        string[] archivosDespachos = Array.Empty<string>();
+        if (!string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos))
+        {
+            archivosDespachos = Directory.GetFiles(ruta_anexo_despachos, "*.pdf");
+        }
+        string[] archivosDevoluciones = Array.Empty<string>();
+        if (!string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones))
+        {
+            archivosDevoluciones = Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf");
+        }
         foreach (var clientGroup in ordersByClient)
         {
             reportContent.Clear();
@@ -293,6 +302,19 @@
             {
             }
         }
+        //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO
+        notificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "OK",
+                Detail = $"Correos de notificacion enviados.",
+                Duration = 3000
+            });
+        //DESMARCA TODAS LAS ORDENES
+        foreach (var order in orders)
+        {
+            order.IsSelected = false ;
+        }
     }
     #endregion
     #region Preparar correos
@@ -326,7 +348,7 @@
         AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "PESO (ton)");
         AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "HORA DE CARGUE");
         AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "OK");
-        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "VEHICULO");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "VEHÍCULO");
         sb.AppendLine("</tr>");
         // FILA DE DATOS
         sb.AppendLine("<tr>");
@@ -390,7 +412,7 @@
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             La fecha indicada es el día en que se recibe el vehículo en nuestra planta, la cual está  ubicada en Km 2 V a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            LOS VEHÍCULOS PROGRAMADOS DESDE LAS 12:00, SERÁN DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL DIA SIGUIENTE SE CONTINUAR  EL PROCESO DE ORGANIZACIÓN Y CLASIFICACIÓN DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
+            LOS VEHÍCULOS PROGRAMADOS DESDE LAS 12:00, SERÁN DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL DÍA SIGUIENTE SE CONTINUARÁ EL PROCESO DE ORGANIZACIÓN Y CLASIFICACIÓN DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
             <div style=""direction: ltr; text-align: center; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             <b>CONDICIONES Y REQUISITOS</b></div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
@@ -403,14 +425,14 @@
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             Si inicialmente ha solicitado programar un determinado vehículo, por ejemplo una Tractomula, y por alguna razón no consigue este vehículo y decide enviar el equipo en dos Dobletroques, por favor comuníquese previamente con él  crea de operaciones
             <span style=""color: rgb(5, 99, 193);""><u><a href=""mailto:diroperaciones@unispan.com.co"" id=""OWAd49d3ee8-a475-a0d0-9627-f7183e77d513"" class=""x_OWAAutoLink"" style=""color: rgb(5, 99, 193);"">diroperaciones@unispan.com.co</a></u></span>&nbsp;para que sea verificado si
-             es posible aceptar esta modificación, en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo vehiculo, ya que para bajar cada carro se requiere espacio físico y una cuadrilla de personal.</div>
+             es posible aceptar esta modificación, en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo vehículo, ya que para bajar cada carro se requiere espacio físico y una cuadrilla de personal.</div>
             <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
             <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
             <b>VEHÍCULOS</b>: Todos los vehículos deben permitir retirar la carrocería por ambos lados y venir cargados de acuerdo a la metodología adjunta
             <b>PRO-P.LO-006 - PROCEDIMIENTO DE CARGUE.pdf</b>, este método es muy importante para poder descargar el equipo mecánicamente, brindando as  menores tiempos de atención a nuestros clientes y salvaguardando la seguridad del personal involucrado en esta labor.&nbsp;
              No se aceptan devoluciones en Volquetas y se sugiere no emplear camas bajas, camion gra o vehículos que no dispongan de carrocería, dado a la alta posibilidad de extraviar parte del equipo, en especial piezas pequeñas. Debido a la escasez de vehículos Turbo
             (4.0 Ton) que dispongan de carrocería removible, ser  el  único tipo de vehículo que se acepta con esta condición. Lo invitamos a ver video sobre la Guía para el cargue de equipos:
-            <span style=""color: rgb(5, 99, 193);""><u><a href=""https://www.youtube.com/watch?v=UTyIqQiTCsY"" id=""OWA2178799a-a6c4-d9da-043a-76d8e821ed2a"" class=""x_OWAAutoLink"" data-auth=""NotApplicable"" style=""color: rgb(5, 99, 193);"">https://www.youtube.com/watch?v=UTyIqQiTCsY</a></u></span></li></ul>
+            <span style=""color: rgb(5, 99, 193);""><u><a href=""https://www.youtube.com/watch?v=3GHnQ7yhjZU"" id=""OWA2178799a-a6c4-d9da-043a-76d8e821ed2a"" class=""x_OWAAutoLink"" data-auth=""NotApplicable"" style=""color: rgb(5, 99, 193);"">https://www.youtube.com/watch?v=UTyIqQiTCsY</a></u></span></li></ul>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
             Si el equipo no llega de acuerdo a la metodología descrita para poder descargar el equipo mecánicamente, el cliente debe  asumir los siguientes costos por servicio de descargue manual de acuerdo al tipo de vehículo:</div>
             <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
@@ -626,7 +648,7 @@
             <thead>
                 @* Fila 1: Totales *@
                 <tr class="row-fixed-1 thead-title-bold">
-                    <th colspan="9" class="col-title-totalTon">
+                    <th colspan="8" class="col-title-totalTon">
                         <span>SUMA TONELADAS PROGRAMADAS ---></span>
                     </th>
                     <th class="col-totalTon">@(string.Format("{0}Ton", totalTon.ToString("0.00")))</th>
@@ -672,7 +694,7 @@
                     @for (int i = 0; i < days; i++)
                     {
                         <th class="col-wight">PESO<br>(Ton)</th>
-                        <th class="col-time">HORA DE<br>CARGUE</th>
+                        <th class="col-time">Hora de<br>Cargue</th>
                         <th>OK</th>
                         <th>VEHÍCULO</th>
                     }

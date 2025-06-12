@@ -708,26 +708,26 @@
                                 <div class="form-group col-sm-6">
                                     <label for="ReturnDate">Fecha devolución</label>
                                     @{
-                                        if (this.model.DispatchIdSelect != 0)
+                                        if (!this.editFields)
                                         {
                                             <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Disabled="true" Change="changeField" />
                                         }
                                         else
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Disabled="@(!this.editFields)" Change="changeField" />
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block"  Change="changeField" />
                                         }
                                     }
                                 </div>
                                 <div class="form-group col-sm-6">
                                     <label for="ReturnTime">Hora devolución</label>
                                     @{
-                                        if (this.model.DispatchIdSelect != 0)
+                                        if (!this.editFields)
                                         {
                                             <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" Disabled="true" />
                                         }
                                         else
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" Disabled="@(!this.editFields)" />
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block"/>
                                         }
                                     }
                                 </div>

@@ -893,7 +893,8 @@ namespace adesoft.adepos.webview.Controller
                         .Select(o => new DTOSharedOrder()
                         {
                             OrderId = o.Id,
-                            OrderNum = o.OrderNum
+                            OrderNum = o.OrderNum,
+                            OrderWorks = ""
                         })
                         .ToList();                    
                 }
@@ -907,7 +908,8 @@ namespace adesoft.adepos.webview.Controller
                         .Select(o => new DTOSharedOrder()
                         {
                             OrderId = o.Id,
-                            OrderNum = o.OrderNum
+                            OrderNum = o.OrderNum,
+                            OrderWorks = o.Works 
                         })
                         .ToList();                    
                 }
@@ -915,7 +917,8 @@ namespace adesoft.adepos.webview.Controller
                 sharedOrders.Add(new DTOSharedOrder()
                 {
                     OrderId = 0,
-                    OrderNum = "Ninguno"
+                    OrderNum = "Ninguno",
+                    OrderWorks = "Nunguno"
                 });
 
                 return sharedOrders.OrderBy(o => o.OrderId).ToList();

@@ -196,7 +196,14 @@
     }
     public void getOrders()
     {
-        this.sharedOrders = logisticsService.GetSharedOrders((OrderType)orderType, orderId, this.model.VehicleTypeId, this.model.DispatchDateTime.Value);
+        if (this.orderType == 1)
+        {
+            this.sharedOrders = logisticsService.GetSharedOrders((OrderType)orderType, orderId, this.model.VehicleTypeId, this.model.DispatchDateTime.Value);
+        }
+        else
+        {
+            this.sharedOrders = logisticsService.GetSharedOrders((OrderType)orderType, orderId, this.model.VehicleTypeId, this.model.ReturnDateTime.Value);
+        }
     }
     public void changeField()
     {
@@ -387,13 +394,13 @@
         dialogService.Open<DialogProgressBar>(null,
             new Dictionary<string, object> { { "Tittle", "Importando PDF..." } },
             new DialogOptions
-                {
-                    ShowTitle = false,
-                    Width = "300px",
-                    Height = "20px",
-                    Left = "calc(50% - 150px)",
-                    Top = "calc(50% - 200px)"
-                });
+            {
+                ShowTitle = false,
+                Width = "300px",
+                Height = "20px",
+                Left = "calc(50% - 150px)",
+                Top = "calc(50% - 200px)"
+            });
         try
         {
             bool ok = await logisticsService.UploadAttachment(
@@ -405,12 +412,12 @@
             if (ok)
             {
                 notificationService.Notify(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "OK",
-                        Detail = $"PDF '{model.NombreArchivo}' importado.",
-                        Duration = 3000
-                    });
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "OK",
+                    Detail = $"PDF '{model.NombreArchivo}' importado.",
+                    Duration = 3000
+                });
                 // Refresca galería
                 pictures = await logisticsService.GetPictures(
                     model.OrderType, model.OrderId, 1, 10
@@ -425,12 +432,12 @@
         catch (Exception ex)
         {
             notificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "ERROR",
-                    Detail = ex.Message,
-                    Duration = 5000
-                });
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "ERROR",
+                Detail = ex.Message,
+                Duration = 5000
+            });
         }
         finally
         {
@@ -469,24 +476,24 @@
                 File.Delete(filePath);
                 LoadAttachmentFiles(); // Recargar lista
                 notificationService.Notify(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Éxito",
-                        Detail = "Archivo eliminado",
-                        Duration = 3000
-                    });
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Éxito",
+                    Detail = "Archivo eliminado",
+                    Duration = 3000
+                });
             }
             StateHasChanged();
         }
         catch (Exception ex)
         {
             notificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = $"Error eliminando archivo: {ex.Message}",
-                    Duration = 5000
-                });
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Error",
+                Detail = $"Error eliminando archivo: {ex.Message}",
+                Duration = 5000
+            });
         }
     }
     #endregion
@@ -584,7 +591,7 @@
                                 </div>
                                 <div class="form-group col-sm-1">
                                     <label class="d-block">&nbsp;</label>
-                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args=>{ ShowNewCustomer();})">
+                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args => { ShowNewCustomer(); })">
                                         +
                                     </NavLink>
                                 </div>
@@ -654,7 +661,7 @@
                                     }
                                     else
                                     {
-                                        <RadzenDropDown  AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
+                                        <RadzenDropDown AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
                                     }
                                 }
                             </div>
@@ -687,7 +694,7 @@
                                 </div>
                                 <div class="form-group col-sm-1">
                                     <label class="d-block">&nbsp;</label>
-                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args=>{ ShowNewCustomer();})">
+                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args => { ShowNewCustomer(); })">
                                         +
                                     </NavLink>
                                 </div>
@@ -714,7 +721,7 @@
                                         }
                                         else
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block"  Change="changeField" />
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnDate" @bind-Value="model.ReturnDateTime" DateFormat="dd/MM/yyyy" id="ReturnDate" class="d-block" Change="changeField" />
                                         }
                                     }
                                 </div>
@@ -727,7 +734,7 @@
                                         }
                                         else
                                         {
-                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block"/>
+                                            <RadzenDatePicker TValue="DateTime?" Name="ReturnTime" ShowTime="true" HourFormat="24" TimeOnly="true" DateFormat="HH:mm" @bind-Value="time" id="ReturnTime" class="d-block" />
                                         }
                                     }
                                 </div>
@@ -755,8 +762,9 @@
                                 if (!this.model.DispatchParent)
                                 {
                                     <div class="form-group ">
-                                        <label for="dispatchWith">Compartir vehiculo con</label>
-                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderNum" ValueProperty="OrderId" />
+                                        <label for="dispatchWith">Compartir vehiculo con dev</label>
+                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderWorks" ValueProperty="OrderId" />
+
                                     </div>
                                 }
                             }
@@ -774,7 +782,6 @@
                     </div>
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"
-                        
                                      TValue="byte[]"
                                      Disabled="@(!this.editFields)"
                                      Accept="*/*"

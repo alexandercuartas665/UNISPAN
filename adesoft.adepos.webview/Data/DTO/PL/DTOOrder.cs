@@ -169,5 +169,6 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         public long OrderId { get; set; }
 
         public string OrderNum { get; set; }
+        public string OrderWorks { get; set; }
     }
 }

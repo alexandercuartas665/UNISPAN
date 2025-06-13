@@ -218,7 +218,13 @@
             List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
             foreach (var order in ordersForClient)
             {
-                reportContent.AppendLine($"<br/>{GenerateOrderReport(order)}"); // o iterar si son múltiples
+                if (order.OrderType.ToString() == "Dispatch")
+                {
+                    reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); // o iterar si son múltiples
+                } else if (order.OrderType.ToString() == "Return")
+                {
+                    reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); // o iterar si son múltiples
+                }   
                 ListaOrdenes += "," + order.OrderId;
                 ListaCorreos += ";" + order.Email;
                 if (order.OrderType.ToString() == "Dispatch")
@@ -319,7 +325,53 @@
     }
     #endregion
     #region Preparar correos
-    public string GenerateOrderReport(DTOOrder order)
+    public string GenerateOrderReportDEVOLUCION(DTOOrder order)
+    {
+        var sb = new StringBuilder();
+        // ESTILOS CSS
+        string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
+        string headerStyle = "background-color: #002060; color: white; padding: 12px; text-align: left; position: sticky; left: 0;";
+        string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
+        // TABLA CON MÚLTIPLES COLUMNAS
+        sb.AppendLine($"<div style='overflow-x: auto;'>");
+        sb.AppendLine($"<table style='{tableStyle}'>");
+        // ENCABEZADOS
+        // Fila combinada para "CONTROL DE DESPACHOS" y "LUNES"
+        sb.Append("<tr>");
+        // Celda combinada para las primeras 8 columnas
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", "CONTROL DE DEVOLUCIONES", 5);
+        // Celda combinada para las siguientes 4 columnas
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", $"{order.DispatchDateTime.Value:dddd}".ToUpper() + "<br>" + $"{order.DispatchDateTime.Value:dd/MM/yyyy}", 4);
+        sb.AppendLine("</tr>");
+        sb.AppendLine("<tr>");
+        AddTableHeader(sb, headerStyle, "OBRAS");
+        AddTableHeader(sb, headerStyle, "CLIENTE");
+        AddTableHeader(sb, headerStyle, "CIUDAD");
+        AddTableHeader(sb, headerStyle, "COMERCIAL");
+        AddTableHeader(sb, headerStyle, "TRANSPORTE A CARGO DE");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "PESO (ton)");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "HORA DE CARGUE");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "OK");
+        AddTableHeader(sb, headerStyle + "border: 1px solid white; width: 1%; white-space: nowrap;", "VEHÍCULO");
+        sb.AppendLine("</tr>");
+        // FILA DE DATOS
+        sb.AppendLine("<tr>");
+        AddTableCell(sb, cellStyle, order.Works);
+        AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
+        AddTableCell(sb, cellStyle, order.City);
+        AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
+        AddTableCell(sb, cellStyle, order.ReponsableTrans);
+        //INFORMACION DESPACHO
+        AddTableCell(sb, cellStyle, $"{order.Wight} kg");
+        AddTableCell(sb, cellStyle, @order.ReturnDateTime.Value.ToString("HH:mm"));
+        AddTableCell(sb, cellStyle, order.Ok ? "OK" : "NO");
+        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
+        sb.AppendLine("</tr>");
+        sb.AppendLine("</table>");
+        sb.AppendLine("</div>");
+        return sb.ToString();
+    }
+    public string GenerateOrderReportDESPACHO(DTOOrder order)
     {
         var sb = new StringBuilder();
         // ESTILOS CSS
@@ -362,7 +414,7 @@
         AddTableCell(sb, cellStyle, order.City);
         AddTableCell(sb, cellStyle, order.ReponsableTrans);
         //INFORMACION DESPACHO
-        AddTableCell(sb, cellStyle, $"{order.TotalPalletWeight} kg");
+        AddTableCell(sb, cellStyle, $"{order.Wight} kg");
         AddTableCell(sb, cellStyle, @order.DispatchDateTime.Value.ToString("HH:mm"));
         AddTableCell(sb, cellStyle, order.Ok ? "OK" : "NO");
         AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");

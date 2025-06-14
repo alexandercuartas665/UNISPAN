@@ -148,10 +148,10 @@
                     if (amountTotal is null)
                     {
                         this.amountTotals.Add(new AmountTotal()
-                            {
-                                date = date,
-                                total = order.Wight
-                            });
+                        {
+                            date = date,
+                            total = order.Wight
+                        });
                     }
                     else
                     {
@@ -197,6 +197,10 @@
         var ordersByClient = selectedOrders.GroupBy(o => o.IsSelected);
         var llevaDespachos = 0;
         var llevaDevoluciones = 0;
+        //TIPO DE ORDENES A ENVIAR CORREO
+        var tipo_orden_correos = "";
+        var ListaOrdenesDespachos = "";
+
         // Obtener todos los archivos PDF en el directorio
         string[] archivosDespachos = Array.Empty<string>();
         if (!string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos))
@@ -213,20 +217,32 @@
             reportContent.Clear();
             ListaOrdenes = "";
             ListaCorreos = "";
+            ListaOrdenesDespachos = "";
             var clientName = clientGroup.Key;
             var ordersForClient = clientGroup.ToList();
             List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
             foreach (var order in ordersForClient)
             {
+                tipo_orden_correos = order.OrderType.ToString();
                 if (order.OrderType.ToString() == "Dispatch")
                 {
                     reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); // o iterar si son múltiples
-                } else if (order.OrderType.ToString() == "Return")
+                }
+                else if (order.OrderType.ToString() == "Return")
                 {
                     reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); // o iterar si son múltiples
-                }   
+                }
                 ListaOrdenes += "," + order.OrderId;
                 ListaCorreos += ";" + order.Email;
+                if (ListaOrdenesDespachos == "")
+                {
+                    ListaOrdenesDespachos = order.OrderNum;
+                }
+                else
+                {
+                    ListaOrdenesDespachos += ", " + order.OrderNum;
+                }
+
                 if (order.OrderType.ToString() == "Dispatch")
                 {
                     llevaDespachos++;
@@ -247,10 +263,8 @@
                         attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
                     }
                 }
-
-
             }
-            var textocorreo = TextoParaCorreo(reportContent.ToString()); // o iterar si son múltiples
+            var textocorreo = TextoParaCorreo(reportContent.ToString(), tipo_orden_correos, ListaOrdenesDespachos); // o iterar si son múltiples
             try
             {
                 Task.Run(() =>
@@ -277,7 +291,15 @@
                     mailMessage.BodyEncoding = Encoding.UTF8;
                     //mailMessage.Body = $" {reportContent}  ";
                     mailMessage.Body = $" {textocorreo}  ";
-                    mailMessage.Subject = $"PROGRAMACIÓN DESPACHO {ListaOrdenes}";
+                    if (tipo_orden_correos == "Dispatch")
+                    {
+                        mailMessage.Subject = $"ACTUALIZACIÓN PROGRAMACIÓN DESPACHO {ListaOrdenesDespachos}";
+                    }
+                    else if (tipo_orden_correos == "Return")
+                    {
+                        mailMessage.Subject = $"ACTUALIZACIÓN PROGRAMACIÓN DEVOLUCIÓN {ListaOrdenes}";
+
+                    }
                     // Adjuntar cada PDF al correo
                     if (llevaDespachos != 0)
                     {
@@ -311,12 +333,12 @@
         }
         //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO
         notificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "OK",
-                Detail = $"Correos de notificacion enviados.",
-                Duration = 3000
-            });
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = "OK",
+            Detail = $"Correos de notificacion enviados.",
+            Duration = 3000
+        });
         //DESMARCA TODAS LAS ORDENES
         foreach (var order in orders)
         {
@@ -436,209 +458,32 @@
         sb.AppendFormat("<th style='{0}; text-align: center;' colspan='{1}'>{2}</th>", style, colspan, text);
     }
     #region Texto base correo
-    public string TextoParaCorreo(string Tablas)
+    public string TextoParaCorreo(string Tablas, string tipo_orden_correos, string ListaOrdenes)
     {
         var sb = new StringBuilder();
-        sb.Append($@"<html>
-            <head>
-            <meta http-equiv=""Content-Type"" content=""text/html; charset=UTF-8"">
-            <style type=""text/css"" style=""display:none;""> P {{margin - top:0;margin-bottom:0;}} </style>
-            </head>
-            <body dir=""ltr"">
-            <div style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            </div>
-            <div class=""elementToProof"" style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div class=""elementToProof"" style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div id=""Signature"" class=""elementToProof"">
-            <div style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Cordial Saludo</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Se programa el cupo(s) solicitado(s) as :</div>{Tablas}<div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            &nbsp;</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            La fecha indicada es el día en que se recibe el vehículo en nuestra planta, la cual está  ubicada en Km 2 V a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            LOS VEHÍCULOS PROGRAMADOS DESDE LAS 12:00, SERÁN DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL DÍA SIGUIENTE SE CONTINUARÁ EL PROCESO DE ORGANIZACIÓN Y CLASIFICACIÓN DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
-            <div style=""direction: ltr; text-align: center; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>CONDICIONES Y REQUISITOS</b></div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            La siguiente información es importante que se tenga en cuenta para cumplir con de los requisitos y condiciones de alistamiento y envío  del equipo:</div>
-            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
-            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>PROGRAMACIÓN DEVOLUCIONES</b>: Las devoluciones deben ser programadas con cinco (5) días hábiles de anticipación, se recibe equipo en bodega de lunes a viernes (No festivos).</li></ul>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Si por algún motivo no puede cumplir con la cita programada, por favor comunicarse con el Asesor de Obra de Unispan con la mayor antelación posible para proceder a reprogramar y liberar el cupo en nuestra planta para otro cliente.</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Si inicialmente ha solicitado programar un determinado vehículo, por ejemplo una Tractomula, y por alguna razón no consigue este vehículo y decide enviar el equipo en dos Dobletroques, por favor comuníquese previamente con él  crea de operaciones
-            <span style=""color: rgb(5, 99, 193);""><u><a href=""mailto:diroperaciones@unispan.com.co"" id=""OWAd49d3ee8-a475-a0d0-9627-f7183e77d513"" class=""x_OWAAutoLink"" style=""color: rgb(5, 99, 193);"">diroperaciones@unispan.com.co</a></u></span>&nbsp;para que sea verificado si
-             es posible aceptar esta modificación, en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo vehículo, ya que para bajar cada carro se requiere espacio físico y una cuadrilla de personal.</div>
-            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
-            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>VEHÍCULOS</b>: Todos los vehículos deben permitir retirar la carrocería por ambos lados y venir cargados de acuerdo a la metodología adjunta
-            <b>PRO-P.LO-006 - PROCEDIMIENTO DE CARGUE.pdf</b>, este método es muy importante para poder descargar el equipo mecánicamente, brindando as  menores tiempos de atención a nuestros clientes y salvaguardando la seguridad del personal involucrado en esta labor.&nbsp;
-             No se aceptan devoluciones en Volquetas y se sugiere no emplear camas bajas, camion gra o vehículos que no dispongan de carrocería, dado a la alta posibilidad de extraviar parte del equipo, en especial piezas pequeñas. Debido a la escasez de vehículos Turbo
-            (4.0 Ton) que dispongan de carrocería removible, ser  el  único tipo de vehículo que se acepta con esta condición. Lo invitamos a ver video sobre la Guía para el cargue de equipos:
-            <span style=""color: rgb(5, 99, 193);""><u><a href=""https://www.youtube.com/watch?v=3GHnQ7yhjZU"" id=""OWA2178799a-a6c4-d9da-043a-76d8e821ed2a"" class=""x_OWAAutoLink"" data-auth=""NotApplicable"" style=""color: rgb(5, 99, 193);"">https://www.youtube.com/watch?v=UTyIqQiTCsY</a></u></span></li></ul>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Si el equipo no llega de acuerdo a la metodología descrita para poder descargar el equipo mecánicamente, el cliente debe  asumir los siguientes costos por servicio de descargue manual de acuerdo al tipo de vehículo:</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            &nbsp;</div>
-            <div align=""center"">
-            <table cellspacing=""0"" cellpadding=""0"" style=""direction: ltr; box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;"">
-            <tbody>
-            <tr>
-            <td style=""direction: ltr; border-width: 1pt; border-style: solid; border-color: initial; padding: 0cm 5.4pt; width: 119.6pt;"">
-            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>TIPO DE VEHÍCULO</b></div>
-            </td>
-            <td style=""direction: ltr; border-top: 1pt solid; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; width: 65.1pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>CAPACIDAD</b></div>
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>(Ton)</b></div>
-            </td>
-            <td style=""direction: ltr; border-top: 1pt solid; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; width: 119.85pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>COSTO SERVICIO DESCARGUE MANUAL</b></div>
-            </td>
-            </tr>
-            <tr>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
-            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            TRACTOMULA</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            33 Ton</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            $ 2.000.000 + IVA</div>
-            </td>
-            </tr>
-            <tr>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
-            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            DOBLETROQUE</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            16 Ton</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            $ 1.400.000 + IVA</div>
-            </td>
-            </tr>
-            <tr>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
-            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            SENCILLO</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            8 Ton</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            $ 800.000 + IVA</div>
-            </td>
-            </tr>
-            <tr>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; border-left: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.6pt;"">
-            <div style=""direction: ltr; text-align: justify; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            TURBO O INFERIOR*</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 65.1pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            4 Ton</div>
-            </td>
-            <td style=""direction: ltr; border-right: 1pt solid; border-bottom: 1pt solid; padding: 0cm 5.4pt; vertical-align: top; width: 119.85pt;"">
-            <div style=""direction: ltr; text-align: center; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            $ 0</div>
-            </td>
-            </tr>
-            </tbody>
-            </table>
-            </div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            &nbsp;</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <b>*</b>NO EXISTIR  COBRO PARA VEHÍCULOS TURBO QUE LLEGUEN A DEVOLVER EQUIPO SIN LA METODOLOGÍA A ESTABLECIDA PARA SER DESCARGADOS MEDIANTE MONTACARGA, PERO SI EL EQUIPO VIENE EN PÉSIMO ESTADO DE ORGANIZACIÓN, SE TENDRÁ  COBRO POR $240.000 + IVA.</div>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            &nbsp;</div>
-            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px; flex-direction: column; display: flex;"">
-            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <div style=""direction: ltr;""><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operación, debido a que al cargarlo de esta forma,
-             las piezas se desplazan.</div>
-            </li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); align-self: center;"">
-            <div style=""direction: ltr; text-align: center;""><img id=""x_image_0"" size=""1181026"" contenttype=""image/png"" style=""max-width: 1867px;"" data-outlook-trace=""F:2|T:2"" src=""http://manager.unispan.com.co/Images/imagen_despachos.png""></div>
-            </li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>FUNCIONARIO DE OBRA</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operación, debido a que al cargarlo de esta forma,Se recomienda enviar un funcionario de la obra para que valide los conteos en la planta Unispan, notificar previamente por mail, los datos del funcionario que envíe la obra, el cual debe presentarse con sus respectivos EPP y Planilla
-             de Seguridad Vigente (Unispan asumir  los gastos de viáticos del funcionario que envía  la obra, con previa coordinación de Unispan, para no superar los topes establecidos en los gastos y presentar los respectivos soportes legales para el reembolso), de acuerdo
-             a lo especificado en el documento adjunto <b>VIÁTICOS FUNCIONARIOS.pdf</b>.&nbsp; En caso de no enviar funcionario, tener en cuenta que no se aceptarán reclamos por diferencias de cantidad entre el listado enviado por la obra y el conteo que se realice en la planta
-             Unispan (solo se recibe en la planta; una vez el equipo se descargue, clasifique y organice por referencias; para poder contar con precisión y validar las condiciones de limpieza y estado de cada elemento del equipo.)</li><li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;"">
-            <b>ESTADO DEL EQUIPO</b>: Los elementos deben devolverse libres de residuos de concreto, implementar limpieza mecánica (copagrata, espátula, viruta metálica etc.) de lo contrario se generaran cobros por limpieza.&nbsp;</li></ul>
-            <div style=""direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            No aplicar ACPM o algún antiadherente a los elementos que se vayan a devolver, podrá  generarse un cobro por el lavado del equipo. Tampoco aplicar algún tipo de sustancia como (ácidos) que corroen, oxidan y afectan la composición de los materiales del equipo,
-             pudiendo clasificar el equipo afectado como irreparable.</div>
-            <ul style=""direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;"">
-            <li style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 8pt 36pt;"">
-            <b>PACKING LIST</b>: Debe enviarse un listado claro y preciso de los elementos que se devuelven con los nombres técnicos del equipo. Para lo cual se adjuntan &nbsp;<b>MANUAL ELPIS.pdf</b>&nbsp;(Plataforma para acceder a consultar los saldos de equipo que dispone la obra
-             por cada frente, puede consultar los movimientos, valores de reposición, peso en Kg) y
-            <b>MANUAL DEL USUARIO.pdf</b>&nbsp;(Documento para identificación de los elementos empleados en los diferentes sistemas).</li></ul>
-            <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div style=""direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div id=""x_Signature"" class=""x_elementToProof"">
-            <div style=""text-align: left; text-indent: 0px; background-color: rgb(255, 255, 255); margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);"">
-            Atte,</div>
-            <table style=""text-align: left; background-color: rgb(255, 255, 255); color: rgb(36, 36, 36); box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;"">
-            <tbody>
-            <tr>
-            <td style=""text-align: left; padding: 0cm 5.4pt; vertical-align: top; width: 155.7pt; height: 87px;"">
-            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt;""><span style=""font-family: Calibri, sans-serif, serif, EmojiFont; font-size: 11pt; color: rgb(0, 0, 0);"">&nbsp;<img id=""x_x_x_x_x_image_0"" width=""231"" height=""83"" size=""51851"" contenttype=""image/png"" style=""width: 231px; height: 83px; min-width: auto; min-height: auto; margin: 0px;"" data-outlook-trace=""F:6|T:6"" src=""http://manager.unispan.com.co/Images/Unispan2.png""></span></p>
-            </td>
-            <td style=""text-align: left; padding: 0cm 5.4pt; width: 276.65pt; height: 87px;"">
-            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
-            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;""><br>
-            </span></p>
-            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
-            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;"">Julian Andr s Mora Ruiz.
-            </span><span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;"">Director de Operaciones&nbsp;</span></p>
-            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
-            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;"">Tel.: (602) 6664040&nbsp; Ext.: 149 Cel.: 3216383756&nbsp;</span></p>
-            <p style=""text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;"">
-            <span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;"">diroperaciones@unispan.com.co<b>&nbsp;/
-            </b></span><span style=""font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: rgb(23, 15, 173);""><b><u><a href=""https://unispan.com.co/"" id=""OWA5aef641b-f10f-d499-3a1c-7f91fa85647e"" class=""x_x_x_x_x_OWAAutoLink"" title=""https://unispan.com.co/"" data-linkindex=""9"" data-auth=""NotApplicable"" style=""margin: 0px;"">www.unispan.com.co</a></u>&nbsp;</b></span></p>
-            </td>
-            </tr>
-            </tbody>
-            </table>
-            <div style=""text-align: left; text-indent: 0px; background-color: rgb(255, 255, 255); margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);"">
-              Copyright exclusivos de UNISPAN COLOMBIA S.A.S.</div>
-            <div style=""direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            <div style=""font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);"">
-            <br>
-            </div>
-            </div>
-            </body>
-            </html>");
+        var plantilla_correo = "";
+        var texto_en_archivo = "";
+        if (tipo_orden_correos == "Dispatch")
+        {
+            plantilla_correo = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "TextMail", "despacho.txt");
+        }
+        else if (tipo_orden_correos == "Return")
+        {
+            plantilla_correo = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "TextMail", "devolucion.txt");
+        }
+        // Verificar si el archivo existe y leer su contenido
+        if (File.Exists(plantilla_correo))
+        {
+            texto_en_archivo = File.ReadAllText(plantilla_correo, Encoding.UTF8); // Lee el contenido con codificación
+        }
+        else
+        {
+            // Manejar el caso de archivo no encontrado (opcional)
+            texto_en_archivo = "Plantilla no disponible";
+        }
+        texto_en_archivo = texto_en_archivo.Replace("@@TABLA@@", Tablas);
+        texto_en_archivo = texto_en_archivo.Replace("@@ORDENES@@", ListaOrdenes);
+        sb.Append(texto_en_archivo);
         return sb.ToString();
     }
     #endregion
@@ -781,7 +626,7 @@
                                     <tr>
                                         <!-- Columna para checkbox individual -->
                                         <td class="col-checkbox">
-                                            <input type="checkbox" name="selectedOrders"  @bind="order.IsSelected" />
+                                            <input type="checkbox" name="selectedOrders" @bind="order.IsSelected" />
                                         </td>
                                         @{
                                             if (order.Status.Equals(OrderStatus.Paused))
@@ -965,7 +810,7 @@
                                 {
                                     <tr>
                                         <td class="col-checkbox">
-                                            <input type="checkbox" name="selectedOrders"  @bind="order.IsSelected" />
+                                            <input type="checkbox" name="selectedOrders" @bind="order.IsSelected" />
                                         </td>
                                         <td class="col-ret-work">
                                             @{

@@ -1,0 +1,68 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+<style type="text/css" style="display:none;"> P {margin-top:0;margin-bottom:0;} </style>
+</head>
+<body dir="ltr">
+<div id="appendonsend"></div>
+<div id="divRplyFwdMsg"></div>
+<div style="direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+Cordial saludo</div>
+<div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+<br>
+</div>
+<div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+Agradecemos la confianza depositada en nuestra compañía.&nbsp; Se ha adicionado la oportunidad
+<span style="color: rgb(3, 102, 214);"><a style="color: rgb(3, 102, 214); text-align: left;" data-auth="NotApplicable" class="x_OWAAutoLink x_elementToProof" id="OWA566bff22-c8c8-05fa-e2c1-3c64a6260b0d" href="http://172.16.110.7:8010/">@@ORDENES@@</a></span>&nbsp;,
+ su pedido queda actualizado así:</div>
+<div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+<br>
+@@TABLA@@
+<br>
+</div>
+<div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+<span style="background-color: rgb(255, 255, 255);">Se recomienda que el vehículo llegue una hora antes de la programada para iniciar el retiro de la carrocería, lo anterior, con el ánimo de proceder a cargar el equipo mediante montacargas.&nbsp;&nbsp;</span></div>
+<div style="direction: ltr; margin: 0px; font-family: Calibri, sans-serif; font-size: 11pt; color: rgb(0, 0, 0);">
+<span style="line-height: 107%;">Ubicación de la Planta Unispan: Km 2 Vía Zona Franca Palmaseca - Palmira – Valle del Cauca</span></div>
+<div style="direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+<br>
+</div>
+<div style="direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+<br>
+</div>
+<div id="x_x_Signature">
+<div style="direction: ltr; text-align: left; text-indent: 0px; background-color: rgb(255, 255, 255); margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);">
+Atte,</div>
+<table style="direction: ltr; text-align: left; background-color: rgb(255, 255, 255); color: rgb(36, 36, 36); box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;">
+<tbody>
+<tr>
+<td style="direction: ltr; text-align: left; padding: 0cm 5.4pt; vertical-align: top; width: 155.7pt; height: 87px;">
+<p style="direction: ltr; text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt;">
+<span style="font-family: Calibri, sans-serif, serif, EmojiFont; font-size: 11pt; color: rgb(0, 0, 0);">&nbsp;<img style="width: 231px; height: 83px; min-width: auto; min-height: auto; margin: 0px;" size="51851" height="83" width="231" id="x_x_x_x_x_x_image_0" data-outlook-trace="F:7|T:7" src="http://manager.unispan.com.co/Images/Unispan2.png"></span></p>
+</td>
+<td style="direction: ltr; text-align: left; padding: 0cm 5.4pt; width: 276.65pt; height: 87px;">
+<p style="direction: ltr; text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
+<span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;"><br>
+</span></p>
+<p style="direction: ltr; text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
+<span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;">Julian Andrés Mora Ruiz.
+</span><span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">Director de Operaciones&nbsp;</span></p>
+<p style="direction: ltr; text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
+<span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">Tel.: (602) 6664040&nbsp; Ext.: 149 Cel.: 3216383756&nbsp;</span></p>
+<p style="direction: ltr; text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
+<span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">diroperaciones@unispan.com.co<b>&nbsp;/
+</b></span><span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: rgb(23, 15, 173);"><b><u><a style="margin: 0px;" data-auth="NotApplicable" data-linkindex="9" title="https://unispan.com.co/" class="x_x_x_x_x_x_OWAAutoLink" id="OWA3a13abd9-6626-a47f-f22e-67768cea3968" href="https://unispan.com.co/">www.unispan.com.co</a></u>&nbsp;</b></span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div style="direction: ltr; text-align: left; text-indent: 0px; background-color: rgb(255, 255, 255); margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);">
+© Copyright exclusivos de UNISPAN COLOMBIA S.A.S.</div>
+<div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif, serif, EmojiFont; font-size: 12pt; color: rgb(0, 0, 0);">
+<br>
+</div>
+<div style="direction: ltr; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+<br>
+</div>
+</div>
+</body>
+</html>

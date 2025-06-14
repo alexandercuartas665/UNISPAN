@@ -791,7 +791,7 @@ namespace adesoft.adepos.webview.Controller
                     return BadRequest("El nombre del archivo es obligatorio.");
 
                 // Ruta donde guardar el archivo
-                var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", dto.OrderId.ToString() );
+                var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", dto.OrderId.ToString());
                 if (!Directory.Exists(uploads))
                     Directory.CreateDirectory(uploads);
 
@@ -799,19 +799,37 @@ namespace adesoft.adepos.webview.Controller
                 var safeFileName = Path.GetFileName(dto.FileName);
                 var filePath = Path.Combine(uploads, safeFileName);
 
-                // Guarda el archivo
-                System.IO.File.WriteAllBytes(filePath, dto.FileBytes);
+                // Decodificar los bytes (Base64) a binario original
+                byte[] fileBytes;
+                try
+                {
+                    // 1. Convertir los bytes recibidos a cadena Base64
+                    string base64String = Encoding.UTF8.GetString(dto.FileBytes);
 
-                // Aquí puedes guardar la referencia en la base de datos si lo necesitas
+                    // 2. Eliminar el prefijo Data-URL si existe (ej: "data:application/pdf;base64,")
+                    if (base64String.Contains(";base64,"))
+                    {
+                        base64String = base64String.Split(',')[1];
+                    }
+
+                    // 3. Convertir la cadena Base64 a bytes originales
+                    fileBytes = Convert.FromBase64String(base64String);
+                }
+                catch (Exception decodeEx)
+                {
+                    // Si falla, usar los bytes originales (por si no era Base64)
+                    fileBytes = dto.FileBytes;
+                    Console.WriteLine($"[Advertencia] Error al decodificar Base64: {decodeEx.Message}");
+                }
+
+                // Guardar el archivo con los bytes decodificados
+                System.IO.File.WriteAllBytes(filePath, fileBytes);
 
                 return Ok(true);
             }
             catch (Exception ex)
             {
-                // Loguea el error en consola para depuración
                 Console.WriteLine($"[ImportAttachment] Error: {ex.Message}\n{ex.StackTrace}");
-
-                // Devuelve el error al cliente
                 return StatusCode(500, $"Error al guardar el archivo: {ex.Message}");
             }
         }

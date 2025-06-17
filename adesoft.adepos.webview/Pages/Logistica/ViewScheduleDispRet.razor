@@ -387,13 +387,13 @@
         AddTableCell(sb, cellStyle, order.Works);
         AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
         AddTableCell(sb, cellStyle, order.City);
-        AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
+        AddTableCell(sb, cellStyle, $"{order.SalesPerson}");
         AddTableCell(sb, cellStyle, order.ReponsableTrans);
         //INFORMACION DESPACHO
         AddTableCell(sb, cellStyle, $"{order.Wight} kg");
         AddTableCell(sb, cellStyle, @order.ReturnDateTime.Value.ToString("HH:mm"));
         AddTableCell(sb, cellStyle, order.Ok ? "OK" : "NO");
-        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
+        AddTableCell(sb, cellStyle, $"{order.VehicleType}");
         sb.AppendLine("</tr>");
         sb.AppendLine("</table>");
         sb.AppendLine("</div>");
@@ -437,7 +437,7 @@
         AddTableCell(sb, cellStyle, $"{order.CustomerName} ({order.CustomerAccount})");
         AddTableCell(sb, cellStyle, order.OrderNum);
         AddTableCell(sb, cellStyle, order.OPNum);
-        AddTableCell(sb, cellStyle, $"{order.SalesPerson} (ID: {order.SalesPersonId})");
+        AddTableCell(sb, cellStyle, $"{order.SalesPerson}");
         AddTableCell(sb, cellStyle, order.Module);
         AddTableCell(sb, cellStyle, order.City);
         AddTableCell(sb, cellStyle, order.ReponsableTrans);
@@ -445,7 +445,7 @@
         AddTableCell(sb, cellStyle, $"{order.Wight} kg");
         AddTableCell(sb, cellStyle, @order.DispatchDateTime.Value.ToString("HH:mm"));
         AddTableCell(sb, cellStyle, order.Ok ? "OK" : "NO");
-        AddTableCell(sb, cellStyle, $"{order.VehicleType} (Placa: {order.PlateNum})");
+        AddTableCell(sb, cellStyle, $"{order.VehicleType}");
         sb.AppendLine("</tr>");
         sb.AppendLine("</table>");
         sb.AppendLine("</div>");

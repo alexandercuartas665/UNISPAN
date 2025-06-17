@@ -1,4 +1,4 @@
-<html>
+﻿<html>
             <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
             <style type="text/css" style="display:none;"> P {{margin - top:0;margin-bottom:0;}} </style>
@@ -19,10 +19,10 @@
             <div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
             Cordial Saludo</div>
             <div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
-            Se programa el cupo(s) solicitado(s) as :</div>@@TABLA@@<div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
+            Se programa el cupo(s) solicitado(s) así:</div>@@TABLA@@<div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
             &nbsp;</div>
             <div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
-            La fecha indicada es el día en que se recibe el vehículo en nuestra planta, la cual está  ubicada en Km 2 V a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
+            La fecha indicada es el día en que se recibe el vehículo en nuestra planta, la cual está  ubicada en Km 2 Vía a Zona Franca Palmaseca - Palmira   Valle del Cauca.</div>
             <div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
             LOS VEHÍCULOS PROGRAMADOS DESDE LAS 12:00, SERÁN DESCARGADO EN EL TURNO NOCTURNO, POR LO CUAL AL DÍA SIGUIENTE SE CONTINUARÁ EL PROCESO DE ORGANIZACIÓN Y CLASIFICACIÓN DE REFERENCIAS PREVIO AL INICIO DEL CONTEO.</div>
             <div style="direction: ltr; text-align: center; line-height: 1.284; margin: 0cm 0cm 8pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">

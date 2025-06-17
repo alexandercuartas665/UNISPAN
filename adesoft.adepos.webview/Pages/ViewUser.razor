@@ -37,10 +37,7 @@
                     <RadzenDropDown Name="selectRol" class="form-control" AllowClear="false" @bind-Value="model.RoleAppId" TValue="long" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@listroles" TextProperty="Name" ValueProperty="RoleAppId" Change="@(args => Change(args, "DropDown"))" />
                     <RadzenRequiredValidator Component="selectRol" Text="Rol es requerido" Popup="true" />
                 </div>                
-                <div class="form-group col-md-6">
-                    <label for="zoneproductid">zona</label>
-                    <RadzenDropDown Name="selectRol" class="form-control" AllowClear="false" @bind-Value="model.ZoneProductId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Data="@zoneProducts" TextProperty="Name" ValueProperty="ZoneProductId" />
-                </div>
+                
                 <div class="form-group col-md-6">
                     <label for="AdminId">Administrador</label>
                     <RadzenDropDown AllowFiltering="true" Name="AdminId"
@@ -83,8 +80,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        listroles = await roleAppService.selectAll(new RoleApp());
-        zoneProducts = plantService.GetZoneProducts();
+        //listroles = await roleAppService.selectAll(new RoleApp());
+        //zoneProducts = plantService.GetZoneProducts();
 
         if (long.Parse(UserAppId) != 0)
         {

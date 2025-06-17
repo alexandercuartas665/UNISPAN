@@ -278,7 +278,10 @@
                     MailMessage mailMessage = new MailMessage();
                     mailMessage.From = new MailAddress("formularios@unispan.com.co");
                     mailMessage.To.Add("sistemas@unispan.com.co");
-                    mailMessage.To.Add("info_despachos@unispan.com.co");
+                    if (tipo_orden_correos == "Dispatch")
+                    {
+                        mailMessage.To.Add("info_despacho@unispan.com.co");
+                    }
                     //mailMessage.To.Add("acuartas@bitcode.com.co");
                     //AGREGA LOS CORREOS DE LOS CLIENTES QUE ESTAN EN LA VARIABLE ListaCorreos
                     if (!string.IsNullOrEmpty(ListaCorreos))
@@ -499,7 +502,7 @@
         var ListaCorreosRetorno = "";
         switch (order.Module)
         {
-            case "YINNA H.":
+           case "YINNA H.":
                 ListaCorreosRetorno += ";auxingenieria4@unispan.com.co";
                 break;
             case "LUZ H.":
@@ -581,48 +584,50 @@
                 ListaCorreosRetorno += ";proyectista15@unispan.com.co";
                 break;
 
+
         }
 
 
-         switch (order.SalesPerson  )
+        switch (order.SalesPerson)
         {
-            case "CRISTIAN C.":
-                ListaCorreosRetorno += ";cristiancubillos@unispan.com.co;asesorescentro@unispan.com.co";
+            case "ANGELA D.":
+                ListaCorreosRetorno += ";angeladominguez@unispan.com.co; asesorescali@unispan.com.co";
                 break;
             case "YONAIRO P.":
-                ListaCorreosRetorno += ";yonairopaez@unispan.com.co;asesorescentro@unispan.com.co";
-                break;
-            case "SAMANDA R.":
-                ListaCorreosRetorno += ";samandarosas@unispan.com.co;asesorescentro@unispan.com.co";
-                break;
-            case "TEYLOR DEVIA":
-                ListaCorreosRetorno += ";teylordevia@unispan.com.co;asesorescentro@unispan.com.co";
-                break;
-            case "MICHAEL ORJUELA":
-                ListaCorreosRetorno += ";michaelorjuela@unispan.com.co;asesorescentro@unispan.com.co";
-                break;
-            case "JUAN C. R.":
-                ListaCorreosRetorno += ";juanrestrepo@unispan.com.co;asesorescosta@unispan.com.co";
-                break;
-            case "ANGELA D.":
-                ListaCorreosRetorno += ";angeladominguez@unispan.com.co;asesorescali@unispan.com.co";
-                break;
-            case "LINDA PATIÑO":
-                ListaCorreosRetorno += ";lindapatino@unispan.com.co;asesorescali@unispan.com.co";
-                break;
-            case "MIGUEL S.":
-                ListaCorreosRetorno += ";miguelsaavedra@unispan.com.co;asesorescali@unispan.com.co";
+                ListaCorreosRetorno += ";yonairopaez@unispan.com.co; asesorescentro@unispan.com.co";
                 break;
             case "LUIS O.":
-                ListaCorreosRetorno += ";luisgarcia@unispan.com.co;sergioperez@unispan.com.co";
+                ListaCorreosRetorno += ";luisgarcia@unispan.com.co; sergioperez@unispan.com.co";
+                break;
+            case "SAMANDA R.":
+                ListaCorreosRetorno += ";samandarosas@unispan.com.co; asesorescentro@unispan.com.co";
+                break;
+            case "JUAN C. R.":
+                ListaCorreosRetorno += ";juanrestrepo@unispan.com.co; asesorescosta@unispan.com.co";
+                break;
+            case "MIGUEL  S.":
+                ListaCorreosRetorno += ";miguelsaavedra@unispan.com.co; asesorescali@unispan.com.co";
+                break;
+            case "CRISTIAN C.":
+                ListaCorreosRetorno += ";cristiancubillos@unispan.com.co; asesorescentro@unispan.com.co";
+                break;
+            case "LINDA PATIÑO":
+                ListaCorreosRetorno += ";lindapatino@unispan.com.co; asesorescali@unispan.com.co";
                 break;
             case "JEFFERSON RUIZ":
-                ListaCorreosRetorno += ";jeffersonruiz@unispan.com.co;sergioperez@unispan.com.co";
+                ListaCorreosRetorno += ";jeffersonruiz@unispan.com.co; sergioperez@unispan.com.co";
+                break;
+            case "TEYLOR DEVIA":
+                ListaCorreosRetorno += ";teylordevia@unispan.com.co; asesorescentro@unispan.com.co";
+                break;
+            case "MICHAEL ORJUELA":
+                ListaCorreosRetorno += ";michaelorjuela@unispan.com.co; asesorescentro@unispan.com.co";
                 break;
             case "JOSE MEJÍA":
                 ListaCorreosRetorno += ";josemejia@unispan.com.co";
                 break;
-            
+
+
         }
 
 

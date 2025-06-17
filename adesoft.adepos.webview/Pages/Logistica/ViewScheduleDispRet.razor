@@ -369,7 +369,7 @@
         // Celda combinada para las primeras 8 columnas
         AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", "CONTROL DE DEVOLUCIONES", 5);
         // Celda combinada para las siguientes 4 columnas
-        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", $"{order.DispatchDateTime.Value:dddd}".ToUpper() + "<br>" + $"{order.DispatchDateTime.Value:dd/MM/yyyy}", 4);
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", $"{order.ReturnDateTime.Value:dddd}".ToUpper() + "<br>" + $"{order.ReturnDateTime.Value:dd/MM/yyyy}", 4);
         sb.AppendLine("</tr>");
         sb.AppendLine("<tr>");
         AddTableHeader(sb, headerStyle, "OBRAS");

@@ -39,6 +39,7 @@
     private bool exportToExcel = false;
     private bool createOrUpdate = false;
     private bool searchOrder = false;
+    private bool sendNotificatioOrder = false;
     private decimal totalTon = 0;
     private int initDay = 0;
     private double days = 0;
@@ -78,6 +79,14 @@
         {
             this.exportToExcel = opt.IsActive;
         }
+        opt = listactionapp.Where(ac => ac.NameAction.Equals("LogisticsSendNotification")).FirstOrDefault();
+        if (!(opt is null))
+        {
+            this.sendNotificatioOrder = opt.IsActive;
+        }
+
+
+
     }
     void EditOrder(long orderId)
     {
@@ -182,173 +191,193 @@
     #region  enviar notificacion de correo
     void SendNotification()
     {
-        // Cargar la configuración
-        IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory()) // Ruta base del proyecto
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true) // Archivo de configuración
-            .Build();
-        string ruta_anexo_despachos = configuration.GetValue<string>("AdjuntoDespacho");
-        string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
-        StringBuilder reportContent = new StringBuilder();
-        string ListaOrdenes = "";
-        string ListaCorreos = "";
-        var selectedOrders = orders.Where(o => o.IsSelected).ToList();
-        //var ordersByClient = selectedOrders.GroupBy(o => o.Works);
-        var ordersByClient = selectedOrders.GroupBy(o => o.IsSelected);
-        var llevaDespachos = 0;
-        var llevaDevoluciones = 0;
-        //TIPO DE ORDENES A ENVIAR CORREO
-        var tipo_orden_correos = "";
-        var ListaOrdenesDespachos = "";
-
-        // Obtener todos los archivos PDF en el directorio
-        string[] archivosDespachos = Array.Empty<string>();
-        if (!string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos))
+        if (this.sendNotificatioOrder == false)
         {
-            archivosDespachos = Directory.GetFiles(ruta_anexo_despachos, "*.pdf");
-        }
-        string[] archivosDevoluciones = Array.Empty<string>();
-        if (!string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones))
-        {
-            archivosDevoluciones = Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf");
-        }
-        foreach (var clientGroup in ordersByClient)
-        {
-            reportContent.Clear();
-            ListaOrdenes = "";
-            ListaCorreos = "";
-            ListaOrdenesDespachos = "";
-            var clientName = clientGroup.Key;
-            var ordersForClient = clientGroup.ToList();
-            List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
-            foreach (var order in ordersForClient)
+            notificationService.Notify(new NotificationMessage
             {
-                tipo_orden_correos = order.OrderType.ToString();
-                if (order.OrderType.ToString() == "Dispatch")
-                {
-                    reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); // o iterar si son múltiples
-                }
-                else if (order.OrderType.ToString() == "Return")
-                {
-                    reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); // o iterar si son múltiples
-                }
-                ListaOrdenes += "," + order.OrderId;
-                ListaCorreos += ";" + order.Email;
-                ListaCorreos += ";" + ListaCorreosEspeciales(order);
-
-                if (ListaOrdenesDespachos == "")
-                {
-                    ListaOrdenesDespachos = order.OrderNum;
-                }
-                else
-                {
-                    ListaOrdenesDespachos += ", " + order.OrderNum;
-                }
-
-                if (order.OrderType.ToString() == "Dispatch")
-                {
-                    llevaDespachos++;
-                }
-                else if (order.OrderType.ToString() == "Return")
-                {
-                    llevaDevoluciones++;
-                }
-                Console.WriteLine($" - Orden ID: {order.OrderId}");
-                //PREPARA UN LISTADO DE TODOS LOS ARCHIVOS QUE SE DEBEN INCLUIR TENIENDO EN CUENTA CADA ORDEN
-                var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", order.OrderId.ToString());
-                if (Directory.Exists(orderFolder))
-                {
-                    foreach (var filePath in Directory.GetFiles(orderFolder))
-                    {
-                        string fileNameReal = Path.GetFileName(filePath);
-                        string fileNameEspecial = order.OPNum + "_" + fileNameReal; // Puedes personalizar esto
-                        attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
-                    }
-                }
+                Severity = NotificationSeverity.Warning,
+                Summary = "ok",
+                Detail = $"No tienes permisos suficientes para enviar notificaciones.",
+                Duration = 3000
+            });
+            //DESMARCA TODAS LAS ORDENES
+            foreach (var order in orders)
+            {
+                order.IsSelected = false;
             }
-            var textocorreo = TextoParaCorreo(reportContent.ToString(), tipo_orden_correos, ListaOrdenesDespachos); // o iterar si son múltiples
-            try
+        }
+        else
+
+        {
+
+            // Cargar la configuración
+            IConfiguration configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory()) // Ruta base del proyecto
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true) // Archivo de configuración
+                .Build();
+            string ruta_anexo_despachos = configuration.GetValue<string>("AdjuntoDespacho");
+            string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
+            StringBuilder reportContent = new StringBuilder();
+            string ListaOrdenes = "";
+            string ListaCorreos = "";
+            var selectedOrders = orders.Where(o => o.IsSelected).ToList();
+            //var ordersByClient = selectedOrders.GroupBy(o => o.Works);
+            var ordersByClient = selectedOrders.GroupBy(o => o.IsSelected);
+            var llevaDespachos = 0;
+            var llevaDevoluciones = 0;
+            //TIPO DE ORDENES A ENVIAR CORREO
+            var tipo_orden_correos = "";
+            var ListaOrdenesDespachos = "";
+
+            // Obtener todos los archivos PDF en el directorio
+            string[] archivosDespachos = Array.Empty<string>();
+            if (!string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos))
             {
-                Task.Run(() =>
+                archivosDespachos = Directory.GetFiles(ruta_anexo_despachos, "*.pdf");
+            }
+            string[] archivosDevoluciones = Array.Empty<string>();
+            if (!string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones))
+            {
+                archivosDevoluciones = Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf");
+            }
+            foreach (var clientGroup in ordersByClient)
+            {
+                reportContent.Clear();
+                ListaOrdenes = "";
+                ListaCorreos = "";
+                ListaOrdenesDespachos = "";
+                var clientName = clientGroup.Key;
+                var ordersForClient = clientGroup.ToList();
+                List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
+                foreach (var order in ordersForClient)
                 {
-                    SmtpClient client = new SmtpClient("smtp.office365.com", 587);
-                    client.UseDefaultCredentials = false;
-                    client.EnableSsl = true;
-                    client.Credentials = new NetworkCredential("formularios@unispan.com.co", "Sistemas2024*");
-                    MailMessage mailMessage = new MailMessage();
-                    mailMessage.From = new MailAddress("formularios@unispan.com.co");
-                    mailMessage.To.Add("sistemas@unispan.com.co");
-                    if (tipo_orden_correos == "Dispatch")
+                    tipo_orden_correos = order.OrderType.ToString();
+                    if (order.OrderType.ToString() == "Dispatch")
                     {
-                        mailMessage.To.Add("info_despacho@unispan.com.co");
+                        reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); // o iterar si son múltiples
                     }
-                    //mailMessage.To.Add("acuartas@bitcode.com.co");
-                    //AGREGA LOS CORREOS DE LOS CLIENTES QUE ESTAN EN LA VARIABLE ListaCorreos
-                    if (!string.IsNullOrEmpty(ListaCorreos))
+                    else if (order.OrderType.ToString() == "Return")
                     {
-                        var correos = ListaCorreos.Split(';').Where(c => !string.IsNullOrEmpty(c)).ToList();
-                        foreach (var correo in correos)
+                        reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); // o iterar si son múltiples
+                    }
+                    ListaOrdenes += "," + order.OrderId;
+                    ListaCorreos += ";" + order.Email;
+                    ListaCorreos += ";" + ListaCorreosEspeciales(order);
+
+                    if (ListaOrdenesDespachos == "")
+                    {
+                        ListaOrdenesDespachos = order.OrderNum;
+                    }
+                    else
+                    {
+                        ListaOrdenesDespachos += ", " + order.OrderNum;
+                    }
+
+                    if (order.OrderType.ToString() == "Dispatch")
+                    {
+                        llevaDespachos++;
+                    }
+                    else if (order.OrderType.ToString() == "Return")
+                    {
+                        llevaDevoluciones++;
+                    }
+                    Console.WriteLine($" - Orden ID: {order.OrderId}");
+                    //PREPARA UN LISTADO DE TODOS LOS ARCHIVOS QUE SE DEBEN INCLUIR TENIENDO EN CUENTA CADA ORDEN
+                    var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", order.OrderId.ToString());
+                    if (Directory.Exists(orderFolder))
+                    {
+                        foreach (var filePath in Directory.GetFiles(orderFolder))
                         {
-                            mailMessage.To.Add(correo);
+                            string fileNameReal = Path.GetFileName(filePath);
+                            string fileNameEspecial = order.OPNum + "_" + fileNameReal; // Puedes personalizar esto
+                            attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
                         }
                     }
-                    ;
-                    mailMessage.IsBodyHtml = true;
-                    mailMessage.BodyEncoding = Encoding.UTF8;
-                    //mailMessage.Body = $" {reportContent}  ";
-                    mailMessage.Body = $" {textocorreo}  ";
-                    if (tipo_orden_correos == "Dispatch")
+                }
+                var textocorreo = TextoParaCorreo(reportContent.ToString(), tipo_orden_correos, ListaOrdenesDespachos); // o iterar si son múltiples
+                try
+                {
+                    Task.Run(() =>
                     {
-                        mailMessage.Subject = $"ACTUALIZACIÓN PROGRAMACIÓN DESPACHO {ListaOrdenesDespachos}";
-                    }
-                    else if (tipo_orden_correos == "Return")
-                    {
-                        mailMessage.Subject = $"ACTUALIZACIÓN PROGRAMACIÓN DEVOLUCIÓN {ListaOrdenes}";
-
-                    }
-                    // Adjuntar cada PDF al correo
-                    if (llevaDespachos != 0)
-                    {
-                        foreach (string archivo in archivosDespachos)
+                        SmtpClient client = new SmtpClient("smtp.office365.com", 587);
+                        client.UseDefaultCredentials = false;
+                        client.EnableSsl = true;
+                        client.Credentials = new NetworkCredential("formularios@unispan.com.co", "Sistemas2024*");
+                        MailMessage mailMessage = new MailMessage();
+                        mailMessage.From = new MailAddress("formularios@unispan.com.co");
+                        mailMessage.To.Add("sistemas@unispan.com.co");
+                        if (tipo_orden_correos == "Dispatch")
                         {
-                            Attachment adjunto = new Attachment(archivo);
+                            mailMessage.To.Add("info_despacho@unispan.com.co");
+                        }
+                        //mailMessage.To.Add("acuartas@bitcode.com.co");
+                        //AGREGA LOS CORREOS DE LOS CLIENTES QUE ESTAN EN LA VARIABLE ListaCorreos
+                        if (!string.IsNullOrEmpty(ListaCorreos))
+                        {
+                            var correos = ListaCorreos.Split(';').Where(c => !string.IsNullOrEmpty(c)).ToList();
+                            foreach (var correo in correos)
+                            {
+                                mailMessage.To.Add(correo);
+                            }
+                        }
+                        ;
+                        mailMessage.IsBodyHtml = true;
+                        mailMessage.BodyEncoding = Encoding.UTF8;
+                        //mailMessage.Body = $" {reportContent}  ";
+                        mailMessage.Body = $" {textocorreo}  ";
+                        if (tipo_orden_correos == "Dispatch")
+                        {
+                            mailMessage.Subject = $"ACTUALIZACIÓN PROGRAMACIÓN DESPACHO {ListaOrdenesDespachos}";
+                        }
+                        else if (tipo_orden_correos == "Return")
+                        {
+                            mailMessage.Subject = $"ACTUALIZACIÓN PROGRAMACIÓN DEVOLUCIÓN {ListaOrdenes}";
+
+                        }
+                        // Adjuntar cada PDF al correo
+                        if (llevaDespachos != 0)
+                        {
+                            foreach (string archivo in archivosDespachos)
+                            {
+                                Attachment adjunto = new Attachment(archivo);
+                                mailMessage.Attachments.Add(adjunto);
+                            }
+                        }
+                        if (llevaDevoluciones != 0)
+                        {
+                            foreach (string archivo in archivosDevoluciones)
+                            {
+                                Attachment adjunto = new Attachment(archivo);
+                                mailMessage.Attachments.Add(adjunto);
+                            }
+                        }
+                        // adjunta los archivos PDF almanecados en la carpeta de cada orden
+                        foreach (var item in attachmentFiles)
+                        {
+                            Attachment adjunto = new Attachment(item.Item1);
+                            adjunto.ContentDisposition.FileName = item.Item2;
                             mailMessage.Attachments.Add(adjunto);
                         }
-                    }
-                    if (llevaDevoluciones != 0)
-                    {
-                        foreach (string archivo in archivosDevoluciones)
-                        {
-                            Attachment adjunto = new Attachment(archivo);
-                            mailMessage.Attachments.Add(adjunto);
-                        }
-                    }
-                    // adjunta los archivos PDF almanecados en la carpeta de cada orden
-                    foreach (var item in attachmentFiles)
-                    {
-                        Attachment adjunto = new Attachment(item.Item1);
-                        adjunto.ContentDisposition.FileName = item.Item2;
-                        mailMessage.Attachments.Add(adjunto);
-                    }
-                    client.Send(mailMessage);
-                });
+                        client.Send(mailMessage);
+                    });
+                }
+                catch (Exception ex)
+                {
+                }
             }
-            catch (Exception ex)
+            //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO
+            notificationService.Notify(new NotificationMessage
             {
+                Severity = NotificationSeverity.Success,
+                Summary = "OK",
+                Detail = $"Correos de notificacion enviados.",
+                Duration = 3000
+            });
+            //DESMARCA TODAS LAS ORDENES
+            foreach (var order in orders)
+            {
+                order.IsSelected = false;
             }
-        }
-        //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO
-        notificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Success,
-            Summary = "OK",
-            Detail = $"Correos de notificacion enviados.",
-            Duration = 3000
-        });
-        //DESMARCA TODAS LAS ORDENES
-        foreach (var order in orders)
-        {
-            order.IsSelected = false;
         }
     }
     #endregion
@@ -502,7 +531,7 @@
         var ListaCorreosRetorno = "";
         switch (order.Module)
         {
-           case "YINNA H.":
+            case "YINNA H.":
                 ListaCorreosRetorno += ";auxingenieria4@unispan.com.co";
                 break;
             case "LUZ H.":

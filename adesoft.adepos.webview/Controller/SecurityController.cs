@@ -112,35 +112,35 @@ namespace adesoft.adepos.webview.Controller
                     if (!(permissions is null))
                         actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CreatePalletsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CreatePalletsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("DeletePalletsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("DeletePalletsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("SendPalletPickingApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("SendPalletPickingApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CompletePalletsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CompletePalletsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingPickingApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingPickingApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingTicketsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingTicketsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == userApp.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
                     if (actionApps.Count != 0)
                     {
@@ -177,33 +177,33 @@ namespace adesoft.adepos.webview.Controller
                     if (!(permissions is null))
                         actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CreatePalletsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CreatePalletsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("DeletePalletsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("DeletePalletsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("SendPalletPickingApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("SendPalletPickingApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CompletePalletsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);                    
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("CompletePalletsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);                    
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingPickingApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
-                    if (!(permissions is null))
-                        actionApps.Add(actionApp);
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingPickingApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //if (!(permissions is null))
+                    //    actionApps.Add(actionApp);
 
-                    actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingTicketsApp")).FirstOrDefault();
-                    permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
+                    //actionApp = _dbcontext.ActionApps.Where(a => a.NameAction.Equals("ViewOrdersPendingTicketsApp")).FirstOrDefault();
+                    //permissions = _dbcontext.Permissions.Where(p => p.RoleAppId == user.RoleAppId && p.ActionAppId.Equals(actionApp.ActionAppId)).FirstOrDefault();
                     if (!(permissions is null))
                         actionApps.Add(actionApp);
 

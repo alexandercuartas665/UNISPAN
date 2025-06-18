@@ -47,7 +47,7 @@ namespace adesoft.adepos.webview.Controller
                 var orders = _dbcontext.Orders
                         .Select(o => o)
                         .Where(o => o.OrderType == orderType
-                            && o.Status.Equals(OrderStatus.Draft)
+                            && o.Status.Equals(OrderStatus.None)
                             && !o.Sync)
                         .ToList();
 

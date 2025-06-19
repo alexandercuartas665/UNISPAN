@@ -247,8 +247,8 @@
             @if (CanWrite)
             {
                 <input class="btn btn-primary" value="Guardar" type="submit" disabled=@this.model.Scheduled/>
-                @*<input class="btn btn-success" value="Despachado" @onclick="DeleteOrder" type="button" disabled=@this.model.Rescheduled/>*@
-                <input class="btn btn-danger" value="Eliminar" @onclick="DeleteOrder2" type="button" disabled=@this.model.Scheduled/> 
+                <input class="btn btn-success" value="Despachado" @onclick="DeleteOrder" type="button" />
+                <input class="btn btn-danger" value="Eliminar" @onclick="DeleteOrder2" type="button" disabled=@this.model.Scheduled/>
                 @if (model.DateEnd != TransactionGeneric.DateAplazados)
                 {
                     <input class="btn btn-warning" value="Aplazar" @onclick="@(args => { dateorder = TransactionGeneric.DateAplazados; SaveOrder(); })" type="button" hidden=@this.model.Scheduled />

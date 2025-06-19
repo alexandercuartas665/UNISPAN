@@ -298,6 +298,10 @@
                         <label for="module">Modulo</label>
                         <RadzenDropDown AllowFiltering="true" Name="module" class="form-control" @bind-Value="model.ModuleId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@modules" TextProperty="Description" ValueProperty="Id" Disabled=@(this.model.Scheduled || !CanWrite) />
                     </div>
+                    <div class="form-group">
+                        <label for="module">Observaciones:</label>
+                        <RadzenTextArea Name="observations" Placeholder="Ingrese observaciones" class="form-control" @bind-Value="model.Note" Disabled=@(this.model.Scheduled || !CanWrite)></RadzenTextArea>
+                    </div>
                 </div>
                 <div class="col-sm-6">
                     <div class="form-group">

@@ -230,6 +230,25 @@
             throw;
         }
     }
+
+
+    public async Task SaveOrderOk(DTOOrder dtoOrder)
+    {
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("confirm", string.Format("Esta seguro que desea cambiar el estado ok {0}?", this.orderType == 1 ? "despacho" : "devolución")))
+                return;
+            var reSyncOrder = await this.logisticsService.SaveOKOrder(dtoOrder);
+
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            throw;
+        }
+    }
+
+
     void OnChangeCapital(string value)
     {
         this.model.Works = value.ToUpper();
@@ -543,13 +562,19 @@
                     {
                         <button class="btn btn-success mr-3" @onclick="@(args => { ReSyncOrder(this.model); })" hidden="@(!this.reSync)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Re-Sincronizar</button>
                     }
-                    @*if (!this.model.Ok)
-                    {
+
+                    if (this.isOk){
+                        if (this.model.Ok)
+                        {
+                            <button class="btn btn-warning mr-3" @onclick="@(args => { SaveOrderOk(this.model); })" hidden="@(!this.isOk)">Desmarcar OK</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-warning mr-3" @onclick="@(args => { SaveOrderOk(this.model); })" hidden="@(!this.isOk)">OK</button>
+                        }
                     }
-                    else
-                    {
-                        <button class="btn btn-warning mr-3" @onclick="@(args => { SaveOrderOk(); })" hidden="@(!this.isOk)">Desmarcar OK</button>
-                    }*@
+
+                    
                     <button class="btn btn-info mr-3" @onclick="@(args => { CopyAndEdit(); })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Copiar y Editar</button>
                     <button class="btn btn-info mr-3" @onclick="@(args => { this.editFields = !this.editFields; })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Editar</button>
                     <button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })" hidden="@(!this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Guardar</button>
@@ -649,7 +674,7 @@
                             <div class="form-row">
                                 <div class="form-group col-sm-6">
                                     <label for="Wight">Peso (Toneladas)</label>
-                                    <RadzenNumeric TValue="decimal" Format="0.00" Name="Wight" id="Wight" @bind-Value="model.Wight" class="form-control" Disabled="true"></RadzenNumeric>
+                                    <RadzenNumeric TValue="decimal" Format="0.00" Name="Wight" id="Wight" @bind-Value="model.Wight" class="form-control" Disabled="@(!this.editFields)"></RadzenNumeric>
                                 </div>
                             </div>
                             <div class="form-group">

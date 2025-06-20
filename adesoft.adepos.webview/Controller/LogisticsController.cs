@@ -92,7 +92,7 @@ namespace adesoft.adepos.webview.Controller
                         ModuleId = order.ModuleId,
                         CityId = order.CityId,
                         ReponsableTransId = order.ReponsableTransId,
-                        Email= order.Email
+                        Email = order.Email
                     };
 
                     /*var pictures = _dbcontext.OrderPictures
@@ -132,12 +132,12 @@ namespace adesoft.adepos.webview.Controller
             try
             {
                 var order = _dbcontext.Orders
-                    .Where(o => o.OrderType == orderType 
+                    .Where(o => o.OrderType == orderType
                         //&& o.Status != OrderStatus.None
                         && o.Id == orderId)
                     .FirstOrDefault();
 
-                if(!(order is null))
+                if (!(order is null))
                 {
                     var customer = _dbcontext.LogisticMasterData.Where(c => c.IdentificationNum == order.CustomerAccount).FirstOrDefault();
                     var vendor = _dbcontext.LogisticMasterData.Where(c => c.IdentificationNum == order.VendorAccount).FirstOrDefault();
@@ -194,7 +194,7 @@ namespace adesoft.adepos.webview.Controller
 
                     };
 
-                    if(order.Id.Equals(order.DispatchId))
+                    if (order.Id.Equals(order.DispatchId))
                     {
                         var isOrderParent = _dbcontext.Orders.Where(o => (o.DispatchId == dtoOrder.OrderId) && (o.Id != dtoOrder.OrderId)).FirstOrDefault();
                         dtoOrder.DispatchParent = !(isOrderParent is null);
@@ -273,7 +273,7 @@ namespace adesoft.adepos.webview.Controller
                     OrderType = picture.OrderType,
                     Path = picture.Path,
                     Sync = true
-                });                
+                });
             }
 
             return picturesDto;
@@ -292,7 +292,7 @@ namespace adesoft.adepos.webview.Controller
 
                 var filterBy = 0;
                 var search = "";
-                if(!string.IsNullOrEmpty(searchBy))
+                if (!string.IsNullOrEmpty(searchBy))
                 {
                     search = searchBy.Split("|")[0];
 
@@ -301,16 +301,16 @@ namespace adesoft.adepos.webview.Controller
                     {
                         filterBy = int.Parse(searchBy.Split("|")[1].Replace("Filter:", ""));
                     }
-                }                                
+                }
 
                 switch (orderType)
                 {
                     case OrderType.Dispatch:
-                        switch(filterBy)
+                        switch (filterBy)
                         {
                             case 2:
                                 {
-                                    if((reposableTransIds != null) && (reposableTransIds.Count() != 0))
+                                    if ((reposableTransIds != null) && (reposableTransIds.Count() != 0))
                                     {
                                         foreach (var reposableTransId in reposableTransIds)
                                         {
@@ -448,7 +448,7 @@ namespace adesoft.adepos.webview.Controller
                                         .ToList();
 
                                         orders.AddRange(pendingOrders);
-                                    }                                        
+                                    }
 
                                     break;
                                 }
@@ -680,7 +680,7 @@ namespace adesoft.adepos.webview.Controller
                                             .Where(o => o.OrderType == orderType
                                                 && o.ReturnDateTime >= fDate
                                                 && o.ReturnDateTime <= tDate
-                                                && o.ReponsableTransId.Equals(0)) 
+                                                && o.ReponsableTransId.Equals(0))
                                             .ToList();
 
                                             ordersxRT.AddRange(ordersxSRT);
@@ -882,7 +882,7 @@ namespace adesoft.adepos.webview.Controller
                 .Where(o => o.ReponsableTransId.Equals(resp1.Id)
                     //&& o.Status != OrderStatus.None
                     && o.Id.Equals(o.DispatchId)
-                    && (string.IsNullOrEmpty(o.DriverName) 
+                    && (string.IsNullOrEmpty(o.DriverName)
                     || string.IsNullOrEmpty(o.PlateNum)))
                 .ToList();
 
@@ -914,9 +914,9 @@ namespace adesoft.adepos.webview.Controller
                             OrderNum = o.OrderNum,
                             OrderWorks = ""
                         })
-                        .ToList();                    
+                        .ToList();
                 }
-                else 
+                else
                 {
                     sharedOrders = _dbcontext.Orders.Where(o => o.OrderType == orderType
                         //&& o.Status != OrderStatus.None
@@ -927,9 +927,9 @@ namespace adesoft.adepos.webview.Controller
                         {
                             OrderId = o.Id,
                             OrderNum = o.OrderNum,
-                            OrderWorks = o.Works 
+                            OrderWorks = o.Works
                         })
-                        .ToList();                    
+                        .ToList();
                 }
 
                 sharedOrders.Add(new DTOSharedOrder()
@@ -1004,8 +1004,8 @@ namespace adesoft.adepos.webview.Controller
                     Period = order.Period,
                     TransactionGenericId = order.TransactionGenericId,
                     Status = order.Status,
-                    Email = order.Email  
-                    
+                    Email = order.Email
+
                 };
 
                 if (order.Id.Equals(order.DispatchId))
@@ -1020,7 +1020,7 @@ namespace adesoft.adepos.webview.Controller
                 dtoOrder.CounterPictures = pictures.Count;
 
                 if (showPictures)
-                {                    
+                {
                     foreach (var picture in pictures)
                     {
                         byte[] imageArray = System.IO.File.ReadAllBytes(picture.Path);
@@ -1038,7 +1038,7 @@ namespace adesoft.adepos.webview.Controller
                     }
                 }
 
-                if(showComments)
+                if (showComments)
                 {
                     var comments = _dbcontext.OrderComments
                     .Where(c => c.OrderType == order.OrderType && c.OrderId == order.Id)
@@ -1057,14 +1057,14 @@ namespace adesoft.adepos.webview.Controller
                     }
                 }
 
-                if(order.DispatchDateTime.Equals(DateTime.MinValue) && order.ReturnDateTime.Equals(DateTime.MinValue))
+                if (order.DispatchDateTime.Equals(DateTime.MinValue) && order.ReturnDateTime.Equals(DateTime.MinValue))
                 {
                     var comment = _dbcontext.OrderComments
                     .Where(c => c.OrderType == order.OrderType && c.OrderId == order.Id)
                     .OrderByDescending(c => c.Id)
                     .FirstOrDefault();
 
-                    if(comment != null)
+                    if (comment != null)
                     {
                         dtoOrder.Comment = comment.Comment;
                     }
@@ -1083,14 +1083,14 @@ namespace adesoft.adepos.webview.Controller
             var imageStorePath = this._configuration.GetValue<string>("Logistics:ImageStorePath");
 
             try
-            {                
+            {
                 foreach (var dtoOrder in dtoOrders)
                 {
                     var order = _dbcontext.Orders
                         .Where(o => o.OrderType == dtoOrder.OrderType && o.Id == dtoOrder.OrderId)
                         .FirstOrDefault();
                     try
-                    {                        
+                    {
                         if (!(order is null))
                         {
                             if (order.Sync)
@@ -1110,7 +1110,7 @@ namespace adesoft.adepos.webview.Controller
                                 }
 
                                 foreach (var dtoPicture in dtoOrder.Pictures.Where(p => !p.Sync).ToList())
-                                {                                    
+                                {
                                     var fileNamePath = string.Format("{0}/{1}", directory, dtoPicture.Name);
                                     var picture = new OrderPicture()
                                     {
@@ -1126,7 +1126,7 @@ namespace adesoft.adepos.webview.Controller
                                         imageFile.Write(bytes, 0, bytes.Length);
                                         imageFile.Flush();
 
-                                        _dbcontext.OrderPictures.Add(picture);                                        
+                                        _dbcontext.OrderPictures.Add(picture);
                                     }
                                 }
                             }
@@ -1137,20 +1137,20 @@ namespace adesoft.adepos.webview.Controller
                                 continue;
                             }
 
-                            if(dtoOrder.Pictures.Count != 0)
+                            if (dtoOrder.Pictures.Count != 0)
                             {
                                 order.Sync = true;
                                 order.SyncDateTime = DateTime.Now;
                                 order.ErrorMessage = "";
 
                                 _dbcontext.Orders.Update(order);
-                            }                            
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
                         order.ErrorMessage = ex.Message;
-                        _dbcontext.Update(order);                        
+                        _dbcontext.Update(order);
                         continue;
                     }
                 }
@@ -1210,7 +1210,7 @@ namespace adesoft.adepos.webview.Controller
         //        return BadRequest(ex.Message);
         //    }
         //}
-        
+
         [HttpPost("syncOrders/{orderType}/{orderId}")]
         public IActionResult SyncOrders(OrderType orderType, int orderId, [FromBody] DTOOrder dtoOrder)
         {
@@ -1218,7 +1218,7 @@ namespace adesoft.adepos.webview.Controller
             var imageStorePath = this._configuration.GetValue<string>("Logistics:ImageStorePath");
 
             try
-            {                
+            {
                 var order = _dbcontext.Orders
                     .Where(o => o.OrderType == orderType && o.Id == orderId)
                     .FirstOrDefault();
@@ -1268,23 +1268,23 @@ namespace adesoft.adepos.webview.Controller
                         catch (Exception ex)
                         {
                             order.ErrorMessage = ex.Message;
-                            _dbcontext.Orders.Update(order);                            
+                            _dbcontext.Orders.Update(order);
                         }
 
-                        if(dtoOrder.Pictures.Count != 0)
+                        if (dtoOrder.Pictures.Count != 0)
                         {
                             order.Sync = true;
                             order.SyncDateTime = DateTime.Now;
                             order.ErrorMessage = "";
 
                             _dbcontext.Orders.Update(order);
-                        }                        
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     order.ErrorMessage = ex.Message;
-                    _dbcontext.Update(order);                    
+                    _dbcontext.Update(order);
                 }
 
                 _dbcontext.SaveChanges();
@@ -1359,7 +1359,7 @@ namespace adesoft.adepos.webview.Controller
 
         [HttpPost("UploadImage/{orderNum}")]
         public IActionResult UploadImage([FromBody] DTOOrderPicture dtoPicture, string orderNum)
-        {            
+        {
             using var transaction = _dbcontext.Database.BeginTransaction();
             try
             {
@@ -1371,7 +1371,7 @@ namespace adesoft.adepos.webview.Controller
                 var imageStorePath = this._configuration.GetValue<string>("Logistics:ImageStorePath");
                 var directory = string.Format("{0}/{1}", imageStorePath, string.Format("Idx{0}_{1}", dtoPicture.OrderId, orderNum));
                 if (!Directory.Exists(directory))
-                {                    
+                {
                     Directory.CreateDirectory(directory);
                 }
                 var fileNamePath = string.Format("{0}/{1}", directory, dtoPicture.Name);
@@ -1398,7 +1398,7 @@ namespace adesoft.adepos.webview.Controller
                 order.ErrorMessage = "";
                 _dbcontext.Orders.Update(order);
                 _dbcontext.SaveChanges();
-                _dbcontext.DetachAll();                
+                _dbcontext.DetachAll();
                 transaction.Commit();
                 return Ok(new { IsUpload = true });
             }
@@ -1415,7 +1415,7 @@ namespace adesoft.adepos.webview.Controller
             var fDate = new DateTime(fromDate.Year, fromDate.Month, fromDate.Day, 0, 0, 0);
             var tDate = new DateTime(toDate.Year, toDate.Month, toDate.Day, 23, 59, 59);
 
-            List<DTOOrder> ordersDto = new List<DTOOrder>();           
+            List<DTOOrder> ordersDto = new List<DTOOrder>();
 
             try
             {
@@ -1424,7 +1424,7 @@ namespace adesoft.adepos.webview.Controller
                 {
                     case OrderType.None:
                         var dispatchs = _dbcontext.Orders
-                            .Where(o => (o.DispatchDateTime >= fDate && o.DispatchDateTime <= tDate)                            
+                            .Where(o => (o.DispatchDateTime >= fDate && o.DispatchDateTime <= tDate)
                             && o.OrderType == OrderType.Dispatch
                             && (o.OrderNum.Contains(searchBy) || o.CustomerName.Contains(searchBy) || o.Works.Contains(searchBy)))
                             .ToList();
@@ -1450,7 +1450,7 @@ namespace adesoft.adepos.webview.Controller
                             && o.OrderType == orderType
                             && (o.OrderNum.Contains(searchBy) || o.CustomerName.Contains(searchBy) || o.Works.Contains(searchBy)))
                             .ToList();
-                        break;                 
+                        break;
                 }
 
                 ordersDto = this.OrderList2DtoList(orders);
@@ -1570,7 +1570,7 @@ namespace adesoft.adepos.webview.Controller
                 .ToList();
 
             return logisticMasterData;
-        }        
+        }
 
         public DTOLogisticMasterData CreateOrUpdateVendor(DTOLogisticMasterData dtoLogisticMasterData)
         {
@@ -1625,7 +1625,7 @@ namespace adesoft.adepos.webview.Controller
             if (logisticMasterData is null)
             {
                 logisticMasterData = new LogisticMasterData()
-                {                    
+                {
                     Type = dtoLogisticMasterData.Type,
                     Description = dtoLogisticMasterData.Description
                 };
@@ -1656,7 +1656,7 @@ namespace adesoft.adepos.webview.Controller
                 order = _dbcontext.Orders.Where(o => o.Id == dtoOrder.OrderId).FirstOrDefault();
                 if (!(order is null))
                 {
-                    order.ModifiedOn  = DateTime.Now; 
+                    order.ModifiedOn = DateTime.Now;
                     order.OrderNum = dtoOrder.OrderNum != null ? dtoOrder.OrderNum : "";
                     order.OPNum = dtoOrder.OPNum;
                     order.Works = dtoOrder.Works;
@@ -1675,7 +1675,7 @@ namespace adesoft.adepos.webview.Controller
                     order.InvoiceAmount = dtoOrder.InvoiceAmount;
                     order.InvoiceDate = dtoOrder.InvoiceDate;
                     order.InvoiceNum = dtoOrder.InvoiceNum;
-                    order.Email  = dtoOrder.Email;
+                    order.Email = dtoOrder.Email;
 
                     order.DispatchId = dtoOrder.DispatchIdSelect != 0 ? dtoOrder.DispatchIdSelect : dtoOrder.OrderId;
 
@@ -1745,6 +1745,8 @@ namespace adesoft.adepos.webview.Controller
                         });
                     }
 
+
+
                     var transactionGeneric = _dbcontext.TransactionGenerics.Where(t => t.TransactionGenericId.Equals(order.TransactionGenericId)).FirstOrDefault();
                     if (!(transactionGeneric is null))
                     {
@@ -1755,7 +1757,8 @@ namespace adesoft.adepos.webview.Controller
                         transactionGeneric.ReponsableTransId = order.ReponsableTransId;
                         transactionGeneric.VehicleTypeId = order.VehicleTypeId;
                         transactionGeneric.Wight = order.Wight;
-                        transactionGeneric.DateEnd = order.OrderType.Equals(OrderType.Dispatch) ? order.DispatchDateTime : order.ReturnDateTime;
+                        //transactionGeneric.DateEnd = order.OrderType.Equals(OrderType.Dispatch) ? order.DispatchDateTime : new DateTime(2100, 1, 1);
+                        transactionGeneric.DateEnd = order.DispatchDateTime.Year != 1 ? order.DispatchDateTime : new DateTime(2100, 1, 1); 
 
                         _dbcontext.TransactionGenerics.Update(transactionGeneric);
                     }
@@ -1806,7 +1809,7 @@ namespace adesoft.adepos.webview.Controller
                     NoConform = "",
                     CreatedOn = DateTime.Now,
                     ModifiedOn = DateTime.Now
-                    
+
                 };
 
                 if (dtoOrder.DispatchIdSelect != 0)
@@ -1857,43 +1860,43 @@ namespace adesoft.adepos.webview.Controller
             if (!(order is null))
             {
                 if (!order.Status.Equals(OrderStatus.Draft))
-                    
 
-                using (var transaction = _dbcontext.Database.BeginTransaction())
-                {
-                    try
+
+                    using (var transaction = _dbcontext.Database.BeginTransaction())
                     {
-                        _dbcontext.Orders.Remove(order);
+                        try
+                        {
+                            _dbcontext.Orders.Remove(order);
 
-                        var comments = _dbcontext.OrderComments.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
-                        _dbcontext.OrderComments.RemoveRange(comments);
+                            var comments = _dbcontext.OrderComments.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
+                            _dbcontext.OrderComments.RemoveRange(comments);
 
-                        var pictures = _dbcontext.OrderPictures.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
-                        _dbcontext.OrderPictures.RemoveRange(pictures);
+                            var pictures = _dbcontext.OrderPictures.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
+                            _dbcontext.OrderPictures.RemoveRange(pictures);
 
-                        var transactionGeneric = _dbcontext.TransactionGenerics
-                            .Where(o => o.TransactionGenericId.Equals(order.TransactionGenericId))
-                            .FirstOrDefault();
+                            var transactionGeneric = _dbcontext.TransactionGenerics
+                                .Where(o => o.TransactionGenericId.Equals(order.TransactionGenericId))
+                                .FirstOrDefault();
 
-                        if (!(transactionGeneric is null))
-                            _dbcontext.TransactionGenerics.Remove(transactionGeneric);
+                            if (!(transactionGeneric is null))
+                                _dbcontext.TransactionGenerics.Remove(transactionGeneric);
 
-                        var orderProducts = _dbcontext.OrderProducts
-                            .Where(op => op.OrderId.Equals(order.Id))
-                            .ToList();
-                        _dbcontext.OrderProducts.RemoveRange(orderProducts);
+                            var orderProducts = _dbcontext.OrderProducts
+                                .Where(op => op.OrderId.Equals(order.Id))
+                                .ToList();
+                            _dbcontext.OrderProducts.RemoveRange(orderProducts);
 
-                        _dbcontext.SaveChanges();
-                        _dbcontext.DetachAll();
+                            _dbcontext.SaveChanges();
+                            _dbcontext.DetachAll();
 
-                        transaction.Commit();
+                            transaction.Commit();
+                        }
+                        catch (Exception)
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
                     }
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                }                
 
                 return true;
             }
@@ -1932,11 +1935,37 @@ namespace adesoft.adepos.webview.Controller
             return false;
         }
 
+
+        public bool SaveOKOrder(DTOOrder dtoOrder)
+        {
+            var order = _dbcontext.Orders.Where(o => o.Id == dtoOrder.OrderId).FirstOrDefault();
+            if (!(order is null))
+            {
+                if (order.Ok)
+                {
+                    order.Ok = false;
+                }
+                else
+                {
+                    order.Ok = true;
+                }
+                _dbcontext.Update(order);
+                _dbcontext.SaveChanges();
+                _dbcontext.DetachAll();
+                _dbcontext.SaveChanges();
+                _dbcontext.DetachAll();
+                return true;
+            }
+            return false;
+        }
+
+
+
         public void AddOrderReportFilter(DTOOrderReportFilter filter)
         {
             filters.Add(filter);
-        }   
-        
+        }
+
         [HttpGet("GetOrdersReport")]
         public IActionResult GetOrdersReport(string guidfilter)
         {
@@ -1949,13 +1978,13 @@ namespace adesoft.adepos.webview.Controller
                 var tDate = new DateTime(filter.ToDate.Year, filter.ToDate.Month, filter.ToDate.Day, 23, 59, 59);
 
                 var orders = new List<Order>();
-                var pendingOrders = new List<Order>();               
+                var pendingOrders = new List<Order>();
 
                 switch ((OrderType)filter.OrderType)
                 {
                     case OrderType.Dispatch:
 
-                        switch(filter.FilterId)
+                        switch (filter.FilterId)
                         {
                             case 2:
                                 {
@@ -2099,7 +2128,7 @@ namespace adesoft.adepos.webview.Controller
                                     }
                                     break;
                                 }
-                        }                        
+                        }
 
                         break;
 
@@ -2140,7 +2169,7 @@ namespace adesoft.adepos.webview.Controller
 
                 foreach (var order in orders)
                 {
-                    var customer = _dbcontext.LogisticMasterData.Where(c => c.IdentificationNum == order.CustomerAccount && c.Type.Equals("CLIENTE")).FirstOrDefault();                    
+                    var customer = _dbcontext.LogisticMasterData.Where(c => c.IdentificationNum == order.CustomerAccount && c.Type.Equals("CLIENTE")).FirstOrDefault();
                     var salesPerson = _dbcontext.LogisticMasterData.Where(s => s.Id == order.SalesPersonId && s.Type.Equals("COMERCIAL")).FirstOrDefault();
                     var module = _dbcontext.LogisticMasterData.Where(s => s.Id == order.ModuleId && s.Type.Equals("MODULADOR")).FirstOrDefault();
                     var city = _dbcontext.LogisticMasterData.Where(s => s.Id == order.CityId && s.Type.Equals("CIUDAD")).FirstOrDefault();
@@ -2223,7 +2252,7 @@ namespace adesoft.adepos.webview.Controller
 
                             property = orderReportType.GetProperty("Hour" + (i + 1));
                             property.SetValue(orderReport, order.ReturnDateTime.ToString("HH:mm"));
-                            
+
                             property = orderReportType.GetProperty("Ok" + (i + 1));
                             property.SetValue(orderReport, (order.Ok ? "OK" : ""));
 
@@ -2245,7 +2274,7 @@ namespace adesoft.adepos.webview.Controller
                         }
                     }
 
-                    if(!filter.FilterId.Equals(0))
+                    if (!filter.FilterId.Equals(0))
                     {
                         var comment = _dbcontext.OrderComments
                             .Where(c => c.OrderType == order.OrderType && c.OrderId == order.Id)
@@ -2270,7 +2299,7 @@ namespace adesoft.adepos.webview.Controller
                         if (comment != null)
                         {
                             orderReport.Description = comment.Comment;
-                        }                        
+                        }
                     }
 
                     ordersReport.Add(orderReport);
@@ -2284,7 +2313,7 @@ namespace adesoft.adepos.webview.Controller
 
                         var property = orderReportType.GetProperty("Total" + (i + 1));
                         property.SetValue(orderReport, string.Format("{0}Ton", totales[i].ToString("0.00")));
-                        
+
                         property = orderReportType.GetProperty("Title" + (i + 1));
                         property.SetValue(orderReport, curDate.ToString("dddd").ToUpper());
 
@@ -2298,7 +2327,7 @@ namespace adesoft.adepos.webview.Controller
                 }
 
                 var dtoOrders = ordersReport
-                            .Where(o => (string.IsNullOrEmpty(filter.SearchBy) || o.OrderNum.ToLower().Contains(filter.SearchBy) 
+                            .Where(o => (string.IsNullOrEmpty(filter.SearchBy) || o.OrderNum.ToLower().Contains(filter.SearchBy)
                             || o.Works.ToLower().Contains(filter.SearchBy) || o.DriverName.ToLower().Contains(filter.SearchBy)
                             || o.CustomerName.ToLower().Contains(filter.SearchBy) || o.VendorName.ToLower().Contains(filter.SearchBy)
                             ))
@@ -2314,7 +2343,7 @@ namespace adesoft.adepos.webview.Controller
 
         public DTOOrder ChangeOrderState(DTOOrder dtoOrder)
         {
-            switch(dtoOrder.OrderState)
+            switch (dtoOrder.OrderState)
             {
                 case 1: //Despachado
 
@@ -2322,7 +2351,7 @@ namespace adesoft.adepos.webview.Controller
 
                 case 2: //Re-Importar Productos
 
-                    if(dtoOrder.TransactionGenericId != 0)
+                    if (dtoOrder.TransactionGenericId != 0)
                     {
                         var order = _dbcontext.Orders
                             .Where(o => o.TransactionGenericId.Equals(dtoOrder.TransactionGenericId))
@@ -2343,7 +2372,7 @@ namespace adesoft.adepos.webview.Controller
                             _dbcontext.SaveChanges();
                             _dbcontext.DetachAll();
                         }
-                    }                    
+                    }
 
                     break;
 
@@ -2353,7 +2382,7 @@ namespace adesoft.adepos.webview.Controller
                             .Where(o => o.Id.Equals(dtoOrder.OrderId))
                             .FirstOrDefault();
 
-                        if(!(order is null))
+                        if (!(order is null))
                         {
                             using (var transaction = _dbcontext.Database.BeginTransaction())
                             {
@@ -2370,7 +2399,7 @@ namespace adesoft.adepos.webview.Controller
                                             .Where(t => t.TransactionGenericId.Equals(order.TransactionGenericId))
                                             .FirstOrDefault();
 
-                                        if(!(transaction is null))
+                                        if (!(transaction is null))
                                         {
                                             transactionGeneric.DateEnd = TransactionGeneric.DateAplazados;
 

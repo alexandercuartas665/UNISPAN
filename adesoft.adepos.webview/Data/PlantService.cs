@@ -1314,7 +1314,7 @@ namespace adesoft.adepos.webview.Data
                             mailMessage.Body = "<p>CORREO ELECTRONICO ENVIADO DESDE UNISPAN.APP.</p>"
                                                 + "<p>este es un correo de prueba enviados desde el sistema: </p> <a href=\"http://18.223.15.205:8010/\">CrediMax.com<a>"; 
                             mailMessage.Subject = "Registro exitoso en credimax";
-                            client.Send(mailMessage);
+                            //client.Send(mailMessage);
                         });
                     }
                     catch (Exception ex)

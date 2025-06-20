@@ -122,6 +122,13 @@ namespace adesoft.adepos.webview.Data
             return await Task.FromResult(_logisticsController.ReSyncOrder(dtoOrder));
         }
 
+        public async Task<bool> SaveOKOrder(DTOOrder dtoOrder)
+        {
+            return await Task.FromResult(_logisticsController.SaveOKOrder(dtoOrder));
+        }
+
+
+
         public List<DTOSharedOrder> GetSharedOrders(OrderType orderType, long orderId, int vehicleTypeId, DateTime dispatchDate)
         {
             return _logisticsController.GetSharedOrders(orderType, orderId, vehicleTypeId, dispatchDate);

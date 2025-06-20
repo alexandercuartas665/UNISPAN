@@ -142,6 +142,13 @@
                 <label for="vehicleType">Tipo vehículo</label>
                 <RadzenDropDown AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" />
             </div>            
+
+            <div class="form-group">
+                <label for="vehicleType">Observaciones</label>
+                <RadzenTextArea Name="observations" Placeholder="Ingrese observaciones" class="form-control" @bind-Value="model.Note" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" />
+            </div>
+
+
         </div>
         <div class="col-sm-6">
             <div class="form-group">

@@ -9,6 +9,7 @@
 @using System.Text;
 @using System.Net.Mail;
 @using System.Net;
+@using System.Text.RegularExpressions;
 @inject LogisticsService logisticsService;
 @inject ParameterService parameterService;
 @inject DialogService dialogService;
@@ -317,18 +318,22 @@
                         }
                         //mailMessage.To.Add("acuartas@bitcode.com.co");
                         //AGREGA LOS CORREOS DE LOS CLIENTES QUE ESTAN EN LA VARIABLE ListaCorreos
-                        
-                        ListaCorreos = ListaCorreos.Replace("\n", " ")
-                                    .Replace("\r", " ")
-                                    .Replace("\t", " ");
 
+                        ListaCorreos = ListaCorreos.Replace("\n", "")
+                                    .Replace("\r", "")
+                                    .Replace("\t", "");
+                        ListaCorreos = ListaCorreos.Replace("\u200B", "");  // Forma más segura
+                        ListaCorreos = ListaCorreos.Replace(" ", "");  // Forma más segura
 
                         if (!string.IsNullOrEmpty(ListaCorreos))
                         {
                             var correos = ListaCorreos.Split(';').Where(c => !string.IsNullOrEmpty(c)).ToList();
                             foreach (var correo in correos)
                             {
-                                mailMessage.To.Add(correo);
+                                if (EsCorreoValido(correo))
+                                {
+                                    mailMessage.To.Add(correo);
+                                }
                             }
                         }
                         ;
@@ -374,13 +379,13 @@
                 }
                 catch (Exception ex)
                 {
-                   
+
                     //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO
                     notificationService.Notify(new NotificationMessage
                     {
                         Severity = NotificationSeverity.Success,
                         Summary = "ERROR",
-                        Detail = ex.Message ,
+                        Detail = ex.Message,
                         Duration = 3000
                     });
 
@@ -402,6 +407,27 @@
             }
         }
     }
+
+    public static bool EsCorreoValido(string correo)
+    {
+        if (string.IsNullOrWhiteSpace(correo))
+            return false;
+
+        try
+        {
+            // Patrón de validación mejorado
+            string patron = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            return Regex.IsMatch(correo.Trim(), patron, RegexOptions.IgnoreCase);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+
+
+
+
     #endregion
     #region Preparar correos
     public string GenerateOrderReportDEVOLUCION(DTOOrder order)

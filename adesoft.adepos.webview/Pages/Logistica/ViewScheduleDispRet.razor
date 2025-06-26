@@ -306,12 +306,23 @@
                         MailMessage mailMessage = new MailMessage();
                         mailMessage.From = new MailAddress("formularios@unispan.com.co");
                         mailMessage.To.Add("sistemas@unispan.com.co");
+                        //mailMessage.To.Add("acuartas@bitcode.com.co");
                         if (tipo_orden_correos == "Dispatch")
                         {
                             mailMessage.To.Add("info_despacho@unispan.com.co");
                         }
+                        else if (tipo_orden_correos == "Return")
+                        {
+                            mailMessage.To.Add("diroperaciones@unispan.com.co");
+                        }
                         //mailMessage.To.Add("acuartas@bitcode.com.co");
                         //AGREGA LOS CORREOS DE LOS CLIENTES QUE ESTAN EN LA VARIABLE ListaCorreos
+                        
+                        ListaCorreos = ListaCorreos.Replace("\n", " ")
+                                    .Replace("\r", " ")
+                                    .Replace("\t", " ");
+
+
                         if (!string.IsNullOrEmpty(ListaCorreos))
                         {
                             var correos = ListaCorreos.Split(';').Where(c => !string.IsNullOrEmpty(c)).ToList();
@@ -363,6 +374,17 @@
                 }
                 catch (Exception ex)
                 {
+                   
+                    //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO
+                    notificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "ERROR",
+                        Detail = ex.Message ,
+                        Duration = 3000
+                    });
+
+
                 }
             }
             //MUESTRA UN MENSAJE INDICANDO PROCESO TERMINDO

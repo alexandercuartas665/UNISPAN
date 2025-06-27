@@ -45,11 +45,10 @@ namespace adesoft.adepos.webview.Controller
             try
             {
                 var orders = _dbcontext.Orders
-                        .Select(o => o)
-                        .Where(o => o.OrderType == orderType
-                            && o.Status.Equals(OrderStatus.None)
-                            && !o.Sync)
-                        .ToList();
+                    .Where(o => o.OrderType == orderType
+                        && (o.Status == OrderStatus.Draft || o.Status == OrderStatus.None) // Combina los estados
+                        && !o.Sync)
+                    .ToList();
 
                 var dtoOrders = new List<DTOOrder>();
                 foreach (var order in orders)

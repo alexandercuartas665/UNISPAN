@@ -1,4 +1,4 @@
-<html><head>
+﻿<html><head>
 <meta http-equiv="Content-Type" content="text/html; charset=Windows-1252">
 <style type="text/css" style="display:none;"> P {margin-top:0;margin-bottom:0;} </style>
 </head>
@@ -11,9 +11,9 @@ Cordial saludo</div>
 <br>
 </div>
 <div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
-Agradecemos la confianza depositada en nuestra compañía.&nbsp; Se ha adicionado la oportunidad
+Agradecemos la confianza depositada en nuestra compañía.&nbsp; Su pedido
 <span style="color: rgb(3, 102, 214);"><a style="color: rgb(3, 102, 214); text-align: left;" data-auth="NotApplicable" class="x_OWAAutoLink x_elementToProof" id="OWA566bff22-c8c8-05fa-e2c1-3c64a6260b0d" href="http://172.16.110.7:8010/">@@ORDENES@@</a></span>&nbsp;,
- su pedido queda actualizado así:</div>
+ queda programado así:</div>
 <div style="direction: ltr; margin: 0px; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
 <br>
 @@TABLA@@

@@ -221,7 +221,6 @@
         }
         else
         {
-            // Carga de configuración y preparación de variables...
             IConfiguration configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -248,25 +247,17 @@
                 var listaTemporalDeCorreos = new List<string>();
                 var ordersForClient = clientGroup.ToList();
                 List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
-
-                // --- INICIO DE LA SOLUCIÓN: RECARGA DE DATOS ---
                 var detailedOrders = new List<DTOOrder>();
+
                 Task.Run(async () =>
                 {
                     foreach (var summaryOrder in ordersForClient)
                     {
-                        // LÍNEA CORREGIDA: Usamos el método GetOrder(orderType, orderId) que es el método real en tu servicio.
                         var detailedOrder = await logisticsService.GetOrder(summaryOrder.OrderType, summaryOrder.OrderId);
-
-                        if (detailedOrder != null)
-                        {
-                            detailedOrders.Add(detailedOrder);
-                        }
+                        if (detailedOrder != null) { detailedOrders.Add(detailedOrder); }
                     }
-                }).Wait(); // .Wait() asegura que la recarga de datos termine antes de continuar.
-                // --- FIN DE LA SOLUCIÓN ---
+                }).Wait();
 
-                // Ahora, usamos la nueva lista 'detailedOrders' (con datos completos) para el resto del proceso.
                 foreach (var order in detailedOrders)
                 {
                     tipo_orden_correos = order.OrderType.ToString();
@@ -274,7 +265,15 @@
                     else if (order.OrderType.ToString() == "Return") { reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); }
 
                     ListaOrdenes += "," + order.OrderId;
-                    listaTemporalDeCorreos.Add(order.Email);
+
+                    // --- INICIO DE LA CORRECCIÓN ---
+                    // Se valida que el campo email no esté vacío y se separa por ';' para manejar múltiples correos.
+                    if (!string.IsNullOrWhiteSpace(order.Email))
+                    {
+                        listaTemporalDeCorreos.AddRange(order.Email.Split(';'));
+                    }
+                    // --- FIN DE LA CORRECCIÓN ---
+
                     string correosEspeciales = ListaCorreosEspeciales(order);
                     if (!string.IsNullOrEmpty(correosEspeciales))
                     {
@@ -316,7 +315,6 @@
 
                         if (tipo_orden_correos == "Dispatch")
                         {
-                            // La lógica del asunto usa la lista original 'selectedOrders' que es correcto para esta validación.
                             bool esPrimeraNotificacion = selectedOrders.Any(o => o.Version == 1);
                             if (esPrimeraNotificacion)
                             {

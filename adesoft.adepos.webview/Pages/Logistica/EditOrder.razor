@@ -706,7 +706,7 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label for="works">Obra<b class="text-danger">*</b></label>
-                                <RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)"></RadzenTextBox>
+                                <RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => model.Works = __value?.ToUpper(), model.Works)"></RadzenTextBox>
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-sm-3">

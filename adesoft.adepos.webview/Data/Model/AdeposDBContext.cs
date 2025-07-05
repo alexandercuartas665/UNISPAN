@@ -189,6 +189,8 @@ namespace adesoft.adepos.webview.Data.Model
 
         public DbSet<SViewPO> vwPOs { get; set; }
 
+        public DbSet<OrderNotification> OrderNotifications { get; set; }
+
         //public DbSet<Rendimiento> Rendimientos { get; set; }
         public AdeposDBContext(DbContextOptions<AdeposDBContext> options)
            : base(options)
@@ -268,8 +270,15 @@ namespace adesoft.adepos.webview.Data.Model
             modelBuilder.Entity<SalesOrder>()
                 .HasKey(s => new { s.SalesId, s.ItemId });            
 
-            modelBuilder.Entity<Order>()                
-                .HasKey(o => new { o.Id });
+            modelBuilder.Entity<Order>()
+               //.HasKey(o => new { o.Id });
+                .HasKey(o => new { o.Id, o.OrderType });
+
+            modelBuilder.Entity<OrderNotification>()
+                .HasOne(n => n.Order)
+                .WithMany(o => o.Notifications)
+                .HasForeignKey(n => new { n.OrderId, n.OrderType });
+
 
             modelBuilder.Entity<OrderProductVersion>()
                 .HasKey(o => new { o.Id });
@@ -339,7 +348,6 @@ namespace adesoft.adepos.webview.Data.Model
             .HasOne<ZoneProduct>(pp => pp.ZoneProduct)
             .WithMany(p => p.Users)
             .HasForeignKey(pp => pp.ZoneProductId);
-
 
             //      modelBuilder.Entity<Rendimiento>()
             //.HasKey(c => new { c.TerceroId, c.DateActivity , c.TypeActivityId });

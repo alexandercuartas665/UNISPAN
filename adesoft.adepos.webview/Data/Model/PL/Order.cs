@@ -106,6 +106,8 @@ namespace adesoft.adepos.webview.Data.Model.PL
 
         public int PalletNo { get; set; }
         public string Email { get; set; }
+
+        public virtual ICollection<OrderNotification> Notifications { get; set; }
     }
 
     public enum OrderStatus

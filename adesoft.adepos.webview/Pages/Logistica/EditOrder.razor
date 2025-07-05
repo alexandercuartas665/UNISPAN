@@ -603,7 +603,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="works">Obra<b class="text-danger">*</b></label>
-                                <RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => this.model.Works = __value?.ToUpper(), this.model.Works?.ToUpper())"></RadzenTextBox>
+                                <RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => model.Works = __value?.ToUpper(), model.Works)"></RadzenTextBox>
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-sm-3">

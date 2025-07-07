@@ -176,7 +176,7 @@ namespace adesoft.adepos.webview.Controller
                         Sync = order.Sync,
                         SyncDateTime = order.SyncDateTime,
                         Pictures = new List<DTOOrderPicture>(),
-                        Comments = new List<DTOOrderComment>(),                        
+                        Comments = new List<DTOOrderComment>(),
                         DispatchId = order.DispatchId,
                         DispatchIdSelect = order.DispatchId != order.Id ? order.DispatchId : 0,
                         IsConform = order.IsConform ? "Sí" : "No",
@@ -187,7 +187,8 @@ namespace adesoft.adepos.webview.Controller
                         TransactionGenericId = order.TransactionGenericId,
                         Status = order.Status,
                         Email = order.Email,
-                        Notifications = order.Notifications.Select(n => new DTOOrderNotification{NotificationDate = n.NotificationDate,NotifiedBy = n.NotifiedBy}).ToList()};
+                        Notifications = order.Notifications.Select(n => new DTOOrderNotification { NotificationDate = n.NotificationDate, NotifiedBy = n.NotifiedBy }).ToList()
+                    };
 
                     if (order.Id.Equals(order.DispatchId))
                     {
@@ -1013,7 +1014,7 @@ namespace adesoft.adepos.webview.Controller
                     VendorAccount = string.IsNullOrEmpty(order.VendorAccount) ? "" : order.VendorAccount,
                     VendorName = string.IsNullOrEmpty(vendor?.Description) ? "" : vendor?.Description,
                     Wight = order.Wight,
-                    Works = order.Works,      
+                    Works = order.Works,
                     ModuleId = order.ModuleId,
                     Module = module?.Description,
                     CityId = order.CityId,
@@ -1033,13 +1034,7 @@ namespace adesoft.adepos.webview.Controller
                     TransactionGenericId = order.TransactionGenericId,
                     Status = order.Status,
                     Email = order.Email,
-                    Version = order.Version,
-                    Notifications = order.Notifications ? 
-                     .Select(n => new DTOOrderNotification
-                     {
-                         NotificationDate = n.NotificationDate,
-                         NotifiedBy = n.NotifiedBy
-                     }).ToList() ?? new List<DTOOrderNotification>()
+                    Version = order.Version
                 };
 
                 if (order.Id.Equals(order.DispatchId))
@@ -1047,6 +1042,26 @@ namespace adesoft.adepos.webview.Controller
                     var isOrderParent = _dbcontext.Orders.Where(o => (o.DispatchId == dtoOrder.OrderId) && (o.Id != dtoOrder.OrderId)).FirstOrDefault();
                     dtoOrder.DispatchParent = !(isOrderParent is null);
                 }
+                //AGREGA LAS ANOTACIONE
+                var textoNotification = string.Empty;
+                var cNotification = _dbcontext.OrderNotifications
+                .Where(c => c.OrderId == order.Id)
+                .OrderByDescending(c => c.NotificationDate)  // Ordena de más reciente a más antiguo
+                .Take(3)                                     // Selecciona los 3 primeros (los más recientes)
+                .ToList();
+                foreach (var comment in cNotification)
+                {
+                    if (textoNotification == string.Empty)
+                    {
+                        textoNotification = " Ultima notificacion (" + comment.NotificationDate.ToString("dd/MM/yyyy HH:mm:ss") + " ) " ;
+                    }
+                    else
+                    {
+                        textoNotification += "Anterior (" + comment.NotificationDate.ToString("dd/MM/yyyy HH:mm:ss") + ") ";
+                    }
+                }
+                dtoOrder.TextTooltip = textoNotification;
+
 
                 var pictures = _dbcontext.OrderPictures
                     .Where(p => p.OrderType == order.OrderType && p.OrderId == order.Id)
@@ -1792,7 +1807,7 @@ namespace adesoft.adepos.webview.Controller
                         transactionGeneric.VehicleTypeId = order.VehicleTypeId;
                         transactionGeneric.Wight = order.Wight;
                         //transactionGeneric.DateEnd = order.OrderType.Equals(OrderType.Dispatch) ? order.DispatchDateTime : new DateTime(2100, 1, 1);
-                        transactionGeneric.DateEnd = order.DispatchDateTime.Year != 1 ? order.DispatchDateTime : new DateTime(2100, 1, 1); 
+                        transactionGeneric.DateEnd = order.DispatchDateTime.Year != 1 ? order.DispatchDateTime : new DateTime(2100, 1, 1);
 
                         _dbcontext.TransactionGenerics.Update(transactionGeneric);
                     }
@@ -1890,7 +1905,7 @@ namespace adesoft.adepos.webview.Controller
 
 
         //Actualiza la fecha de la última notificación para las órdenes especificadas por sus IDs
-       
+
 
 
 

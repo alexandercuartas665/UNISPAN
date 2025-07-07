@@ -326,9 +326,7 @@
                         Attachment adjunto = new Attachment(item.Item1) { ContentDisposition = { FileName = item.Item2 } };
                         mailMessage.Attachments.Add(adjunto);
                     }
-
                     client.Send(mailMessage);
-
                     var notifiedOrderIds = ordersForThisType.Select(o => o.OrderId).ToList();
                     var orderTypeForNotification = typeGroup.Key;
                     bool logSuccess = await logisticsService.LogNotification(notifiedOrderIds, orderTypeForNotification, notifiedByUser);
@@ -820,24 +818,24 @@
                                                 {
                                                     <td class="col-work" style="background: red; color: white; padding: 0px !important;">
                                                         <div style="border: 4px solid #ffc107; display: inline-block; width: 100%; height: 28px">
-                                                            <span style="display: inline-block; margin: 2px 5px;">@order.Works</span>
+                                                            <span style="display: inline-block; margin: 2px 5px;" title="@order.TextTooltip">@order.Works</span>
                                                         </div>
                                                     </td>
                                                 }
                                                 else
                                                 {
-                                                    <td class="col-work" style="background: #ffc107; color: black">@order.Works</td>
+                                                    <td class="col-work" style="background: #ffc107; color: black" title="@order.TextTooltip">@order.Works</td>
                                                 }
                                             }
                                             else
                                             {
                                                 if (order.DispatchDateTime.Value.ToString("yyyy").Equals("0001"))
                                                 {
-                                                    <td class="col-work" style="background: red; color: white">@order.Works</td>
+                                                    <td class="col-work" style="background: red; color: white" title="@order.TextTooltip">@order.Works</td>
                                                 }
                                                 else
                                                 {
-                                                    <td class="col-work">@order.Works</td>
+                                                    <td class="col-work" title="@order.TextTooltip">@order.Works</td>
                                                 }
                                             }
                                         }
@@ -857,7 +855,7 @@
                                                                 var orderNumList = order.OrderNum.Split(',');
                                                                 foreach (var orderNum in orderNumList)
                                                                 {
-                                                                    <span>@orderNum</span>
+                                                                    <span >@orderNum</span>
                                                                     <br />
                                                                 }
                                                             }
@@ -1001,11 +999,11 @@
                                             @{
                                                 if (this.searchOrder || this.createOrUpdate)
                                                 {
-                                                    <a href="" @onclick="@(args => { this.EditOrder(order.OrderId); })">@order.Works</a>
+                                                    <a href="" @onclick="@(args => { this.EditOrder(order.OrderId); })" title="@order.TextTooltip">@order.Works</a>
                                                 }
                                                 else
                                                 {
-                                                    <span>@order.Works</span>
+                                                    <span title="@order.TextTooltip">@order.Works</span>
                                                 }
                                             }
                                         </td>

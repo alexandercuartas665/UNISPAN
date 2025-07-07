@@ -1042,7 +1042,6 @@ namespace adesoft.adepos.webview.Controller
                     var isOrderParent = _dbcontext.Orders.Where(o => (o.DispatchId == dtoOrder.OrderId) && (o.Id != dtoOrder.OrderId)).FirstOrDefault();
                     dtoOrder.DispatchParent = !(isOrderParent is null);
                 }
-
                 //AGREGA LAS ANOTACIONE
                 var textoNotification = string.Empty;
                 var cNotification = _dbcontext.OrderNotifications

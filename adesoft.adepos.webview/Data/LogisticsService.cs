@@ -127,6 +127,12 @@ namespace adesoft.adepos.webview.Data
             return await Task.FromResult(_logisticsController.SaveOKOrder(dtoOrder));
         }
 
+        public async Task<bool> LogNotification(List<long> orderIds, OrderType orderType, string notifiedBy)
+        {
+            // Se añade el parámetro 'notifiedBy' a la llamada del controlador.
+            return await Task.FromResult(_logisticsController.LogNotification(orderIds, orderType, notifiedBy));
+        }
+
 
 
         public List<DTOSharedOrder> GetSharedOrders(OrderType orderType, long orderId, int vehicleTypeId, DateTime dispatchDate)

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace adesoft.adepos.webview.Data.Model.PL
 {
-    [Table("OrderNotifications")]
+    [Table("OrderNotifications")] //Especifica el nombre exacto de la tabla en la BD
     public class OrderNotification
     {
         [Key]
@@ -17,9 +17,9 @@ namespace adesoft.adepos.webview.Data.Model.PL
 
         public DateTime NotificationDate { get; set; }
 
-        public string NotifiedBy { get; set; }
+        public string NotifiedBy { get; set; } //Campo para el usuario
 
-        // Propiedad de navegación para la relación con la tabla Orders
+        //Propiedad de navegación para que EF sepa cómo relacionarse con la orden padre
         [ForeignKey("OrderId, OrderType")]
         public virtual Order Order { get; set; }
     }

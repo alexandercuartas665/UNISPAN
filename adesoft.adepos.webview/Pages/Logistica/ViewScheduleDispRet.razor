@@ -21,12 +21,15 @@
 @inject SecurityService securityService
 @inject CompanyService companyService
 @code {
+
     public string searchBy;
+
     class AmountTotal
     {
         public decimal total { get; set; }
         public string date { get; set; }
     }
+
     [Parameter]
     public string strFromDate { get; set; }
     [Parameter]
@@ -59,6 +62,7 @@
         await this.GetSecurity();
         this.SearchOrder();
     }
+
     private async Task GetSecurity()
     {
         var companyCurrent = await companyService.SelectCurrent(new Company() { TransOption = 1 });
@@ -125,7 +129,7 @@
     {
         notificationService.Notify(message);
     }
-	// BUSCAR ORDENES
+    // BUSCAR ORDENES
     async void SearchOrder()
     {
         dialogService.Close();
@@ -212,144 +216,139 @@
     }
 
     #region  enviar notificacion de correo
-    void SendNotification()
+    async Task SendNotification()
     {
         if (this.sendNotificatioOrder == false)
         {
-            notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "ok", Detail = $"No tienes permisos suficientes para enviar notificaciones.", Duration = 3000 });
-            foreach (var order in orders) { order.IsSelected = false; }
+            notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permiso Denegado", Detail = $"No tienes permisos suficientes para enviar notificaciones.", Duration = 4000 });
+            foreach (var order in orders.Where(o => o.IsSelected)) { order.IsSelected = false; }
+            return;
         }
-        else
+
+        var selectedOrders = orders.Where(o => o.IsSelected).ToList();
+        if (!selectedOrders.Any())
         {
-            IConfiguration configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-            string ruta_anexo_despachos = configuration.GetValue<string>("AdjuntoDespacho");
-            string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
+            notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Información", Detail = "Por favor, seleccione al menos una orden para notificar.", Duration = 4000 });
+            return;
+        }
+
+        var notifiedByUser = httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Sistema";
+
+        IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
+        string ruta_anexo_despachos = configuration.GetValue<string>("AdjuntoDespacho");
+        string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
+
+        //LÓGICA DE ADJUNTOS
+        string[] archivosDespachos = !string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos) ? Directory.GetFiles(ruta_anexo_despachos, "*.pdf") : Array.Empty<string>();
+        string[] archivosDevoluciones = !string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones) ? Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf") : Array.Empty<string>();
+
+        var groupedByOrderType = selectedOrders.GroupBy(o => o.OrderType);
+
+        foreach (var typeGroup in groupedByOrderType)
+        {
+            var ordersForThisType = typeGroup.ToList();
+            var tipo_orden_correos = typeGroup.Key.ToString();
+
             StringBuilder reportContent = new StringBuilder();
+            List<string> listaTemporalDeCorreos = new List<string>();
+            List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
+            string ListaOrdenesDespachos = string.Join(", ", ordersForThisType.Select(o => o.OrderNum).Distinct());
+            int llevaDespachos = (typeGroup.Key == OrderType.Dispatch) ? ordersForThisType.Count : 0;
+            int llevaDevoluciones = (typeGroup.Key == OrderType.Return) ? ordersForThisType.Count : 0;
+
+            //variable ListaOrdenes
             string ListaOrdenes = "";
-            var selectedOrders = orders.Where(o => o.IsSelected).ToList();
-            var ordersByClient = selectedOrders.GroupBy(o => o.IsSelected);
-            var llevaDespachos = 0;
-            var llevaDevoluciones = 0;
-            var tipo_orden_correos = "";
-            var ListaOrdenesDespachos = "";
 
-            string[] archivosDespachos = !string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos) ? Directory.GetFiles(ruta_anexo_despachos, "*.pdf") : Array.Empty<string>();
-            string[] archivosDevoluciones = !string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones) ? Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf") : Array.Empty<string>();
-
-            foreach (var clientGroup in ordersByClient)
+            var detailedOrders = new List<DTOOrder>();
+            await Task.Run(async () =>
             {
-                reportContent.Clear();
-                ListaOrdenes = "";
-                ListaOrdenesDespachos = "";
-                var listaTemporalDeCorreos = new List<string>();
-                var ordersForClient = clientGroup.ToList();
-                List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
-                var detailedOrders = new List<DTOOrder>();
-
-                Task.Run(async () =>
+                foreach (var summaryOrder in ordersForThisType)
                 {
-                    foreach (var summaryOrder in ordersForClient)
-                    {
-                        var detailedOrder = await logisticsService.GetOrder(summaryOrder.OrderType, summaryOrder.OrderId);
-                        if (detailedOrder != null) { detailedOrders.Add(detailedOrder); }
-                    }
-                }).Wait();
-
-                foreach (var order in detailedOrders)
-                {
-                    tipo_orden_correos = order.OrderType.ToString();
-                    if (order.OrderType.ToString() == "Dispatch") { reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); }
-                    else if (order.OrderType.ToString() == "Return") { reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); }
-
-                    ListaOrdenes += "," + order.OrderId;
-
-                    // --- INICIO DE LA CORRECCIÓN ---
-                    // Se valida que el campo email no esté vacío y se separa por ';' para manejar múltiples correos.
-                    if (!string.IsNullOrWhiteSpace(order.Email))
-                    {
-                        listaTemporalDeCorreos.AddRange(order.Email.Split(';'));
-                    }
-                    // --- FIN DE LA CORRECCIÓN ---
-
-                    string correosEspeciales = ListaCorreosEspeciales(order);
-                    if (!string.IsNullOrEmpty(correosEspeciales))
-                    {
-                        listaTemporalDeCorreos.AddRange(correosEspeciales.Split(';', StringSplitOptions.RemoveEmptyEntries));
-                    }
-
-                    if (string.IsNullOrEmpty(ListaOrdenesDespachos)) { ListaOrdenesDespachos = order.OrderNum; }
-                    else { ListaOrdenesDespachos += ", " + order.OrderNum; }
-
-                    if (order.OrderType.ToString() == "Dispatch") { llevaDespachos++; }
-                    else if (order.OrderType.ToString() == "Return") { llevaDevoluciones++; }
-
-                    var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", order.OrderId.ToString());
-                    if (Directory.Exists(orderFolder))
-                    {
-                        foreach (var filePath in Directory.GetFiles(orderFolder))
-                        {
-                            string fileNameReal = Path.GetFileName(filePath);
-                            string fileNameEspecial = order.OPNum + "_" + fileNameReal;
-                            attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
-                        }
-                    }
+                    var detailedOrder = await logisticsService.GetOrder(summaryOrder.OrderType, summaryOrder.OrderId);
+                    if (detailedOrder != null) { detailedOrders.Add(detailedOrder); }
                 }
+            });
 
-                var textocorreo = TextoParaCorreo(reportContent.ToString(), tipo_orden_correos, ListaOrdenesDespachos);
-                try
+            foreach (var order in detailedOrders)
+            {
+                if (order.OrderType == OrderType.Dispatch) { reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); }
+                else if (order.OrderType == OrderType.Return) { reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); }
+             
+                ListaOrdenes += "," + order.OrderId;
+
+                if (!string.IsNullOrWhiteSpace(order.Email)) { listaTemporalDeCorreos.AddRange(order.Email.Split(';')); }
+                string correosEspeciales = ListaCorreosEspeciales(order);
+                if (!string.IsNullOrEmpty(correosEspeciales)) { listaTemporalDeCorreos.AddRange(correosEspeciales.Split(';', StringSplitOptions.RemoveEmptyEntries)); }
+                                
+                var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", order.OrderId.ToString());
+                if (Directory.Exists(orderFolder))
                 {
-                    Task.Run(() =>
+                    foreach (var filePath in Directory.GetFiles(orderFolder))
                     {
-                        SmtpClient client = new SmtpClient("smtp.office365.com", 587) { UseDefaultCredentials = false, EnableSsl = true, Credentials = new NetworkCredential("formularios@unispan.com.co", "Sistemas2024*") };
-                        MailMessage mailMessage = new MailMessage { From = new MailAddress("formularios@unispan.com.co"), IsBodyHtml = true, BodyEncoding = Encoding.UTF8, Body = $" {textocorreo}  " };
-                        mailMessage.To.Add("sistemas@unispan.com.co");
-
-                        if (tipo_orden_correos == "Dispatch") { mailMessage.To.Add("info_despacho@unispan.com.co"); }
-                        else if (tipo_orden_correos == "Return") { mailMessage.To.Add("diroperaciones@unispan.com.co"); }
-
-                        var correosUnicosYValidos = listaTemporalDeCorreos.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Where(c => EsCorreoValido(c)).ToList();
-                        foreach (var correo in correosUnicosYValidos) { mailMessage.To.Add(correo); }
-
-                        if (tipo_orden_correos == "Dispatch")
-                        {
-                            bool esPrimeraNotificacion = selectedOrders.Any(o => o.Version == 1);
-                            if (esPrimeraNotificacion)
-                            {
-                                var nombresDeObras = string.Join(", ", selectedOrders.Select(o => o.Works).Distinct());
-                                mailMessage.Subject = $"PROGRAMACIÓN DESPACHO {nombresDeObras}";
-                            }
-                            else { mailMessage.Subject = $"PROGRAMACIÓN ACTUALIZADA DESPACHO {ListaOrdenesDespachos}"; }
-                        }
-                        else if (tipo_orden_correos == "Return")
-                        {
-                            var nombresDeObras = string.Join(", ", selectedOrders.Select(o => o.Works).Distinct());
-                            mailMessage.Subject = $"PROGRAMACIÓN DEVOLUCIÓN {nombresDeObras}";
-                        }
-
-                        if (llevaDespachos > 0) { foreach (string archivo in archivosDespachos) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
-                        if (llevaDevoluciones > 0) { foreach (string archivo in archivosDevoluciones) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
-
-                        foreach (var item in attachmentFiles)
-                        {
-                            Attachment adjunto = new Attachment(item.Item1) { ContentDisposition = { FileName = item.Item2 } };
-                            mailMessage.Attachments.Add(adjunto);
-                        }
-                        client.Send(mailMessage);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = ex.Message, Duration = 3000 });
+                        string fileNameReal = Path.GetFileName(filePath);
+                        string fileNameEspecial = order.OPNum + "_" + fileNameReal;
+                        attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
+                    }
                 }
             }
-            notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "OK", Detail = $"Correos de notificacion enviados.", Duration = 3000 });
-            foreach (var order in orders) { order.IsSelected = false; }
+
+            var textocorreo = TextoParaCorreo(reportContent.ToString(), tipo_orden_correos, ListaOrdenesDespachos);
+
+            try
+            {
+                await Task.Run(async () =>
+                {
+                    SmtpClient client = new SmtpClient("smtp.office365.com", 587) { UseDefaultCredentials = false, EnableSsl = true, Credentials = new NetworkCredential("formularios@unispan.com.co", "Sistemas2024*") };
+                    MailMessage mailMessage = new MailMessage { From = new MailAddress("formularios@unispan.com.co"), IsBodyHtml = true, BodyEncoding = Encoding.UTF8, Body = $" {textocorreo}  " };
+                    mailMessage.To.Add("sistemas@unispan.com.co");
+
+                    if (tipo_orden_correos == "Dispatch") { mailMessage.To.Add("info_despacho@unispan.com.co"); }
+                    else if (tipo_orden_correos == "Return") { mailMessage.To.Add("diroperaciones@unispan.com.co"); }
+
+                    var correosUnicosYValidos = listaTemporalDeCorreos.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Where(c => EsCorreoValido(c)).ToList();
+                    foreach (var correo in correosUnicosYValidos) { mailMessage.To.Add(correo); }
+
+                    //Logica de Asunto
+                    if (tipo_orden_correos == "Dispatch")
+                    {
+                        bool esPrimeraNotificacion = ordersForThisType.Any(o => o.Version == 1);
+                        if (esPrimeraNotificacion) { mailMessage.Subject = $"PROGRAMACIÓN DESPACHO {string.Join(", ", ordersForThisType.Select(o => o.Works).Distinct())}"; }
+                        else { mailMessage.Subject = $"PROGRAMACIÓN ACTUALIZADA DESPACHO {ListaOrdenesDespachos}"; }
+                    }
+                    else if (tipo_orden_correos == "Return") { mailMessage.Subject = $"PROGRAMACIÓN DEVOLUCIÓN {string.Join(", ", ordersForThisType.Select(o => o.Works).Distinct())}"; }
+
+                    
+                    if (llevaDespachos > 0) { foreach (string archivo in archivosDespachos) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
+                    if (llevaDevoluciones > 0) { foreach (string archivo in archivosDevoluciones) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
+
+                    foreach (var item in attachmentFiles)
+                    {
+                        Attachment adjunto = new Attachment(item.Item1) { ContentDisposition = { FileName = item.Item2 } };
+                        mailMessage.Attachments.Add(adjunto);
+                    }
+
+                    client.Send(mailMessage);
+
+                    var notifiedOrderIds = ordersForThisType.Select(o => o.OrderId).ToList();
+                    var orderTypeForNotification = typeGroup.Key;
+                    bool logSuccess = await logisticsService.LogNotification(notifiedOrderIds, orderTypeForNotification, notifiedByUser);
+                });
+            }
+            catch (Exception ex)
+            {
+                notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "ERROR DE ENVÍO", Detail = ex.Message, Duration = 5000 });
+            }
         }
+
+        notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Éxito", Detail = $"Proceso de notificación iniciado.", Duration = 4000 });
+
+        foreach (var order in selectedOrders) { order.IsSelected = false; }
+        StateHasChanged();
     }
-    //  metodo EsCorreoValido (se me habia borrado y lo volvi a crear aca)
+
+	#endregion
+	#region Validación de correo electrónico
+    //metodo EsCorreoValido
     public static bool EsCorreoValido(string correo)
     {
         if (string.IsNullOrWhiteSpace(correo))

@@ -130,11 +130,8 @@ namespace adesoft.adepos.webview.Controller
         {
             try
             {
-                var order = _dbcontext.Orders
-                    .Where(o => o.OrderType == orderType
-                        //&& o.Status != OrderStatus.None
-                        && o.Id == orderId)
-                    .FirstOrDefault();
+                var order = _dbcontext.Orders.Include(o => o.Notifications).Where(o => o.OrderType == orderType && o.Id == orderId).FirstOrDefault();
+                //&& o.Status != OrderStatus.None
 
                 if (!(order is null))
                 {
@@ -179,7 +176,7 @@ namespace adesoft.adepos.webview.Controller
                         Sync = order.Sync,
                         SyncDateTime = order.SyncDateTime,
                         Pictures = new List<DTOOrderPicture>(),
-                        Comments = new List<DTOOrderComment>(),
+                        Comments = new List<DTOOrderComment>(),                        
                         DispatchId = order.DispatchId,
                         DispatchIdSelect = order.DispatchId != order.Id ? order.DispatchId : 0,
                         IsConform = order.IsConform ? "Sí" : "No",
@@ -189,9 +186,8 @@ namespace adesoft.adepos.webview.Controller
                         Period = order.Period,
                         TransactionGenericId = order.TransactionGenericId,
                         Status = order.Status,
-                        Email = order.Email
-
-                    };
+                        Email = order.Email,
+                        Notifications = order.Notifications.Select(n => new DTOOrderNotification{NotificationDate = n.NotificationDate,NotifiedBy = n.NotifiedBy}).ToList()};
 
                     if (order.Id.Equals(order.DispatchId))
                     {
@@ -774,6 +770,39 @@ namespace adesoft.adepos.webview.Controller
             }
         }
 
+        // 
+        public bool LogNotification(List<long> orderIds, OrderType orderType, string notifiedBy)
+        {
+            if (orderIds == null || !orderIds.Any()) return true;
+
+            try
+            {
+                var notificationsToLog = new List<OrderNotification>();
+                var notificationTime = DateTime.Now;
+
+                foreach (var id in orderIds)
+                {
+                    notificationsToLog.Add(new OrderNotification
+                    {
+                        OrderId = id,
+                        OrderType = orderType,
+                        NotificationDate = notificationTime,
+                        NotifiedBy = notifiedBy //Se usa el parámetro para guardar el usuario
+                    });
+                }
+
+                _dbcontext.OrderNotifications.AddRange(notificationsToLog);
+                _dbcontext.SaveChanges();
+                _dbcontext.DetachAll();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al registrar el historial de notificación: {ex.Message}");
+                return false;
+            }
+        }
+
 
         [HttpPost("ImportAttachment")]
         public IActionResult ImportAttachment([FromBody] DTOOrderAttachment dto)
@@ -984,7 +1013,7 @@ namespace adesoft.adepos.webview.Controller
                     VendorAccount = string.IsNullOrEmpty(order.VendorAccount) ? "" : order.VendorAccount,
                     VendorName = string.IsNullOrEmpty(vendor?.Description) ? "" : vendor?.Description,
                     Wight = order.Wight,
-                    Works = order.Works,
+                    Works = order.Works,      
                     ModuleId = order.ModuleId,
                     Module = module?.Description,
                     CityId = order.CityId,
@@ -1003,8 +1032,14 @@ namespace adesoft.adepos.webview.Controller
                     Period = order.Period,
                     TransactionGenericId = order.TransactionGenericId,
                     Status = order.Status,
-                    Email = order.Email
-
+                    Email = order.Email,
+                    Version = order.Version,
+                    Notifications = order.Notifications? //El '?' es por seguridad si la colección es nula
+                   .Select(n => new DTOOrderNotification
+                   {
+                       NotificationDate = n.NotificationDate,
+                       NotifiedBy = n.NotifiedBy
+                   }).ToList() ?? new List<DTOOrderNotification>()
                 };
 
                 if (order.Id.Equals(order.DispatchId))
@@ -1853,6 +1888,12 @@ namespace adesoft.adepos.webview.Controller
             return dtoOrder;
         }
 
+
+        //Actualiza la fecha de la última notificación para las órdenes especificadas por sus IDs
+       
+
+
+
         public bool DeleteOrder(DTOOrder dtoOrder)
         {
             var order = _dbcontext.Orders.Where(o => o.Id == dtoOrder.OrderId).FirstOrDefault();
@@ -1957,8 +1998,6 @@ namespace adesoft.adepos.webview.Controller
             }
             return false;
         }
-
-
 
         public void AddOrderReportFilter(DTOOrderReportFilter filter)
         {

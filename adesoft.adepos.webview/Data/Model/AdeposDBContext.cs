@@ -189,7 +189,7 @@ namespace adesoft.adepos.webview.Data.Model
 
         public DbSet<SViewPO> vwPOs { get; set; }
 
-        public DbSet<OrderNotification> OrderNotifications { get; set; }
+        public DbSet<OrderNotification> OrderNotifications { get; set; } 
 
         //public DbSet<Rendimiento> Rendimientos { get; set; }
         public AdeposDBContext(DbContextOptions<AdeposDBContext> options)
@@ -248,6 +248,7 @@ namespace adesoft.adepos.webview.Data.Model
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder); // Es buena práctica llamar al método base primero.
 
             modelBuilder.Entity<Permission>()
                 .HasKey(c => new { c.ActionAppId, c.RoleAppId });
@@ -268,18 +269,23 @@ namespace adesoft.adepos.webview.Data.Model
                 .HasKey(sum => new { sum.ItemId });
 
             modelBuilder.Entity<SalesOrder>()
-                .HasKey(s => new { s.SalesId, s.ItemId });            
+                .HasKey(s => new { s.SalesId, s.ItemId });
 
+            //Definición de la llave primaria de la entidad 'Order'.
+            //Ahora refleja la llave compuesta real de la base de datos (Id, OrderType),
             modelBuilder.Entity<Order>()
-               //.HasKey(o => new { o.Id });
                 .HasKey(o => new { o.Id, o.OrderType });
 
+            //AÑADIMOS la definición para la nueva tabla y su relación explícita
             modelBuilder.Entity<OrderNotification>()
-                .HasOne(n => n.Order)
-                .WithMany(o => o.Notifications)
-                .HasForeignKey(n => new { n.OrderId, n.OrderType });
+                .HasKey(n => n.Id); //Define la llave primaria de la nueva tabla (Id)
 
+            modelBuilder.Entity<OrderNotification>()
+                .HasOne(n => n.Order) //Le decimos que una Notificación tiene una Orden...
+                .WithMany(o => o.Notifications) //...y que una Orden tiene muchas Notificaciones
+                .HasForeignKey(n => new { n.OrderId, n.OrderType }); //La conexión se hace a través de la llave foránea compuesta
 
+            
             modelBuilder.Entity<OrderProductVersion>()
                 .HasKey(o => new { o.Id });
 
@@ -314,11 +320,6 @@ namespace adesoft.adepos.webview.Data.Model
             .WithMany(p => p.OrderPalletProducts)
             .HasForeignKey(pp => pp.OrderPalletId);
 
-            /*modelBuilder.Entity<OrderPalletProduct>()
-            .HasOne<OrderProduct>(pp => pp.OrderProduct)
-            .WithMany(p => p.OrderPalletProducts)
-            .HasForeignKey(pp => pp.OrderProductId);*/
-
             modelBuilder.Entity<Item>()
             .HasOne<ZoneProduct>(i => i.ZoneProduct)
             .WithMany(z => z.Items)
@@ -348,12 +349,6 @@ namespace adesoft.adepos.webview.Data.Model
             .HasOne<ZoneProduct>(pp => pp.ZoneProduct)
             .WithMany(p => p.Users)
             .HasForeignKey(pp => pp.ZoneProductId);
-
-            //      modelBuilder.Entity<Rendimiento>()
-            //.HasKey(c => new { c.TerceroId, c.DateActivity , c.TypeActivityId });
-
-            //       modelBuilder.Entity<CreditPayment>()
-            //.HasKey(c => new { c.CreditDetailId, c.CuotaNum });
         }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{

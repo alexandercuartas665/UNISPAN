@@ -56,7 +56,7 @@
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
               "RelativeToolTip": "adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
-              "ViewState": "AgIAAGsAAAAAAAAAAAAkwIYAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAHcAAAAAAAAAAAAiwHsAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-06-27T14:51:25.487Z",
               "IsPinned": true,
@@ -73,10 +73,6 @@
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
               "WhenOpened": "2025-07-07T14:05:52.768Z",
               "IsPinned": true
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
             },
             {
               "$type": "Bookmark",
@@ -100,8 +96,7 @@
               "RelativeToolTip": "adesoft.adepos.webview\\Controller\\LogisticsController.cs",
               "ViewState": "AgIAAP8DAAAAAAAAAAArwAUEAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-07T19:37:52.82Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-07-07T19:37:52.82Z"
             },
             {
               "$type": "Document",
@@ -125,8 +120,7 @@
               "RelativeToolTip": "adesoft.adepos.webview\\Controller\\AccountingAccountController.cs",
               "ViewState": "AgIAACQAAAAAAAAAAAAYwDIAAAAlAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-07T19:36:50.473Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-07-07T19:36:50.473Z"
             }
           ]
         }

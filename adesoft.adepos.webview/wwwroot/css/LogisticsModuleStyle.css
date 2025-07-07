@@ -216,12 +216,12 @@
 
 /* ========== [ESTILOS RESTANTES (INALTERADOS)] ========== */
 .col-transportdev {
-    min-width: 100px;
-    width: 100px;
-    max-width: 100px;
-    left: 850px;
-    position: sticky;
-    z-index: 50;
+    min-width: 100px !important;
+    width: 100px !important;
+    max-width: 100px !important;
+    left: 890px !important; /* 690 + 200 */
+    position: sticky !important;
+    z-index: 51;
     background-color: white;
 }
 
@@ -250,22 +250,22 @@
 }
 
 .col-ret-work {
-    min-width: 380px;
-    width: 380px;
-    max-width: 380px;
-    left: 0;
-    position: sticky;
-    z-index: 50;
+    min-width: 380px !important;
+    width: 380px !important;
+    max-width: 380px !important;
+    left: 30px !important; /* Después del checkbox de 30px */
+    position: sticky !important;
+    z-index: 51;
     background-color: white;
 }
 
 .col-ret-customerName {
-    min-width: 180px;
-    width: 180px;
-    max-width: 180px;
-    left: 380px;
-    position: sticky;
-    z-index: 50;
+    min-width: 180px !important;
+    width: 180px !important;
+    max-width: 180px !important;
+    left: 410px !important; /* 30 + 380 */
+    position: sticky !important;
+    z-index: 51;
     background-color: white;
 }
 
@@ -280,22 +280,22 @@
 }
 
 .col-ret-city {
-    min-width: 100px;
-    width: 100px;
-    max-width: 100px;
-    left: 550px;
-    position: sticky;
-    z-index: 50;
+    min-width: 100px !important;
+    width: 100px !important;
+    max-width: 100px !important;
+    left: 590px !important; /* 410 + 180 */
+    position: sticky !important;
+    z-index: 51;
     background-color: white;
 }
 
 .col-ret-salesPerson {
-    min-width: 200px;
-    width: 200px;
-    max-width: 200px;
-    left: 650px;
-    position: sticky;
-    z-index: 50;
+    min-width: 200px !important;
+    width: 200px !important;
+    max-width: 200px !important;
+    left: 690px !important; /* 590 + 100 */
+    position: sticky !important;
+    z-index: 51;
     background-color: white;
 }
 
@@ -311,11 +311,11 @@
 }
 
 .col-ret-totalTon {
-    min-width: 200px;
-    width: 200px;
-    max-width: 200px;
-    left: 860px;
-    position: sticky;
+    min-width: 200px !important;
+    width: 200px !important;
+    max-width: 200px !important;
+    left: 890px !important; 
+    position: sticky !important;
     z-index: 50;
     background-color: #3B548C;
 }

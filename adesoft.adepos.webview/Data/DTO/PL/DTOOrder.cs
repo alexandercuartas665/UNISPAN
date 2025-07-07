@@ -17,6 +17,8 @@ namespace adesoft.adepos.webview.Data.DTO.PL
             Products = new List<DTOOrderProduct>();
             PickingStatusDetails = new List<DTOPickingStatusDetail>();
 
+            Notifications = new List<DTOOrderNotification>();
+
             this.DispatchDateTime = DateTime.MinValue;
             this.ReturnDateTime = DateTime.MinValue;
 
@@ -24,7 +26,9 @@ namespace adesoft.adepos.webview.Data.DTO.PL
             this.CustomerAccount = string.Empty;
             this.Works = string.Empty;
         }
-        
+
+        public ICollection<DTOOrderNotification> Notifications { get; set; }
+
         public bool IsSelected { get; set; } //OPCION DE SELECCION
 
         public long OrderId { get; set; }

@@ -29,6 +29,9 @@ namespace adesoft.adepos.webview.Data.DTO.PL
 
         public ICollection<DTOOrderNotification> Notifications { get; set; }
 
+        public string TextTooltip { get; set; }
+
+
         public bool IsSelected { get; set; } //OPCION DE SELECCION
 
         public long OrderId { get; set; }

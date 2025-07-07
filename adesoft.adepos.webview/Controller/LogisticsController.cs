@@ -1034,12 +1034,12 @@ namespace adesoft.adepos.webview.Controller
                     Status = order.Status,
                     Email = order.Email,
                     Version = order.Version,
-                    Notifications = order.Notifications? //El '?' es por seguridad si la colección es nula
-                   .Select(n => new DTOOrderNotification
-                   {
-                       NotificationDate = n.NotificationDate,
-                       NotifiedBy = n.NotifiedBy
-                   }).ToList() ?? new List<DTOOrderNotification>()
+                    Notifications = order.Notifications ? 
+                     .Select(n => new DTOOrderNotification
+                     {
+                         NotificationDate = n.NotificationDate,
+                         NotifiedBy = n.NotifiedBy
+                     }).ToList() ?? new List<DTOOrderNotification>()
                 };
 
                 if (order.Id.Equals(order.DispatchId))

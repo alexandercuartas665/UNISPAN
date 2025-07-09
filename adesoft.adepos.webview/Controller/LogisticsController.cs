@@ -769,6 +769,8 @@ namespace adesoft.adepos.webview.Controller
             {
                 throw ex;
             }
+
+
         }
 
         // 
@@ -2484,5 +2486,90 @@ namespace adesoft.adepos.webview.Controller
 
             return dtoOrder;
         }
+
+        [HttpGet("getObrasPorCliente/{clienteId}")]
+        public List<DTOObras> GetObrasPorCliente(int clienteId)
+        {
+            try
+            {
+                var obras = _dbcontext.Obras
+                    .Where(o => o.ClienteId == clienteId && o.Activo == true)
+                    .OrderBy(o => o.Nombre)
+                    .Select(o => new DTOObras
+                    {
+                        Id = o.Id,
+                        Nombre = o.Nombre,
+                        ClienteId = o.ClienteId,
+                        Correos = o.Correos,
+                        Activo = o.Activo
+                    })
+                    .ToList();
+
+                return obras;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener las obras por cliente: {ex.Message}");
+                return new List<DTOObras>();
+            }
+        }
+
+        [HttpPost("createOrUpdateObra")]
+        public DTOObras CreateOrUpdateObra([FromBody] DTOObras dtoObra)
+        {
+            var obraExistente = _dbcontext.Obras.FirstOrDefault(o => o.Id == dtoObra.Id);
+
+            if (obraExistente == null) // Creación de una nueva obra
+            {
+                var nuevaObra = new Obras
+                {
+                    Nombre = dtoObra.Nombre,
+                    ClienteId = dtoObra.ClienteId,
+                    Correos = dtoObra.Correos,
+                    Activo = true,
+                    CreatedOn = DateTime.Now,
+                    ModifiedOn = DateTime.Now
+                };
+                _dbcontext.Obras.Add(nuevaObra);
+            }
+            else // Actualización de una obra existente
+            {
+                obraExistente.Nombre = dtoObra.Nombre;
+                obraExistente.ClienteId = dtoObra.ClienteId;
+                obraExistente.Correos = dtoObra.Correos;
+                obraExistente.Activo = dtoObra.Activo;
+                obraExistente.ModifiedOn = DateTime.Now;
+                _dbcontext.Obras.Update(obraExistente);
+            }
+
+            _dbcontext.SaveChanges();
+            _dbcontext.DetachAll();
+
+            return dtoObra;
+        }
+
+        [HttpPost("deleteObra/{obraId}")]
+        public bool DeleteObra(long obraId)
+        {
+            try
+            {
+                var obra = _dbcontext.Obras.FirstOrDefault(o => o.Id == obraId);
+                if (obra != null)
+                {
+                    obra.Activo = false; // Eliminación lógica
+                    _dbcontext.Obras.Update(obra);
+                    _dbcontext.SaveChanges();
+                    _dbcontext.DetachAll();
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al eliminar la obra: {ex.Message}");
+                return false;
+            }
+        }
+
     }
 }

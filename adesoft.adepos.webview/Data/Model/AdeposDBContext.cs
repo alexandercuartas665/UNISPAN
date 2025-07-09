@@ -189,7 +189,9 @@ namespace adesoft.adepos.webview.Data.Model
 
         public DbSet<SViewPO> vwPOs { get; set; }
 
-        public DbSet<OrderNotification> OrderNotifications { get; set; } 
+        public DbSet<OrderNotification> OrderNotifications { get; set; }
+
+        public DbSet<Obras> Obras { get; set; }
 
         //public DbSet<Rendimiento> Rendimientos { get; set; }
         public AdeposDBContext(DbContextOptions<AdeposDBContext> options)

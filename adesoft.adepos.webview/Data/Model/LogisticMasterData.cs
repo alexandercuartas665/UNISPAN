@@ -1,4 +1,5 @@
-﻿using System;
+﻿using adesoft.adepos.webview.Data.Model.PL;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -17,6 +18,7 @@ namespace adesoft.adepos.webview.Data.Model
 
         public string IdentificationNum { get; set; }
 
-        public string Description { get; set; }        
+        public string Description { get; set; }
+        public virtual ICollection<Obras> Obras { get; set; }
     }
 }

@@ -30,6 +30,7 @@
     [Parameter]
     public bool edit { get; set; }
     public DTOOrder model;
+    private List<DTOObras> listaDeObras = new List<DTOObras>();
     private List<DTOOrderPicture> pictures;
     public List<DTOLogisticMasterData> customers;
     public List<DTOLogisticMasterData> vendors;
@@ -57,7 +58,7 @@
     protected override async Task OnInitializedAsync()
     {
         await this.loadOrder();
-        editFields = true;
+        //editFields = true;
     }
     public async Task loadOrder()
     {
@@ -79,6 +80,16 @@
             if (orderId != 0)
             {
                 this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
+                if (!string.IsNullOrEmpty(this.model.CustomerAccount))
+                {
+                    //buscamos el cliente en la lista ya cargada para obtener su Id numérico...
+                    var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum == this.model.CustomerAccount);
+                    if (clienteSeleccionado != null)
+                    {
+                        //y con ese Id, cargamos sus obras.
+                        await CargarObrasDelCliente(clienteSeleccionado.Id);
+                    }
+                }
                 this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
                 this.page += 1;
                 if ((OrderType)this.orderType == OrderType.Dispatch)
@@ -253,26 +264,45 @@
     {
         this.model.Works = value.ToUpper();
     }
+
     public async void SaveOrder()
     {
         try
         {
+           
             if (orderType == 1)
             {
-                if (model.OrderNum == "" || model.CustomerAccount == "" || model.Works == "")
+                if (string.IsNullOrEmpty(model.OrderNum) || string.IsNullOrEmpty(model.CustomerAccount) || !model.ObraId.HasValue || model.ObraId == 0)
                 {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios.", Duration = 4000 });
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios, incluyendo la selección de una Obra.", Duration = 4000 });
                     return;
                 }
             }
-            else
+            else 
             {
-                if (model.Works == "")
+                if (!model.ObraId.HasValue || model.ObraId == 0)
                 {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios.", Duration = 4000 });
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El campo Obra es obligatorio.", Duration = 4000 });
                     return;
                 }
             }
+
+           
+            if (model.ObraId.HasValue && model.ObraId > 0)
+            {
+                var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == model.ObraId);
+                if (obraSeleccionada != null)
+                {
+                    model.Works = obraSeleccionada.Nombre;
+                }
+                else
+                {
+                    //Si por alguna razón la obra no está en la lista (no debería pasar), evitamos un guardado incorrecto.
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La obra seleccionada no es válida. Por favor, vuelva a seleccionarla.", Duration = 5000 });
+                    return;
+                }
+            }
+                        
             if ((OrderType)this.orderType == OrderType.Dispatch)
             {
                 if (this.model.DispatchDateTime != null)
@@ -282,6 +312,7 @@
             {
                 this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
             }
+
             this.model = await logisticsService.CreateOrUpdateOrder(model);
             navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
         }
@@ -290,6 +321,7 @@
             ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
         }
     }
+
     public async void CopyAndEdit()
     {
         try
@@ -402,6 +434,37 @@
         sb.AppendLine($"<td style='{style}'>{value}</td>");
     }
     #endregion
+
+    private async Task OnClienteChange(object value)
+    {
+        //Limpiamos la selección de obra actual cada vez que cambia el cliente.
+        listaDeObras.Clear();
+        model.ObraId = null;
+
+        if (value != null)
+        {
+            // Buscamos el cliente completo en la lista para obtener su Id numérico.
+            var cliente = customers.FirstOrDefault(c => c.IdentificationNum == value.ToString());
+            if (cliente != null && cliente.Id > 0)
+            {
+                // Llamamos al método dedicado a cargar las obras.
+                await CargarObrasDelCliente(cliente.Id);
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    //Carga las obras del cliente seleccionado
+    private async Task CargarObrasDelCliente(int clienteId)
+    {
+        if (clienteId > 0)
+        {
+            listaDeObras = await logisticsService.GetObrasPorCliente(clienteId);
+        }
+        // No es necesario llamar a StateHasChanged() aquí,
+        // porque el método que lo llama (OnClienteChange) lo hará al finalizar.
+    }
+
     #region Importacion de archivos pdf a la orden
     private async Task OnFileUpload(Radzen.UploadChangeEventArgs e)
     {
@@ -602,8 +665,16 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="works">Obra<b class="text-danger">*</b></label>
-                                <RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => model.Works = __value?.ToUpper(), model.Works)"></RadzenTextBox>
+                                <label>Obra<b class="text-danger">*</b></label>
+                                <RadzenDropDown @bind-Value="model.ObraId"
+                                                Data="@listaDeObras"
+                                                TextProperty="Nombre"
+                                                ValueProperty="Id"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                Placeholder="Seleccione una obra..."
+                                                class="form-control"
+                                                Disabled="@(!this.editFields || !listaDeObras.Any())" />
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-sm-3">
@@ -611,8 +682,8 @@
                                     <RadzenTextBox Disabled="@(!this.editFields)" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
                                 </div>
                                 <div class="form-group col-sm-8">
-                                    <label for="customerName">Nombre cliente<b class="text-danger">*</b></label>
-                                    <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                                    <label for="customerName">Nombre cliente<b class="text-danger">*</b></label> <!---se agrega change-->
+                                    <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" Change="OnClienteChange" />
                                 </div>
                                 <div class="form-group col-sm-1">
                                     <label class="d-block">&nbsp;</label>
@@ -705,8 +776,8 @@
                     {
                         <div class="col-sm-6">
                             <div class="form-group">
-                                <label for="works">Obra<b class="text-danger">*</b></label>
-                                <RadzenTextBox Name="orderId" @bind-Value="model.Works" Placeholder="Ingrese la obra" class="form-control" Disabled="@(!this.editFields)" @oninput="EventCallback.Factory.CreateBinder<string>(this, __value => model.Works = __value?.ToUpper(), model.Works)"></RadzenTextBox>
+                                <label>Obra<b class="text-danger">*</b></label>
+                                <RadzenDropDown @bind-Value="model.ObraId"Data="@listaDeObras" TextProperty="Nombre"ValueProperty="Id"AllowClear="true"AllowFiltering="true"Placeholder="Seleccione una obra..."class="form-control"Disabled="@(!this.editFields || !listaDeObras.Any())" />
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-sm-3">

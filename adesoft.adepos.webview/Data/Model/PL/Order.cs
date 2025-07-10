@@ -108,6 +108,12 @@ namespace adesoft.adepos.webview.Data.Model.PL
         public string Email { get; set; }
 
         public virtual ICollection<OrderNotification> Notifications { get; set; }
+
+        public long? ObraId { get; set; } //propiedad para la llave foránea de obra
+
+        //propiedad de navegación para que EF entienda la relación
+        [ForeignKey("ObraId")]
+        public virtual Obras Obra { get; set; }
     }
 
     public enum OrderStatus

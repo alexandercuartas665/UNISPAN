@@ -27,6 +27,7 @@ namespace adesoft.adepos.webview.Data.DTO.PL
             this.Works = string.Empty;
         }
 
+        public long? ObraId { get; set; }
         public ICollection<DTOOrderNotification> Notifications { get; set; }
 
         public string TextTooltip { get; set; }

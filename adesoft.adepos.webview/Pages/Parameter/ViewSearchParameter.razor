@@ -81,6 +81,10 @@
         {
             dialogService.Open<ViewCustomers>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
         }
+        else if (data.Value == "ViewObras")
+        {
+            dialogService.Open < ViewObras >(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+        }
         else if (data.Value == "ViewVendors")
         {
             dialogService.Open<ViewVendors>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });

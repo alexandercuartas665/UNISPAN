@@ -2571,5 +2571,32 @@ namespace adesoft.adepos.webview.Controller
             }
         }
 
+        [HttpGet("getAllObras")]
+        public List<DTOObras> GetAllObras()
+        {
+            try
+            {
+                var obras = _dbcontext.Obras
+                    .Include(o => o.Cliente) // Incluye la relación con LogisticMasterData
+                    .Select(o => new DTOObras
+                    {
+                        Id = o.Id,
+                        Nombre = o.Nombre,
+                        NombreCliente = o.Cliente.Description, // Obtiene el nombre del cliente
+                        Correos = o.Correos,
+                        Activo = o.Activo,
+                        ClienteId = o.ClienteId
+                    })
+                    .OrderBy(o => o.NombreCliente).ThenBy(o => o.Nombre)
+                    .ToList();
+                return obras;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener todas las obras: {ex.Message}");
+                return new List<DTOObras>();
+            }
+        }
+
     }
 }

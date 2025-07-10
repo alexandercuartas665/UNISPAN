@@ -158,7 +158,10 @@ namespace adesoft.adepos.webview.Data
         {
             return await Task.FromResult(_logisticsController.DeleteObra(obraId));
         }
-
+        public async Task<List<DTOObras>> GetAllObras()
+        {
+            return await Task.FromResult(_logisticsController.GetAllObras());
+        }
 
         public Task<bool> UploadAttachment(long orderId, OrderType orderType, string nombreArchivo, byte[] archivo)
         {

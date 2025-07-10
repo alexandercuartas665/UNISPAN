@@ -7,6 +7,7 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         public long Id { get; set; }
         public string Nombre { get; set; }
         public int ClienteId { get; set; }
+        public string NombreCliente { get; set; }
         public string Correos { get; set; }
         public bool Activo { get; set; }
     }

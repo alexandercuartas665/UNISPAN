@@ -2577,18 +2577,25 @@ namespace adesoft.adepos.webview.Controller
             try
             {
                 var obras = _dbcontext.Obras
-                    .Include(o => o.Cliente) // Incluye la relación con LogisticMasterData
+                    .Include(o => o.Cliente)   // relación para obtener el nombre del Cliente
+                    .Include(o => o.Ciudad)    // relación para obtener el nombre de la Ciudad
+                    .Include(o => o.Comercial) // relación para obtener el nombre del Comercial
                     .Select(o => new DTOObras
                     {
                         Id = o.Id,
                         Nombre = o.Nombre,
-                        NombreCliente = o.Cliente.Description, // Obtiene el nombre del cliente
                         Correos = o.Correos,
                         Activo = o.Activo,
-                        ClienteId = o.ClienteId
+                        ClienteId = o.ClienteId,
+                        NombreCliente = o.Cliente.Description, //obtiene la descripción del Cliente
+                        CiudadId = o.CiudadId,
+                        NombreCiudad = o.Ciudad != null ? o.Ciudad.Description : "", //maneja el caso de que sea nulo
+                        ComercialId = o.ComercialId,
+                        NombreComercial = o.Comercial != null ? o.Comercial.Description : "" //maneja el caso de que sea nulo
                     })
                     .OrderBy(o => o.NombreCliente).ThenBy(o => o.Nombre)
                     .ToList();
+
                 return obras;
             }
             catch (Exception ex)

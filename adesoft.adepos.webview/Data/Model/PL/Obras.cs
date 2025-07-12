@@ -16,6 +16,8 @@ namespace adesoft.adepos.webview.Data.Model.PL
         public string Nombre { get; set; }
 
         public int ClienteId { get; set; }
+        public int? CiudadId { get; set; }
+        public int? ComercialId { get; set; }
 
         public string Correos { get; set; }
 
@@ -25,8 +27,14 @@ namespace adesoft.adepos.webview.Data.Model.PL
 
         public DateTime ModifiedOn { get; set; }
 
-        // Propiedad de navegación para la relación con LogisticMasterData (el Cliente)
+        // Propiedad de navegación para la relación con LogisticMasterData
         [ForeignKey("ClienteId")]
         public virtual LogisticMasterData Cliente { get; set; }
+
+        [ForeignKey("CiudadId")]
+        public virtual LogisticMasterData Ciudad { get; set; }
+
+        [ForeignKey("ComercialId")]
+        public virtual LogisticMasterData Comercial { get; set; }
     }
 }

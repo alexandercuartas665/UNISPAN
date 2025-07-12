@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace adesoft.adepos.webview.Data.DTO.PL
 {
@@ -10,5 +11,10 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         public string NombreCliente { get; set; }
         public string Correos { get; set; }
         public bool Activo { get; set; }
+        public int? CiudadId { get; set; }
+        public int? ComercialId { get; set; }
+        public string NombreCiudad { get; set; }
+
+        public string NombreComercial { get; set; }
     }
 }

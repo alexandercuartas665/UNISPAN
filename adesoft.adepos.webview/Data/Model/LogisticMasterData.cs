@@ -19,6 +19,10 @@ namespace adesoft.adepos.webview.Data.Model
         public string IdentificationNum { get; set; }
 
         public string Description { get; set; }
-        public virtual ICollection<Obras> Obras { get; set; }
+
+        public virtual ICollection<Obras> ObrasComoCliente { get; set; }
+        public virtual ICollection<Obras> ObrasComoCiudad { get; set; }
+        public virtual ICollection<Obras> ObrasComoComercial { get; set; }
+
     }
 }

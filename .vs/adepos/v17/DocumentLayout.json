@@ -3,27 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\dto\\pl\\dtoorder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\dto\\pl\\dtoorder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\model\\adeposdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\adeposdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\programador1\\AppData\\Local\\Temp\\aj4o0at1..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\pages\\parameter\\viewsearchparameter.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\pages\\parameter\\viewsearchparameter.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\model\\logisticmasterdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\logisticmasterdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\pages\\logistica\\viewobras.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\pages\\logistica\\viewobras.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\dto\\pl\\dtoobras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\dto\\pl\\dtoobras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\model\\adeposdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\adeposdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\logisticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -32,6 +21,29 @@
     {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\controller\\logisticscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\controller\\logisticscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\model\\pl\\obras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\pl\\obras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\dto\\pl\\dtoobras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\dto\\pl\\dtoobras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\programador1\\AppData\\Local\\Temp\\ic51525w..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\pages\\inventario\\viewdashboarddispatchorder.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\pages\\inventario\\viewdashboarddispatchorder.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\dto\\pl\\dtoorder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\dto\\pl\\dtoorder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\pages\\parameter\\viewsearchparameter.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\pages\\parameter\\viewsearchparameter.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\pages\\logistica\\editorder.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -46,18 +58,10 @@
       "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\pl\\order.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\model\\logisticmasterdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\logisticmasterdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\programador1\\AppData\\Local\\Temp\\ic51525w..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|c:\\users\\programador1\\source\\repos\\unispan\\adesoft.adepos.webview\\data\\model\\pl\\obras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E73EAF8E-05DC-4E85-A975-504DFD12730D}|adesoft.adepos.webview\\adesoft.adepos.webview.csproj|solutionrelative:adesoft.adepos.webview\\data\\model\\pl\\obras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\programador1\\AppData\\Local\\Temp\\aj4o0at1..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\programador1\\AppData\\Local\\Temp\\aj4o0at1..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|ResultFrame"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\programador1\\AppData\\Local\\Temp\\ic51525w..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|ResultFrame"
     }
   ],
   "DocumentGroupContainers": [
@@ -67,17 +71,17 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 9,
               "Title": "DTOOrder.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAzAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-05-30T20:30:25.018Z",
               "IsPinned": true,
@@ -85,7 +89,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 12,
               "Title": "ViewScheduleDispRet.razor",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\ViewScheduleDispRet.razor",
@@ -94,17 +98,18 @@
               "ViewState": "AgIAAPkDAAAAAAAAAADwvwoEAAA9AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-06-27T14:51:25.487Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 3,
               "Title": "LogisticsService.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\LogisticsService.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\LogisticsService.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\LogisticsService.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\LogisticsService.cs",
-              "ViewState": "AgIAAJ8AAAAAAAAAAAAQwKwAAAAjAAAAAAAAAA==",
+              "ViewState": "AgIAAKEAAAAAAAAAAAAswLcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-09T17:03:10.921Z",
               "IsPinned": true,
@@ -112,13 +117,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 4,
               "Title": "LogisticsController.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Controller\\LogisticsController.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Controller\\LogisticsController.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Controller\\LogisticsController.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Controller\\LogisticsController.cs",
-              "ViewState": "AgIAAAcKAAAAAAAAAAAcwCoKAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAPsJAAAAAAAAAAAiwCEKAABgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-07T19:37:52.82Z",
               "IsPinned": true,
@@ -126,39 +131,41 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 5,
               "Title": "Obras.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\PL\\Obras.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\Model\\PL\\Obras.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\PL\\Obras.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\Model\\PL\\Obras.cs",
-              "ViewState": "AgIAABAAAAAAAAAAAAAQwBgAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABcAAAAAAAAAAAAswBMAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-09T16:03:46.644Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 1,
               "Title": "LogisticMasterData.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\LogisticMasterData.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\Model\\LogisticMasterData.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\LogisticMasterData.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\Model\\LogisticMasterData.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAkwBUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-09T16:43:50.533Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 0,
               "Title": "AdeposDBContext.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\AdeposDBContext.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\Model\\AdeposDBContext.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\AdeposDBContext.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\Model\\AdeposDBContext.cs",
-              "ViewState": "AgIAAFIAAAAAAAAAAAArwGEAAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAFwBAAAAAAAAAADwv3MBAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-09T16:46:49.468Z",
               "IsPinned": true,
@@ -166,7 +173,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 13,
               "Title": "Order.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\Model\\PL\\Order.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\Model\\PL\\Order.cs",
@@ -175,17 +182,18 @@
               "ViewState": "AgIAAGkAAAAAAAAAAAAYwHIAAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-09T19:45:01.659Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "DTOObras.cs",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\PL\\DTOObras.cs",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOObras.cs",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Data\\DTO\\PL\\DTOObras.cs",
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOObras.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAqAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAYwBAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-09T16:49:23.849Z",
               "IsPinned": true,
@@ -193,7 +201,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 11,
               "Title": "EditOrder.razor",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
@@ -207,7 +215,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 10,
               "Title": "ViewSearchParameter.razor",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Parameter\\ViewSearchParameter.razor",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Parameter\\ViewSearchParameter.razor",
@@ -221,13 +229,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "ViewObras.razor",
               "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\ViewObras.razor",
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\ViewObras.razor",
               "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\ViewObras.razor",
               "RelativeToolTip": "adesoft.adepos.webview\\Pages\\Logistica\\ViewObras.razor",
-              "ViewState": "AgIAABwAAAAAAAAAAAAAwBEAAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAAG8AAAAAAAAAAADwv3IAAAAuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-07-10T21:29:54.817Z",
               "IsPinned": true,
@@ -235,15 +243,21 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "SQLQuery1.sql ",
-              "DocumentMoniker": "C:\\Users\\programador1\\AppData\\Local\\Temp\\aj4o0at1..sql",
-              "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\Temp\\aj4o0at1..sql",
-              "ToolTip": "SQLQuery1.sql *",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2025-07-10T22:23:17.01Z",
+              "DocumentIndex": 8,
+              "Title": "ViewDashBoardDispatchOrder.razor",
+              "DocumentMoniker": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Inventario\\ViewDashBoardDispatchOrder.razor",
+              "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Inventario\\ViewDashBoardDispatchOrder.razor",
+              "ToolTip": "C:\\Users\\programador1\\source\\repos\\UNISPAN\\adesoft.adepos.webview\\Pages\\Inventario\\ViewDashBoardDispatchOrder.razor",
+              "RelativeToolTip": "adesoft.adepos.webview\\Pages\\Inventario\\ViewDashBoardDispatchOrder.razor",
+              "ViewState": "AgIAAEwBAAAAAAAAAAAUwFkBAAA1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-07-12T15:08:58.028Z",
               "IsPinned": true,
               "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
             },
             {
               "$type": "Bookmark",
@@ -260,6 +274,17 @@
             {
               "$type": "Bookmark",
               "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "SQLQuery1.sql ",
+              "DocumentMoniker": "C:\\Users\\programador1\\AppData\\Local\\Temp\\ic51525w..sql",
+              "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\Temp\\ic51525w..sql",
+              "ToolTip": "SQLQuery1.sql *",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2025-07-12T15:19:22.02Z",
+              "EditorCaption": ""
             }
           ]
         }

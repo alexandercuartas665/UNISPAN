@@ -2580,6 +2580,7 @@ namespace adesoft.adepos.webview.Controller
                     .Include(o => o.Cliente)   // relación para obtener el nombre del Cliente
                     .Include(o => o.Ciudad)    // relación para obtener el nombre de la Ciudad
                     .Include(o => o.Comercial) // relación para obtener el nombre del Comercial
+                    .Where(o => o.Activo == true) // Filtra solo las obras activas
                     .Select(o => new DTOObras
                     {
                         Id = o.Id,

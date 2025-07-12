@@ -1,5 +1,6 @@
 ﻿@page "/viewobras"
 @using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.DTO
 @using adesoft.adepos.webview.Data.DTO.PL
 @inject DialogService dialogService
 @inject LogisticsService logisticsService
@@ -16,27 +17,43 @@
     <div class="card-body">
         <RadzenFieldset Text="Detalle de la Obra">
             <div class="form-row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                     <label>Cliente<b class="text-danger">*</b></label>
-                    <RadzenDropDown @bind-Value="model.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
+                    <RadzenDropDown TValue="int" @bind-Value="model.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
                                     AllowFiltering="true" Placeholder="Seleccione un cliente..." class="form-control" />
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                     <label>Nombre de la Obra<b class="text-danger">*</b></label>
                     <RadzenTextBox @bind-Value="model.Nombre" class="form-control" />
                 </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Ciudad</label>
+                    <RadzenDropDown TValue="int?" @bind-Value="model.CiudadId" Data="@listaDeCiudades" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione una ciudad..." class="form-control" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Comercial</label>
+                    <RadzenDropDown TValue="int?" @bind-Value="model.ComercialId" Data="@listaDeComerciales" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <label>Correos (separados por " ; ")</label>
+                    <RadzenTextArea @bind-Value="model.Correos" class="form-control" Rows="2" />
+                </div>
                 <div class="form-group col-md-4">
                     <label>Estado</label>
-                    <RadzenDropDown @bind-Value="model.Activo" Data="@(new[] { new { Text = "Activo", Value = true }, new { Text = "Inactivo", Value = false } })"
+                    <RadzenDropDown TValue="bool" @bind-Value="model.Activo" Data="@(new[] { new { Text = "Activo", Value = true }, new { Text = "Inactivo", Value = false } })"
                                     TextProperty="Text" ValueProperty="Value" class="form-control" />
                 </div>
             </div>
             <div class="form-row">
-                <div class="form-group col-md-8">
-                    <label>Correos (separados por punto y coma ";")</label>
-                    <RadzenTextArea @bind-Value="model.Correos" class="form-control" Rows="2" />
-                </div>
-                <div class="form-group col-md-4 d-flex align-items-end">
+                <div class="form-group col-md-12">
                     <RadzenButton Icon="save" ButtonStyle="ButtonStyle.Success" Text="Guardar" Click="SaveObra" />
                     <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Text="Nuevo" Class="ml-2" Click="OnNew" />
                 </div>
@@ -45,15 +62,17 @@
 
         <RadzenDataGrid @ref="gridObras" TItem="DTOObras" Data="@listaDeObras" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10" class="mt-4">
             <Columns>
-                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="250px" />
-                <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre de la Obra" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="200px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre Obra" Width="200px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCiudad" Title="Ciudad" Width="130px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="NombreComercial" Title="Comercial" Width="130px" />
                 <RadzenDataGridColumn TItem="DTOObras" Property="Correos" Title="Correos" />
                 <RadzenDataGridColumn TItem="DTOObras" Property="Activo" Title="Activo" Width="100px" TextAlign="TextAlign.Center">
                     <Template Context="data">
                         <RadzenCheckBox @bind-Value="data.Activo" Disabled="true" />
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="DTOObras" Title="Acciones" Width="120px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="DTOObras" Title="Acciones" Width="100px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
                     <Template Context="data">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => EditRow(data))" />
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="ml-1" Click="@(async () => await DeleteRow(data))" />
@@ -68,6 +87,9 @@
     private DTOObras model;
     private List<DTOObras> listaDeObras;
     private List<DTOLogisticMasterData> listaDeClientes;
+    private List<DTOLogisticMasterData> listaDeCiudades;
+    private List<DTOLogisticMasterData> listaDeComerciales;
+
     private RadzenDataGrid<DTOObras> gridObras;
 
     protected override async Task OnInitializedAsync()
@@ -78,8 +100,17 @@
 
     private async Task LoadInitialData()
     {
-        listaDeObras = await logisticsService.GetAllObras();
-        listaDeClientes = await logisticsService.GetCustomers();
+        var obrasTask = logisticsService.GetAllObras();
+        var clientesTask = logisticsService.GetCustomers();
+        var ciudadesTask = logisticsService.GetLogisticMasterData("CIUDAD");
+        var comercialesTask = logisticsService.GetLogisticMasterData("COMERCIAL");
+
+        await Task.WhenAll(obrasTask, clientesTask, ciudadesTask, comercialesTask);
+
+        listaDeObras = obrasTask.Result;
+        listaDeClientes = clientesTask.Result;
+        listaDeCiudades = ciudadesTask.Result;
+        listaDeComerciales = comercialesTask.Result;
     }
 
     private void OnNew()
@@ -104,7 +135,6 @@
 
     private void EditRow(DTOObras obra)
     {
-        // Clonamos el objeto para asegurar que no se modifica la fila de la tabla directamente
         this.model = new DTOObras
         {
             Id = obra.Id,
@@ -112,7 +142,8 @@
             ClienteId = obra.ClienteId,
             Correos = obra.Correos,
             Activo = obra.Activo,
-            NombreCliente = obra.NombreCliente
+            CiudadId = obra.CiudadId,
+            ComercialId = obra.ComercialId
         };
     }
 

@@ -663,19 +663,7 @@
                                     <label for="orderId">No. Order<b class="text-danger">*</b></label>
                                     <RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.OrderNum" Placeholder="Ingrese el número de orden" class="form-control"></RadzenTextBox>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Obra<b class="text-danger">*</b></label>
-                                <RadzenDropDown @bind-Value="model.ObraId"
-                                                Data="@listaDeObras"
-                                                TextProperty="Nombre"
-                                                ValueProperty="Id"
-                                                AllowClear="true"
-                                                AllowFiltering="true"
-                                                Placeholder="Seleccione una obra..."
-                                                class="form-control"
-                                                Disabled="@(!this.editFields || !listaDeObras.Any())" />
-                            </div>
+                            </div>                            
                             <div class="form-row">
                                 <div class="form-group col-sm-3">
                                     <label for="identificationNum">NIT<b class="text-danger">*</b></label>
@@ -691,6 +679,18 @@
                                         +
                                     </NavLink>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Obra<b class="text-danger">*</b></label>
+                                <RadzenDropDown @bind-Value="model.ObraId"
+                                                Data="@listaDeObras"
+                                                TextProperty="Nombre"
+                                                ValueProperty="Id"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                Placeholder="Seleccione una obra..."
+                                                class="form-control"
+                                                Disabled="@(!this.editFields || !listaDeObras.Any())" />
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-sm-6">
@@ -774,11 +774,7 @@
                     }
                     else
                     {
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label>Obra<b class="text-danger">*</b></label>
-                                <RadzenDropDown @bind-Value="model.ObraId"Data="@listaDeObras" TextProperty="Nombre"ValueProperty="Id"AllowClear="true"AllowFiltering="true"Placeholder="Seleccione una obra..."class="form-control"Disabled="@(!this.editFields || !listaDeObras.Any())" />
-                            </div>
+                        <div class="col-sm-6">                            
                             <div class="form-row">
                                 <div class="form-group col-sm-3">
                                     <label for="identificationNum">NIT<b class="text-danger">*</b></label>
@@ -794,6 +790,10 @@
                                         +
                                     </NavLink>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Obra<b class="text-danger">*</b></label>
+                                <RadzenDropDown @bind-Value="model.ObraId" Data="@listaDeObras" TextProperty="Nombre" ValueProperty="Id" AllowClear="true" AllowFiltering="true" Placeholder="Seleccione una obra..." class="form-control" Disabled="@(!this.editFields || !listaDeObras.Any())" />
                             </div>
                             <div class="form-group">
                                 <label for="salesPeron">Comercial</label>

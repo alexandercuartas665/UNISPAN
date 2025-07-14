@@ -169,6 +169,7 @@ namespace adesoft.adepos.webview.Controller
                         VendorName = vendor?.Description,
                         Wight = order.Wight,
                         Works = order.Works,
+                        ObraId = order.ObraId,
                         ModuleId = order.ModuleId,
                         Module = module?.Description,
                         CityId = order.CityId,
@@ -2528,7 +2529,9 @@ namespace adesoft.adepos.webview.Controller
                     Correos = dtoObra.Correos,
                     Activo = true,
                     CreatedOn = DateTime.Now,
-                    ModifiedOn = DateTime.Now
+                    ModifiedOn = DateTime.Now,
+                    CiudadId = dtoObra.CiudadId,
+                    ComercialId = dtoObra.ComercialId
                 };
                 _dbcontext.Obras.Add(nuevaObra);
             }
@@ -2539,6 +2542,8 @@ namespace adesoft.adepos.webview.Controller
                 obraExistente.Correos = dtoObra.Correos;
                 obraExistente.Activo = dtoObra.Activo;
                 obraExistente.ModifiedOn = DateTime.Now;
+                obraExistente.CiudadId = dtoObra.CiudadId;
+                obraExistente.ComercialId = dtoObra.ComercialId;
                 _dbcontext.Obras.Update(obraExistente);
             }
 

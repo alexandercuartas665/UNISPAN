@@ -370,7 +370,7 @@
         catch (Exception ex)
         {
             errorMessage = $"Error al cargar clientes: {ex.Message}";
-            // Opcional: Registrar el error completo en consola para diagnóstico
+            //Opcional: Registrar el error completo en consola para diagnóstico
             Console.WriteLine($"Error completo: {ex}");
         }
     }
@@ -439,15 +439,19 @@
     {
         //Limpiamos la selección de obra actual cada vez que cambia el cliente.
         listaDeObras.Clear();
-        model.ObraId = null;
+        model.ObraId = 0;
+        model.Works = string.Empty;
+        model.CityId = 0;
+        model.SalesPersonId = 0;
+        model.Email = string.Empty;
 
         if (value != null)
         {
-            // Buscamos el cliente completo en la lista para obtener su Id numérico.
+            //Buscamos el cliente completo en la lista para obtener su Id numérico.
             var cliente = customers.FirstOrDefault(c => c.IdentificationNum == value.ToString());
             if (cliente != null && cliente.Id > 0)
             {
-                // Llamamos al método dedicado a cargar las obras.
+                //Llamamos al método dedicado a cargar las obras.
                 await CargarObrasDelCliente(cliente.Id);
             }
         }
@@ -461,8 +465,38 @@
         {
             listaDeObras = await logisticsService.GetObrasPorCliente(clienteId);
         }
-        // No es necesario llamar a StateHasChanged() aquí,
-        // porque el método que lo llama (OnClienteChange) lo hará al finalizar.
+        //No es necesario llamar a StateHasChanged() aquí,
+        //porque el método que lo llama (OnClienteChange) lo hará al finalizar.
+    }
+    // reservate
+    private void ShowNewListaDeObras()
+    {
+        // Logic to handle the action when the button is clicked.
+        // For now, you can leave it empty or add a placeholder implementation.
+        dialogService.Open<ViewObras>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
+    }                       
+
+    private async Task OnObraChanged(object value)
+    {
+        //Limpiamos los campos que se van a auto-rellenar
+        model.CityId = 0;
+        model.SalesPersonId = 0;
+        model.Email = string.Empty;
+
+        //Verificamos si se seleccionó una obra válida
+        if (value is long obraId && obraId > 0)
+        {
+            //Buscamos la obra completa en la lista que ya tenemos cargada
+            var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == obraId);
+            if (obraSeleccionada != null)
+            {
+                //Rellenamos los campos del formulario con los datos de la obra
+                model.Works = obraSeleccionada.Nombre;
+                model.CityId = obraSeleccionada.CiudadId ?? 0;
+                model.SalesPersonId = obraSeleccionada.ComercialId ?? 0;
+                model.Email = obraSeleccionada.Correos;
+            }
+        }
     }
 
     #region Importacion de archivos pdf a la orden
@@ -680,9 +714,12 @@
                                     </NavLink>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Obra<b class="text-danger">*</b></label>
-                                <RadzenDropDown @bind-Value="model.ObraId"
+                            <div class="form-row">
+                            <div class="form-group col-sm-11">
+                                <label for="obra">Obra<b class="text-danger">*</b></label>
+                                <RadzenDropDown TValue="long?"
+                                                @bind-Value="model.ObraId"
+                                                Change="OnObraChanged"
                                                 Data="@listaDeObras"
                                                 TextProperty="Nombre"
                                                 ValueProperty="Id"
@@ -691,6 +728,14 @@
                                                 Placeholder="Seleccione una obra..."
                                                 class="form-control"
                                                 Disabled="@(!this.editFields || !listaDeObras.Any())" />
+                                
+                                </div>
+                                <div class="form-group col-sm-1">
+                                    <label class="d-block">&nbsp;</label>
+                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args => { ShowNewListaDeObras(); })">
+                                        +
+                                    </NavLink>
+                                </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-sm-6">
@@ -700,7 +745,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="salesPeron">Comercial</label>
-                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+                                <RadzenTextBox Disabled="true" Name="SalesPeron" @bind-Value="model.SalesPerson" Placeholder="Comercial" class="form-control"></RadzenTextBox>
                             </div>
                             <div class="form-group">
                                 <label for="module">Modulo</label>
@@ -708,7 +753,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="city">Ciudad</label>
-                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
+                                <RadzenTextBox Disabled="true" Name="city" @bind-Value="model.City" Placeholder="Ciudad" class="form-control"></RadzenTextBox>
                             </div>
                             <div class="form-group">
                                 <label for="exampleInputEmail1">Transporte a cargo de</label>
@@ -791,17 +836,36 @@
                                     </NavLink>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Obra<b class="text-danger">*</b></label>
-                                <RadzenDropDown @bind-Value="model.ObraId" Data="@listaDeObras" TextProperty="Nombre" ValueProperty="Id" AllowClear="true" AllowFiltering="true" Placeholder="Seleccione una obra..." class="form-control" Disabled="@(!this.editFields || !listaDeObras.Any())" />
+                            <div class="form-row">
+                                <div class="form-group col-sm-11">
+                                    <label for="obra">Obra<b class="text-danger">*</b></label>
+                                    <RadzenDropDown TValue="long?"
+                                                    @bind-Value="model.ObraId"
+                                                    Change="OnObraChanged"
+                                                    Data="@listaDeObras"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    AllowClear="true"
+                                                    AllowFiltering="true"
+                                                    Placeholder="Seleccione una obra..."
+                                                    class="form-control"
+                                                    Disabled="@(!this.editFields || !listaDeObras.Any())" />
+
+                                </div>
+                                <div class="form-group col-sm-1">
+                                    <label class="d-block">&nbsp;</label>
+                                    <NavLink class="btn btn-light" href="javascript:void(0)" @onclick="@(args => { ShowNewListaDeObras(); })">
+                                        +
+                                    </NavLink>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="salesPeron">Comercial</label>
-                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="salesPeron" class="form-control" @bind-Value="model.SalesPersonId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@salesPersons" TextProperty="Description" ValueProperty="Id" />
+                                <RadzenTextBox Disabled="true" Name="SalesPeron" @bind-Value="model.SalesPerson" Placeholder="Comercial" class="form-control"></RadzenTextBox>
                             </div>
                             <div class="form-group">
                                 <label for="city">Ciudad</label>
-                                <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="city" class="form-control" @bind-Value="model.CityId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@cities" TextProperty="Description" ValueProperty="Id" />
+                                <RadzenTextBox Disabled="true" Name="city" @bind-Value="model.City" Placeholder="Ciudad" class="form-control"></RadzenTextBox>
                             </div>
                             <div class="form-group">
                                 <label for="exampleInputEmail1">Transporte a cargo de</label>

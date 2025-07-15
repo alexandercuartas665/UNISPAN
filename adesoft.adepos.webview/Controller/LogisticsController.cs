@@ -2594,9 +2594,9 @@ namespace adesoft.adepos.webview.Controller
                         Activo = o.Activo,
                         ClienteId = o.ClienteId,
                         NombreCliente = o.Cliente.Description, //obtiene la descripción del Cliente
-                        CiudadId = o.CiudadId,
+                        CiudadId = o.CiudadId ?? 0,
                         NombreCiudad = o.Ciudad != null ? o.Ciudad.Description : "", //maneja el caso de que sea nulo
-                        ComercialId = o.ComercialId,
+                        ComercialId = o.ComercialId ?? 0,
                         NombreComercial = o.Comercial != null ? o.Comercial.Description : "" //maneja el caso de que sea nulo
                     })
                     .OrderBy(o => o.NombreCliente).ThenBy(o => o.Nombre)

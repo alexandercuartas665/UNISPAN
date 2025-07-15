@@ -2473,26 +2473,22 @@ namespace adesoft.adepos.webview.Controller
         {
             try
             {
-                // La consulta incluye las tablas relacionadas 'Ciudad' y 'Comercial'
                 var obras = _dbcontext.Obras
                     .Include(o => o.Ciudad)
                     .Include(o => o.Comercial)
                     .Where(o => o.ClienteId == clienteId && o.Activo == true)
                     .OrderBy(o => o.Nombre)
                     .Select(o => new DTOObras
-                    {
-                        //mapeo de las propiedades de Obras a DTOObras
+                    {          
                         Id = o.Id,
                         Nombre = o.Nombre,
                         Correos = o.Correos,
                         Activo = o.Activo,
                         ClienteId = o.ClienteId,
 
-                        //IDs de las relaciones (es importante pasarlos)
                         CiudadId = o.CiudadId,
                         ComercialId = o.ComercialId,
 
-                        //Nombres de las relaciones (con protección para valores nulos)
                         NombreCiudad = o.Ciudad != null ? o.Ciudad.Description : string.Empty,
                         NombreComercial = o.Comercial != null ? o.Comercial.Description : string.Empty
                     })

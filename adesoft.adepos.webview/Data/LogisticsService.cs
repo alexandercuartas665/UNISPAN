@@ -129,7 +129,6 @@ namespace adesoft.adepos.webview.Data
 
         public async Task<bool> LogNotification(List<long> orderIds, OrderType orderType, string notifiedBy)
         {
-            // Se añade el parámetro 'notifiedBy' a la llamada del controlador.
             return await Task.FromResult(_logisticsController.LogNotification(orderIds, orderType, notifiedBy));
         }
 
@@ -143,7 +142,6 @@ namespace adesoft.adepos.webview.Data
             return _logisticsController.ChangeOrderState(dtoOrder);
         }
 
-        //nuevos métodos 
         public async Task<List<DTOObras>> GetObrasPorCliente(int clienteId)
         {
             return await Task.FromResult(_logisticsController.GetObrasPorCliente(clienteId));

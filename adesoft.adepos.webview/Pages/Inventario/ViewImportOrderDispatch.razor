@@ -44,20 +44,17 @@
 
     private async Task OnClienteChange(object value)
     {
-        // 1. Limpiar selecciones previas
         listaDeObras.Clear();
         obraSeleccionadaId = null;
         model.NameWork = string.Empty;
         model.CityId = 0;
         model.SalesPersonId = 0;
 
-        // 2. Si se seleccionó un cliente válido
         if (value is string customerAccount && !string.IsNullOrEmpty(customerAccount))
         {
             var cliente = customers.FirstOrDefault(c => c.IdentificationNum == customerAccount);
             if (cliente != null && cliente.Id > 0)
             {
-                // 3. Cargar las obras de ese cliente
                 listaDeObras = await logisticsService.GetObrasPorCliente(cliente.Id);
             }
         }
@@ -66,19 +63,16 @@
 
     private void OnObraChange(object value)
     {
-        // 1. Limpiar campos dependientes
         model.CityId = 0;
         model.SalesPersonId = 0;
         model.NameWork = string.Empty;
 
-        // 2. Si se seleccionó una obra válida
         if (value is long obraId && obraId > 0)
         {
             var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == obraId);
             if (obraSeleccionada != null)
             {
-                // 3. Autocompletar los campos del modelo
-                model.NameWork = obraSeleccionada.Nombre; // El nombre de la obra va a NameWork
+                model.NameWork = obraSeleccionada.Nombre;
                 model.CityId = obraSeleccionada.CiudadId ?? 0;
                 model.SalesPersonId = obraSeleccionada.ComercialId ?? 0;
             }

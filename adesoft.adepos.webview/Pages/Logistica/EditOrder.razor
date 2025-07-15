@@ -376,7 +376,7 @@
         catch (Exception ex)
         {
             errorMessage = $"Error al cargar clientes: {ex.Message}";
-            //Opcional: Registrar el error completo en consola para diagnóstico
+           
             Console.WriteLine($"Error completo: {ex}");
         }
     }
@@ -443,7 +443,6 @@
 
     private async Task OnClienteChange(object value)
     {
-        //Limpiamos la selección de obra actual cada vez que cambia el cliente.
         listaDeObras.Clear();
         model.ObraId = 0;
         model.Works = string.Empty;
@@ -453,11 +452,9 @@
 
         if (value != null)
         {
-            //Buscamos el cliente completo en la lista para obtener su Id numérico.
             var cliente = customers.FirstOrDefault(c => c.IdentificationNum == value.ToString());
             if (cliente != null && cliente.Id > 0)
             {
-                //Llamamos al método dedicado a cargar las obras.
                 await CargarObrasDelCliente(cliente.Id);
             }
         }
@@ -481,36 +478,29 @@
     // Método para mostrar el diálogo de obras
     private void ShowNewListaDeObras()
     {
-        // Logic to handle the action when the button is clicked.
-        // For now, you can leave it empty or add a placeholder implementation.
         dialogService.Open<ViewObras>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
     }                       
 
     private void OnObraChanged(object value)
     {
-        // 1. Limpiamos los campos que se van a auto-rellenar
         model.City = string.Empty;
         model.SalesPerson = string.Empty;
         model.Email = string.Empty;
 
-        // También reseteamos los IDs por si el usuario deselecciona la obra
         model.CityId = 0;
         model.SalesPersonId = 0;
 
-        // 2. Verificamos si se seleccionó una obra válida
         if (value is long obraId && obraId > 0)
         {
             model.ObraId = obraId;
             var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == obraId);
             if (obraSeleccionada != null)
             {
-                // 3. Rellenamos el modelo con los datos de TEXTO de la obra
-                model.Works = obraSeleccionada.Nombre; // Por compatibilidad
-                model.City = obraSeleccionada.NombreCiudad; // CORREGIDO
-                model.SalesPerson = obraSeleccionada.NombreComercial; // CORREGIDO
+                model.Works = obraSeleccionada.Nombre;
+                model.City = obraSeleccionada.NombreCiudad;
+                model.SalesPerson = obraSeleccionada.NombreComercial; 
                 model.Email = obraSeleccionada.Correos;
 
-                // 4. También actualizamos los IDs en el modelo
                 model.CityId = obraSeleccionada.CiudadId ?? 0;
                 model.SalesPersonId = obraSeleccionada.ComercialId ?? 0;
             }

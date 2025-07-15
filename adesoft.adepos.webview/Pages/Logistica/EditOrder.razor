@@ -59,7 +59,9 @@
     {
         await this.loadOrder();
         //editFields = true;
+        StateHasChanged();
     }
+ 
     public async Task loadOrder()
     {
         this.dialogService.OnClose += CloseNewCustomer;
@@ -67,9 +69,11 @@
         this.model = new DTOOrder();
         this.model.OrderType = (OrderType)orderType;
         await this.getSecurity();
+
         dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
-        Task.Run(async () =>
-        {
+
+        try
+        {            
             this.customers = await logisticsService.GetCustomers();
             this.vendors = await logisticsService.GetVendors();
             this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
@@ -77,19 +81,21 @@
             this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
             this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
             this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+
             if (orderId != 0)
             {
                 this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
+
+                //Si la orden tiene un cliente, cargamos sus obras DE INMEDIATO
                 if (!string.IsNullOrEmpty(this.model.CustomerAccount))
                 {
-                    //buscamos el cliente en la lista ya cargada para obtener su Id numérico...
-                    var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum == this.model.CustomerAccount);
+                    var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum.Trim().Equals(this.model.CustomerAccount.Trim(), StringComparison.OrdinalIgnoreCase));
                     if (clienteSeleccionado != null)
                     {
-                        //y con ese Id, cargamos sus obras.
                         await CargarObrasDelCliente(clienteSeleccionado.Id);
                     }
                 }
+
                 this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
                 this.page += 1;
                 if ((OrderType)this.orderType == OrderType.Dispatch)
@@ -104,18 +110,18 @@
                 this.editFields = edit;
                 LoadAttachmentFiles();
             }
-            else
+            else //Modo Creación
             {
                 this.time = new DateTime();
                 this.editFields = true;
             }
+        }
+        finally
+        {
             dialogService.Close();
-            this.InvokeAsync(() =>
-            {
-                StateHasChanged();
-            });
-        });
+        }
     }
+
     async private Task loadPictures()
     {
         dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
@@ -458,17 +464,21 @@
         await InvokeAsync(StateHasChanged);
     }
     
-    //Carga las obras del cliente seleccionado
+    // Método para cargar las obras del cliente seleccionado
     private async Task CargarObrasDelCliente(int clienteId)
     {
         if (clienteId > 0)
         {
-            listaDeObras = await logisticsService.GetObrasPorCliente(clienteId);
+            var obrasResult = await logisticsService.GetObrasPorCliente(clienteId);            
+            listaDeObras = new List<DTOObras>(obrasResult);
         }
-        //No es necesario llamar a StateHasChanged() aquí,
-        //porque el método que lo llama (OnClienteChange) lo hará al finalizar.
+        else
+        {           
+            listaDeObras = new List<DTOObras>();
+        }
     }
-    // reservate
+    
+    // Método para mostrar el diálogo de obras
     private void ShowNewListaDeObras()
     {
         // Logic to handle the action when the button is clicked.
@@ -735,13 +745,11 @@
                                                 Change="OnObraChanged"
                                                 Data="@listaDeObras"
                                                 TextProperty="Nombre"
-                                                ValueProperty="Id"
-                                                AllowClear="true"
+                                                ValueProperty="Id"                                                
                                                 AllowFiltering="true"
                                                 Placeholder="Seleccione una obra..."
                                                 class="form-control"
-                                                Disabled="@(!this.editFields || !listaDeObras.Any())" />
-                                
+                                                Disabled="@(!this.editFields)"/>                                
                                 </div>
                                 <div class="form-group col-sm-1">
                                     <label class="d-block">&nbsp;</label>
@@ -766,7 +774,7 @@
                                                 AllowFiltering="true"
                                                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                 Disabled="true"
-                                                Placeholder="Seleccione un comercial..."
+                                                Placeholder="Seleccione una obra"
                                                 class="form-control" />
                             </div>
                             <div class="form-group">
@@ -987,7 +995,7 @@
                     </div>
                     <div class="form-group">
                         <label for="observations">Email</label>
-                        <RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
+                        <RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA LOS CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
                     </div>
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"

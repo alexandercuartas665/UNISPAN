@@ -22,6 +22,9 @@
     public List<DTOLogisticMasterData> transports;
     public List<DTOLogisticMasterData> vehicleTypes;
 
+    private List<DTOObras> listaDeObras = new List<DTOObras>();
+    private long? obraSeleccionadaId;
+
     TransactionGeneric model { get; set; }
 
 
@@ -38,6 +41,50 @@
         this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
 
     }
+
+    private async Task OnClienteChange(object value)
+    {
+        // 1. Limpiar selecciones previas
+        listaDeObras.Clear();
+        obraSeleccionadaId = null;
+        model.NameWork = string.Empty;
+        model.CityId = 0;
+        model.SalesPersonId = 0;
+
+        // 2. Si se seleccionó un cliente válido
+        if (value is string customerAccount && !string.IsNullOrEmpty(customerAccount))
+        {
+            var cliente = customers.FirstOrDefault(c => c.IdentificationNum == customerAccount);
+            if (cliente != null && cliente.Id > 0)
+            {
+                // 3. Cargar las obras de ese cliente
+                listaDeObras = await logisticsService.GetObrasPorCliente(cliente.Id);
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnObraChange(object value)
+    {
+        // 1. Limpiar campos dependientes
+        model.CityId = 0;
+        model.SalesPersonId = 0;
+        model.NameWork = string.Empty;
+
+        // 2. Si se seleccionó una obra válida
+        if (value is long obraId && obraId > 0)
+        {
+            var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == obraId);
+            if (obraSeleccionada != null)
+            {
+                // 3. Autocompletar los campos del modelo
+                model.NameWork = obraSeleccionada.Nombre; // El nombre de la obra va a NameWork
+                model.CityId = obraSeleccionada.CiudadId ?? 0;
+                model.SalesPersonId = obraSeleccionada.ComercialId ?? 0;
+            }
+        }
+    }
+
     async void ShowNotification(NotificationMessage message)
     {
         notificationService.Notify(message);
@@ -50,6 +97,11 @@
         if (string.IsNullOrEmpty(tra.AuxTest))
         {
             ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe adjuntar la orden de despacho.", Duration = 4000 });
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(tra.NameWork))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Debe seleccionar una Obra de la lista.", Duration = 4000 });
             return;
         }
         //tra.Note = tra.Note.ToUpper();
@@ -107,11 +159,6 @@
                     <RadzenCheckBox Name="InputAplazar" class="d-block" TValue="bool" id="InputAplazar" />
                 </div>*@
             </div>
-            <div class="form-group">
-                    <label for="inputNameWork">Obra<b class="text-danger">*</b></label>
-                    <RadzenTextBox @bind-Value="model.NameWork" Name="TextNameWork" class="form-control" placeholder="Nombre de obra" />
-                    <RadzenRequiredValidator Component="TextNameWork" Text="Nombre de obra es requerido" Popup="true" />
-            </div>
             <div class="form-row">
                 <div class="form-group col-sm-4">
                     <label for="identificationNum">NIT</label>
@@ -119,8 +166,21 @@
                 </div>
                 <div class="form-group col-sm-8">
                     <label for="customerName">Nombre cliente</label>
-                    <RadzenDropDown AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                    <RadzenDropDown AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" Change="OnClienteChange" />
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="inputNameWork">Obra<b class="text-danger">*</b></label>
+                <RadzenDropDown TValue="long?"
+                                @bind-Value="obraSeleccionadaId"
+                                Change="OnObraChange"
+                                Data="@listaDeObras"
+                                TextProperty="Nombre"
+                                ValueProperty="Id"
+                                AllowFiltering="true"
+                                Placeholder="Seleccione una obra..."
+                                class="form-control"
+                                Disabled="@(!listaDeObras.Any())" />
             </div>
             <div class="form-group">
                 <label for="salesPeron">Comercial</label>

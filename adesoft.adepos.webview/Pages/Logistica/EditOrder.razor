@@ -476,26 +476,39 @@
         dialogService.Open<ViewObras>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
     }                       
 
-    private async Task OnObraChanged(object value)
+    private void OnObraChanged(object value)
     {
-        //Limpiamos los campos que se van a auto-rellenar
-        model.CityId = 0;
-        model.SalesPersonId = 0;
+        // 1. Limpiamos los campos que se van a auto-rellenar
+        model.City = string.Empty;
+        model.SalesPerson = string.Empty;
         model.Email = string.Empty;
 
-        //Verificamos si se seleccionó una obra válida
+        // También reseteamos los IDs por si el usuario deselecciona la obra
+        model.CityId = 0;
+        model.SalesPersonId = 0;
+
+        // 2. Verificamos si se seleccionó una obra válida
         if (value is long obraId && obraId > 0)
         {
-            //Buscamos la obra completa en la lista que ya tenemos cargada
+            model.ObraId = obraId;
             var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == obraId);
             if (obraSeleccionada != null)
             {
-                //Rellenamos los campos del formulario con los datos de la obra
-                model.Works = obraSeleccionada.Nombre;
+                // 3. Rellenamos el modelo con los datos de TEXTO de la obra
+                model.Works = obraSeleccionada.Nombre; // Por compatibilidad
+                model.City = obraSeleccionada.NombreCiudad; // CORREGIDO
+                model.SalesPerson = obraSeleccionada.NombreComercial; // CORREGIDO
+                model.Email = obraSeleccionada.Correos;
+
+                // 4. También actualizamos los IDs en el modelo
                 model.CityId = obraSeleccionada.CiudadId ?? 0;
                 model.SalesPersonId = obraSeleccionada.ComercialId ?? 0;
-                model.Email = obraSeleccionada.Correos;
             }
+        }
+        else
+        {
+            model.ObraId = null;
+            model.Works = string.Empty;
         }
     }
 
@@ -745,7 +758,16 @@
                             </div>
                             <div class="form-group">
                                 <label for="salesPeron">Comercial</label>
-                                <RadzenTextBox Disabled="true" Name="SalesPeron" @bind-Value="model.SalesPerson" Placeholder="Comercial" class="form-control"></RadzenTextBox>
+                                <RadzenDropDown TValue="int"
+                                                Data="@salesPersons"
+                                                TextProperty="Description"
+                                                ValueProperty="Id"
+                                                @bind-Value="model.SalesPersonId"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                Disabled="true"
+                                                Placeholder="Seleccione un comercial..."
+                                                class="form-control" />
                             </div>
                             <div class="form-group">
                                 <label for="module">Modulo</label>
@@ -753,7 +775,16 @@
                             </div>
                             <div class="form-group">
                                 <label for="city">Ciudad</label>
-                                <RadzenTextBox Disabled="true" Name="city" @bind-Value="model.City" Placeholder="Ciudad" class="form-control"></RadzenTextBox>
+                                <RadzenDropDown TValue="int"
+                                                Data="@cities"
+                                                TextProperty="Description"
+                                                ValueProperty="Id"
+                                                @bind-Value="model.CityId"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                Disabled="true"
+                                                Placeholder="Seleccione una ciudad..."
+                                                class="form-control" />
                             </div>
                             <div class="form-group">
                                 <label for="exampleInputEmail1">Transporte a cargo de</label>
@@ -861,11 +892,29 @@
                             </div>
                             <div class="form-group">
                                 <label for="salesPeron">Comercial</label>
-                                <RadzenTextBox Disabled="true" Name="SalesPeron" @bind-Value="model.SalesPerson" Placeholder="Comercial" class="form-control"></RadzenTextBox>
+                                <RadzenDropDown TValue="int"
+                                                Data="@salesPersons"
+                                                TextProperty="Description"
+                                                ValueProperty="Id"
+                                                @bind-Value="model.SalesPersonId"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                Disabled="true"
+                                                Placeholder="Seleccione un comercial..."
+                                                class="form-control" />
                             </div>
                             <div class="form-group">
                                 <label for="city">Ciudad</label>
-                                <RadzenTextBox Disabled="true" Name="city" @bind-Value="model.City" Placeholder="Ciudad" class="form-control"></RadzenTextBox>
+                                <RadzenDropDown TValue="int"
+                                                Data="@cities"
+                                                TextProperty="Description"
+                                                ValueProperty="Id"
+                                                @bind-Value="model.CityId"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                Disabled="true"
+                                                Placeholder="Seleccione una ciudad..."
+                                                class="form-control" />
                             </div>
                             <div class="form-group">
                                 <label for="exampleInputEmail1">Transporte a cargo de</label>
@@ -938,7 +987,7 @@
                     </div>
                     <div class="form-group">
                         <label for="observations">Email</label>
-                        <RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA CORREOS CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
+                        <RadzenTextArea Disabled="@(!this.editFields)" Name="email" @bind-Value="model.Email" Placeholder="INGRESA CORREOS DE NOTIFICACION" class="form-control"></RadzenTextArea>
                     </div>
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"

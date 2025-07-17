@@ -15,7 +15,9 @@
         </div>
     </div>
     <div class="card-body">
-        <RadzenFieldset Text="Detalle de la Obra">
+        <RadzenFieldset Text="Gestión de Obras">
+
+            <h5>Agregar o Editar Obra: </h5>
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label>Cliente<b class="text-danger">*</b></label>
@@ -54,32 +56,40 @@
             </div>
             <div class="form-row">
                 <div class="form-group col-md-12">
-                    <RadzenButton Icon="save" ButtonStyle="ButtonStyle.Success" Text="Guardar" Click="SaveObra" />
-                    <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Text="Nuevo" Class="ml-2" Click="OnNew" />
+                    <RadzenButton Icon="save" Style="background-color: #007bff; color: white;" Text="Guardar" Click="SaveObra" />
+                    <!--<RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Text="Nuevo" Class="ml-2" Click="OnNew" /> -->
                 </div>
             </div>
-        </RadzenFieldset>
 
-        <RadzenDataGrid @ref="gridObras" TItem="DTOObras" Data="@listaDeObras" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10" class="mt-4">
-            <Columns>
-                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="200px" />
-                <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre Obra" Width="200px" />
-                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCiudad" Title="Ciudad" Width="130px" />
-                <RadzenDataGridColumn TItem="DTOObras" Property="NombreComercial" Title="Comercial" Width="130px" />
-                <RadzenDataGridColumn TItem="DTOObras" Property="Correos" Title="Correos" />
-                <RadzenDataGridColumn TItem="DTOObras" Property="Activo" Title="Activo" Width="100px" TextAlign="TextAlign.Center">
-                    <Template Context="data">
-                        <RadzenCheckBox @bind-Value="data.Activo" Disabled="true" />
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="DTOObras" Title="Acciones" Width="100px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
-                    <Template Context="data">
-                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => EditRow(data))" />
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="ml-1" Click="@(async () => await DeleteRow(data))" />
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
+            <hr />
+
+            <h5>Listado de Obras: </h5>
+
+            <div class="form-row mb-3">
+                <div class="form-group col-md-6">
+                    <RadzenTextBox @oninput="@OnFiltroClienteChange" Placeholder="Filtrar por Nombre de Cliente: ..." class="form-control" />
+                </div>
+                <div class="form-group col-md-6">
+                    <RadzenTextBox @oninput="@OnFiltroObraChange" Placeholder="Filtrar por Nombre de Obra: ... " class="form-control" />
+                </div>
+            </div>
+            <RadzenDataGrid @ref="gridObras" TItem="DTOObras" Data="@obrasFiltradas" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10" class="mt-3">
+                <Columns>
+                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="200px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre Obra" Width="200px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreCiudad" Title="Ciudad" Width="130px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreComercial" Title="Comercial" Width="130px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="Correos" Title="Correos" />                  
+                    <RadzenDataGridColumn TItem="DTOObras" Title="Editar / Eliminar" Width="100px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+                        <Template Context="data">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => EditRow(data))" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="ml-1" Click="@(async () => await DeleteRow(data))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+
+        </RadzenFieldset>
     </div>
 </div>
 
@@ -91,6 +101,45 @@
     private List<DTOLogisticMasterData> listaDeComerciales;
 
     private RadzenDataGrid<DTOObras> gridObras;
+
+    // Filtros para los nombres de Cliente y Obra
+    private string filtroNombreCliente = "";
+    private string filtroNombreObra = "";
+
+    // Esta propiedad computada devuelve la lista original o una versión filtrada
+    private IEnumerable<DTOObras> obrasFiltradas
+    {
+        get
+        {
+            // Empezamos con la lista completa
+            var query = listaDeObras.AsEnumerable();
+
+            // Aplicamos el filtro por Cliente si hay texto
+            if (!string.IsNullOrWhiteSpace(filtroNombreCliente))
+            {
+                query = query.Where(o => o.NombreCliente != null && o.NombreCliente.Contains(filtroNombreCliente, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Aplicamos el filtro por Obra si hay texto
+            if (!string.IsNullOrWhiteSpace(filtroNombreObra))
+            {
+                query = query.Where(o => o.Nombre != null && o.Nombre.Contains(filtroNombreObra, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query;
+        }
+    }
+
+    // Métodos que se ejecutan cada vez que el usuario escribe en las cajas de texto
+    private void OnFiltroClienteChange(ChangeEventArgs args)
+    {
+        filtroNombreCliente = args.Value.ToString();
+    }
+
+    private void OnFiltroObraChange(ChangeEventArgs args)
+    {
+        filtroNombreObra = args.Value.ToString();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,7 +156,7 @@
 
         await Task.WhenAll(obrasTask, clientesTask, ciudadesTask, comercialesTask);
 
-        listaDeObras = obrasTask.Result;
+        listaDeObras = obrasTask.Result ?? new List<DTOObras>(); // Aseguramos que la lista no sea nula
         listaDeClientes = clientesTask.Result;
         listaDeCiudades = ciudadesTask.Result;
         listaDeComerciales = comercialesTask.Result;

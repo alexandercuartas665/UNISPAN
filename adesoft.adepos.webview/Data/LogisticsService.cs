@@ -129,11 +129,8 @@ namespace adesoft.adepos.webview.Data
 
         public async Task<bool> LogNotification(List<long> orderIds, OrderType orderType, string notifiedBy)
         {
-            // Se añade el parámetro 'notifiedBy' a la llamada del controlador.
             return await Task.FromResult(_logisticsController.LogNotification(orderIds, orderType, notifiedBy));
         }
-
-
 
         public List<DTOSharedOrder> GetSharedOrders(OrderType orderType, long orderId, int vehicleTypeId, DateTime dispatchDate)
         {
@@ -143,6 +140,25 @@ namespace adesoft.adepos.webview.Data
         public DTOOrder ChangeOrderState(DTOOrder dtoOrder)
         {
             return _logisticsController.ChangeOrderState(dtoOrder);
+        }
+
+        public async Task<List<DTOObras>> GetObrasPorCliente(int clienteId)
+        {
+            return await Task.FromResult(_logisticsController.GetObrasPorCliente(clienteId));
+        }
+
+        public async Task<DTOObras> CreateOrUpdateObra(DTOObras obra)
+        {
+            return await Task.FromResult(_logisticsController.CreateOrUpdateObra(obra));
+        }
+
+        public async Task<bool> DeleteObra(long obraId)
+        {
+            return await Task.FromResult(_logisticsController.DeleteObra(obraId));
+        }
+        public async Task<List<DTOObras>> GetAllObras()
+        {
+            return await Task.FromResult(_logisticsController.GetAllObras());
         }
 
         public Task<bool> UploadAttachment(long orderId, OrderType orderType, string nombreArchivo, byte[] archivo)

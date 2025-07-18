@@ -189,7 +189,9 @@ namespace adesoft.adepos.webview.Data.Model
 
         public DbSet<SViewPO> vwPOs { get; set; }
 
-        public DbSet<OrderNotification> OrderNotifications { get; set; } 
+        public DbSet<OrderNotification> OrderNotifications { get; set; }
+
+        public DbSet<Obras> Obras { get; set; }
 
         //public DbSet<Rendimiento> Rendimientos { get; set; }
         public AdeposDBContext(DbContextOptions<AdeposDBContext> options)
@@ -349,6 +351,26 @@ namespace adesoft.adepos.webview.Data.Model
             .HasOne<ZoneProduct>(pp => pp.ZoneProduct)
             .WithMany(p => p.Users)
             .HasForeignKey(pp => pp.ZoneProductId);
+
+            modelBuilder.Entity<Obras>()
+                .HasOne(obra => obra.Cliente) // Una Obra tiene un Cliente...
+                .WithMany(lmd => lmd.ObrasComoCliente) // ...y un LogisticMasterData es el Cliente de muchas Obras.
+                .HasForeignKey(obra => obra.ClienteId) // La llave foránea en Obras es ClienteId.
+                .OnDelete(DeleteBehavior.Restrict); // Evita problemas de borrado en cascada.
+
+            modelBuilder.Entity<Obras>()
+                .HasOne(obra => obra.Ciudad)
+                .WithMany(lmd => lmd.ObrasComoCiudad)
+                .HasForeignKey(obra => obra.CiudadId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<Obras>()
+                .HasOne(obra => obra.Comercial)
+                .WithMany(lmd => lmd.ObrasComoComercial)
+                .HasForeignKey(obra => obra.ComercialId)
+                .OnDelete(DeleteBehavior.Restrict);
+
         }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{

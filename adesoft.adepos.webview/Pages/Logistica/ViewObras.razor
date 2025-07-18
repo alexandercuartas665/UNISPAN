@@ -1,0 +1,215 @@
+﻿@page "/viewobras"
+@using adesoft.adepos.webview.Data
+@using adesoft.adepos.webview.Data.DTO
+@using adesoft.adepos.webview.Data.DTO.PL
+@inject DialogService dialogService
+@inject LogisticsService logisticsService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+
+<div class="card">
+    <div class="card-header">
+        <span>ADMINISTRACIÓN DE OBRAS</span>
+        <div class="float-right">
+            <a href="javascript:void(0);" @onclick="@(args => dialogService.Close(false))">Cerrar</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <RadzenFieldset Text="Gestión de Obras">
+
+            <h5>Agregar o Editar Obra: </h5>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Cliente<b class="text-danger">*</b></label>
+                    <RadzenDropDown TValue="int" @bind-Value="model.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" Placeholder="Seleccione un cliente..." class="form-control" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Nombre de la Obra<b class="text-danger">*</b></label>
+                    <RadzenTextBox @bind-Value="model.Nombre" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Ciudad</label>
+                    <RadzenDropDown TValue="int?" @bind-Value="model.CiudadId" Data="@listaDeCiudades" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione una ciudad..." class="form-control" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Comercial</label>
+                    <RadzenDropDown TValue="int?" @bind-Value="model.ComercialId" Data="@listaDeComerciales" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <label>Correos (separados por " ; ")</label>
+                    <RadzenTextArea @bind-Value="model.Correos" class="form-control" Rows="2" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Estado</label>
+                    <RadzenDropDown TValue="bool" @bind-Value="model.Activo" Data="@(new[] { new { Text = "Activo", Value = true }, new { Text = "Inactivo", Value = false } })"
+                                    TextProperty="Text" ValueProperty="Value" class="form-control" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <RadzenButton Icon="save" Style="background-color: #007bff; color: white;" Text="Guardar" Click="SaveObra" />
+                    <!--<RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Text="Nuevo" Class="ml-2" Click="OnNew" /> -->
+                </div>
+            </div>
+
+            <hr />
+
+            <h5>Listado de Obras: </h5>
+
+            <div class="form-row mb-3">
+                <div class="form-group col-md-6">
+                    <RadzenTextBox @oninput="@OnFiltroClienteChange" Placeholder="Filtrar por Nombre de Cliente: ..." class="form-control" />
+                </div>
+                <div class="form-group col-md-6">
+                    <RadzenTextBox @oninput="@OnFiltroObraChange" Placeholder="Filtrar por Nombre de Obra: ... " class="form-control" />
+                </div>
+            </div>
+            <RadzenDataGrid @ref="gridObras" TItem="DTOObras" Data="@obrasFiltradas" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10" class="mt-3">
+                <Columns>
+                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="200px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre Obra" Width="200px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreCiudad" Title="Ciudad" Width="130px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreComercial" Title="Comercial" Width="130px" />
+                    <RadzenDataGridColumn TItem="DTOObras" Property="Correos" Title="Correos" />                  
+                    <RadzenDataGridColumn TItem="DTOObras" Title="Editar / Eliminar" Width="100px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+                        <Template Context="data">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => EditRow(data))" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="ml-1" Click="@(async () => await DeleteRow(data))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+
+        </RadzenFieldset>
+    </div>
+</div>
+
+@code {
+    private DTOObras model;
+    private List<DTOObras> listaDeObras;
+    private List<DTOLogisticMasterData> listaDeClientes;
+    private List<DTOLogisticMasterData> listaDeCiudades;
+    private List<DTOLogisticMasterData> listaDeComerciales;
+
+    private RadzenDataGrid<DTOObras> gridObras;
+
+    // Filtros para los nombres de Cliente y Obra
+    private string filtroNombreCliente = "";
+    private string filtroNombreObra = "";
+
+    // Esta propiedad computada devuelve la lista original o una versión filtrada
+    private IEnumerable<DTOObras> obrasFiltradas
+    {
+        get
+        {
+            // Empezamos con la lista completa
+            var query = listaDeObras.AsEnumerable();
+
+            // Aplicamos el filtro por Cliente si hay texto
+            if (!string.IsNullOrWhiteSpace(filtroNombreCliente))
+            {
+                query = query.Where(o => o.NombreCliente != null && o.NombreCliente.Contains(filtroNombreCliente, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Aplicamos el filtro por Obra si hay texto
+            if (!string.IsNullOrWhiteSpace(filtroNombreObra))
+            {
+                query = query.Where(o => o.Nombre != null && o.Nombre.Contains(filtroNombreObra, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query;
+        }
+    }
+
+    // Métodos que se ejecutan cada vez que el usuario escribe en las cajas de texto
+    private void OnFiltroClienteChange(ChangeEventArgs args)
+    {
+        filtroNombreCliente = args.Value.ToString();
+    }
+
+    private void OnFiltroObraChange(ChangeEventArgs args)
+    {
+        filtroNombreObra = args.Value.ToString();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnNew();
+        await LoadInitialData();
+    }
+
+    private async Task LoadInitialData()
+    {
+        var obrasTask = logisticsService.GetAllObras();
+        var clientesTask = logisticsService.GetCustomers();
+        var ciudadesTask = logisticsService.GetLogisticMasterData("CIUDAD");
+        var comercialesTask = logisticsService.GetLogisticMasterData("COMERCIAL");
+
+        await Task.WhenAll(obrasTask, clientesTask, ciudadesTask, comercialesTask);
+
+        listaDeObras = obrasTask.Result ?? new List<DTOObras>(); // Aseguramos que la lista no sea nula
+        listaDeClientes = clientesTask.Result;
+        listaDeCiudades = ciudadesTask.Result;
+        listaDeComerciales = comercialesTask.Result;
+    }
+
+    private void OnNew()
+    {
+        this.model = new DTOObras { Activo = true };
+    }
+
+    private async Task SaveObra()
+    {
+        if (model.ClienteId == 0 || string.IsNullOrWhiteSpace(model.Nombre))
+        {
+            notificationService.Notify(NotificationSeverity.Error, "Error", "Debe seleccionar un cliente y especificar un nombre para la obra.");
+            return;
+        }
+
+        await logisticsService.CreateOrUpdateObra(model);
+        notificationService.Notify(NotificationSeverity.Success, "Éxito", "Obra guardada correctamente.");
+
+        OnNew();
+        await LoadInitialData();
+    }
+
+    private void EditRow(DTOObras obra)
+    {
+        this.model = new DTOObras
+        {
+            Id = obra.Id,
+            Nombre = obra.Nombre,
+            ClienteId = obra.ClienteId,
+            Correos = obra.Correos,
+            Activo = obra.Activo,
+            CiudadId = obra.CiudadId,
+            ComercialId = obra.ComercialId
+        };
+    }
+
+    private async Task DeleteRow(DTOObras obra)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"¿Está seguro? Esta acción desactivará la obra '{obra.Nombre}'."))
+        {
+            var result = await logisticsService.DeleteObra(obra.Id);
+            if (result)
+            {
+                notificationService.Notify(NotificationSeverity.Success, "Éxito", "Obra desactivada.");
+                await LoadInitialData();
+            }
+            else
+            {
+                notificationService.Notify(NotificationSeverity.Error, "Error", "No se pudo desactivar la obra.");
+            }
+        }
+    }
+}

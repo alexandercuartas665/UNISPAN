@@ -109,16 +109,14 @@
             navigationManager.NavigateTo(string.Format("viewRptLogisticOrders/{0}/{1}/{2}", this.scheduleDisRet.FromDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ToDate.ToString("dd-MM-yyyy"), this.scheduleDisRet.ModuleId));
         }
     }
-    // Propiedad que indica si se quiere seleccionar/deseleccionar todas
+
     bool SelectAll { get; set; }
-    // SELECCION DE TODAS LAS ORDENS
+   
     void ToggleSelectAll(ChangeEventArgs e)
     {
-        // Convertimos el valor recibido a booleano.
         bool isChecked = false;
         if (e.Value != null && bool.TryParse(e.Value.ToString(), out isChecked))
         {
-            // Si la conversión es exitosa, actualizamos cada orden.
             foreach (var order in orders)
             {
                 order.IsSelected = isChecked;
@@ -144,26 +142,22 @@
             this.banner = await parameterService.SelectByIdentify(this.scheduleDisRet.ModuleId == 1 ? "LogisticsBannerDispatchs" : "LogisticsBannerReturns");
             try
             {
-                // SE CARGAN LOS DATOS ORIGINALES
                 this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, searchBy);
 
-                // INICIO NUEVA LÓGICA DE ORDENAMIENTO
-                // SE APLICA EL ORDENAMIENTO A LA LISTA RECIÉN CARGADA
-                if (this.scheduleDisRet.ModuleId == 1) // Si es la vista de Despachos
+                if (this.scheduleDisRet.ModuleId == 1)
                 {
                     this.orders = this.orders
-                        .OrderBy(o => o.DispatchDateTime == DateTime.MinValue) // Pendientes (true) van al final
-                        .ThenBy(o => o.DispatchDateTime)                       // El resto se ordena por fecha
+                        .OrderBy(o => o.DispatchDateTime == DateTime.MinValue) 
+                        .ThenBy(o => o.DispatchDateTime)                      
                         .ToList();
                 }
-                else // Si es la vista de Devoluciones
+                else 
                 {
                     this.orders = this.orders
-                        .OrderBy(o => o.ReturnDateTime == DateTime.MinValue)   // Pendientes (true) van al final
-                        .ThenBy(o => o.ReturnDateTime)                         // El resto se ordena por fecha
+                        .OrderBy(o => o.ReturnDateTime == DateTime.MinValue)   
+                        .ThenBy(o => o.ReturnDateTime)                        
                         .ToList();
                 }
-                // FIN NUEVA LÓGICA DE ORDENAMIENTO 
 
                 foreach (var order in this.orders)
                 {

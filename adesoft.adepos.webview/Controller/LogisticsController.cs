@@ -94,26 +94,6 @@ namespace adesoft.adepos.webview.Controller
                         Email = order.Email
                     };
 
-                    /*var pictures = _dbcontext.OrderPictures
-                        .Where(p => p.OrderType == order.OrderType && p.OrderId == order.Id)
-                        .ToList();
-
-                    foreach (var picture in pictures)
-                    {
-                        byte[] imageArray = System.IO.File.ReadAllBytes(picture.Path);
-                        string dataBase64 = Convert.ToBase64String(imageArray);
-
-                        dtoOrder.Pictures.Add(new DTOOrderPicture()
-                        {
-                            OrderId = picture.OrderId,
-                            DataBase64 = string.Format("data:image/jpeg;base64,{0}", dataBase64),
-                            Name = picture.Name,
-                            OrderType = picture.OrderType,
-                            Path = picture.Path,
-                            Sync = true
-                        });
-                    }*/
-
                     dtoOrders.Add(dtoOrder);
                 }
 
@@ -169,6 +149,7 @@ namespace adesoft.adepos.webview.Controller
                         VendorName = vendor?.Description,
                         Wight = order.Wight,
                         Works = order.Works,
+                        ObraId = order.ObraId,
                         ModuleId = order.ModuleId,
                         Module = module?.Description,
                         CityId = order.CityId,
@@ -769,6 +750,8 @@ namespace adesoft.adepos.webview.Controller
             {
                 throw ex;
             }
+
+
         }
 
         // 
@@ -2484,5 +2467,137 @@ namespace adesoft.adepos.webview.Controller
 
             return dtoOrder;
         }
+
+        [HttpGet("getObrasPorCliente/{clienteId}")]
+        public List<DTOObras> GetObrasPorCliente(int clienteId)
+        {
+            try
+            {
+                var obras = _dbcontext.Obras
+                    .Include(o => o.Ciudad)
+                    .Include(o => o.Comercial)
+                    .Where(o => o.ClienteId == clienteId && o.Activo == true)
+                    .OrderBy(o => o.Nombre)
+                    .Select(o => new DTOObras
+                    {          
+                        Id = o.Id,
+                        Nombre = o.Nombre,
+                        Correos = o.Correos,
+                        Activo = o.Activo,
+                        ClienteId = o.ClienteId,
+
+                        CiudadId = o.CiudadId,
+                        ComercialId = o.ComercialId,
+
+                        NombreCiudad = o.Ciudad != null ? o.Ciudad.Description : string.Empty,
+                        NombreComercial = o.Comercial != null ? o.Comercial.Description : string.Empty
+                    })
+                    .ToList();
+
+                return obras;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener las obras por cliente: {ex.Message}");
+                return new List<DTOObras>();
+            }
+        }
+
+        [HttpPost("createOrUpdateObra")]
+        public DTOObras CreateOrUpdateObra([FromBody] DTOObras dtoObra)
+        {
+            var obraExistente = _dbcontext.Obras.FirstOrDefault(o => o.Id == dtoObra.Id);
+
+            if (obraExistente == null) // Creación de una nueva obra
+            {
+                var nuevaObra = new Obras
+                {
+                    Nombre = dtoObra.Nombre,
+                    ClienteId = dtoObra.ClienteId,
+                    Correos = dtoObra.Correos,
+                    Activo = true,
+                    CreatedOn = DateTime.Now,
+                    ModifiedOn = DateTime.Now,
+                    CiudadId = dtoObra.CiudadId,
+                    ComercialId = dtoObra.ComercialId
+                };
+                _dbcontext.Obras.Add(nuevaObra);
+            }
+            else // Actualización de una obra existente
+            {
+                obraExistente.Nombre = dtoObra.Nombre;
+                obraExistente.ClienteId = dtoObra.ClienteId;
+                obraExistente.Correos = dtoObra.Correos;
+                obraExistente.Activo = dtoObra.Activo;
+                obraExistente.ModifiedOn = DateTime.Now;
+                obraExistente.CiudadId = dtoObra.CiudadId;
+                obraExistente.ComercialId = dtoObra.ComercialId;
+                _dbcontext.Obras.Update(obraExistente);
+            }
+
+            _dbcontext.SaveChanges();
+            _dbcontext.DetachAll();
+
+            return dtoObra;
+        }
+
+        [HttpPost("deleteObra/{obraId}")]
+        public bool DeleteObra(long obraId)
+        {
+            try
+            {
+                var obra = _dbcontext.Obras.FirstOrDefault(o => o.Id == obraId);
+                if (obra != null)
+                {
+                    obra.Activo = false; // Eliminación lógica
+                    _dbcontext.Obras.Update(obra);
+                    _dbcontext.SaveChanges();
+                    _dbcontext.DetachAll();
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al eliminar la obra: {ex.Message}");
+                return false;
+            }
+        }
+
+        [HttpGet("getAllObras")]
+        public List<DTOObras> GetAllObras()
+        {
+            try
+            {
+                var obras = _dbcontext.Obras
+                    .Include(o => o.Cliente)   // relación para obtener el nombre del Cliente
+                    .Include(o => o.Ciudad)    // relación para obtener el nombre de la Ciudad
+                    .Include(o => o.Comercial) // relación para obtener el nombre del Comercial
+                    .Where(o => o.Activo == true) // Filtra solo las obras activas
+                    .Select(o => new DTOObras
+                    {
+                        Id = o.Id,
+                        Nombre = o.Nombre,
+                        Correos = o.Correos,
+                        Activo = o.Activo,
+                        ClienteId = o.ClienteId,
+                        NombreCliente = o.Cliente.Description, //obtiene la descripción del Cliente
+                        CiudadId = o.CiudadId ?? 0,
+                        NombreCiudad = o.Ciudad != null ? o.Ciudad.Description : "", //maneja el caso de que sea nulo
+                        ComercialId = o.ComercialId ?? 0,
+                        NombreComercial = o.Comercial != null ? o.Comercial.Description : "" //maneja el caso de que sea nulo
+                    })
+                    .OrderBy(o => o.NombreCliente).ThenBy(o => o.Nombre)
+                    .ToList();
+
+                return obras;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener todas las obras: {ex.Message}");
+                return new List<DTOObras>();
+            }
+        }
+
     }
 }

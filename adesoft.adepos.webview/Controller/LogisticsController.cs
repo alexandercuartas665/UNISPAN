@@ -1708,15 +1708,12 @@ namespace adesoft.adepos.webview.Controller
                     order.InvoiceDate = dtoOrder.InvoiceDate;
                     order.InvoiceNum = dtoOrder.InvoiceNum;
                     order.Email = dtoOrder.Email;
-
+                    order.ObraId  = dtoOrder.ObraId;
                     order.DispatchId = dtoOrder.DispatchIdSelect != 0 ? dtoOrder.DispatchIdSelect : dtoOrder.OrderId;
-
                     order.IsConform = dtoOrder.IsConform.Equals("Sí");
                     order.NoConform = dtoOrder.NoConform;
-
                     order.FVTransport = dtoOrder.FVTransport;
                     order.Period = dtoOrder.Period != null ? dtoOrder.Period.Value : DateTime.MinValue;
-
                     if ((dtoOrder.DispatchIdSelect != 0) && (dtoOrder.OrderId != dtoOrder.DispatchIdSelect))
                     {
                         var orderShared = _dbcontext.Orders.Where(o => o.Id == dtoOrder.DispatchIdSelect).FirstOrDefault();

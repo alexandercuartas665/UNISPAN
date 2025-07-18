@@ -61,7 +61,7 @@
         //editFields = true;
         StateHasChanged();
     }
-
+ 
     public async Task loadOrder()
     {
         this.dialogService.OnClose += CloseNewCustomer;
@@ -73,7 +73,7 @@
         dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
 
         try
-        {
+        {            
             this.customers = await logisticsService.GetCustomers();
             this.vendors = await logisticsService.GetVendors();
             this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
@@ -92,14 +92,7 @@
                     var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum.Trim().Equals(this.model.CustomerAccount.Trim(), StringComparison.OrdinalIgnoreCase));
                     if (clienteSeleccionado != null)
                     {
-                        listaDeObras = await CargarObrasDelCliente(clienteSeleccionado.Id);
-                        StateHasChanged(); // Forzar actualización de UI
-
-                        if (model.ObraId.HasValue && !listaDeObras.Any(o => o.Id == model.ObraId))
-                        {
-                            // Resetear si no se encuentra
-                            model.ObraId = null;
-                        }
+                        await CargarObrasDelCliente(clienteSeleccionado.Id);
                     }
                 }
 
@@ -282,7 +275,7 @@
     {
         try
         {
-
+           
             if (orderType == 1)
             {
                 if (string.IsNullOrEmpty(model.OrderNum) || string.IsNullOrEmpty(model.CustomerAccount) || !model.ObraId.HasValue || model.ObraId == 0)
@@ -291,7 +284,7 @@
                     return;
                 }
             }
-            else
+            else 
             {
                 if (!model.ObraId.HasValue || model.ObraId == 0)
                 {
@@ -300,7 +293,7 @@
                 }
             }
 
-
+           
             if (model.ObraId.HasValue && model.ObraId > 0)
             {
                 var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == model.ObraId);
@@ -315,7 +308,7 @@
                     return;
                 }
             }
-
+                        
             if ((OrderType)this.orderType == OrderType.Dispatch)
             {
                 if (this.model.DispatchDateTime != null)
@@ -383,7 +376,7 @@
         catch (Exception ex)
         {
             errorMessage = $"Error al cargar clientes: {ex.Message}";
-
+           
             Console.WriteLine($"Error completo: {ex}");
         }
     }
@@ -462,27 +455,31 @@
             var cliente = customers.FirstOrDefault(c => c.IdentificationNum == value.ToString());
             if (cliente != null && cliente.Id > 0)
             {
-                listaDeObras = await CargarObrasDelCliente(cliente.Id);
+                await CargarObrasDelCliente(cliente.Id);
             }
         }
         await InvokeAsync(StateHasChanged);
     }
-
+    
     // Método para cargar las obras del cliente seleccionado
-    private async Task<List<DTOObras>> CargarObrasDelCliente(int clienteId)
+    private async Task CargarObrasDelCliente(int clienteId)
     {
         if (clienteId > 0)
         {
-            return await logisticsService.GetObrasPorCliente(clienteId);
+            var obrasResult = await logisticsService.GetObrasPorCliente(clienteId);            
+            listaDeObras = new List<DTOObras>(obrasResult);
         }
-        return new List<DTOObras>();
+        else
+        {           
+            listaDeObras = new List<DTOObras>();
+        }
     }
-
+    
     // Método para mostrar el diálogo de obras
     private void ShowNewListaDeObras()
     {
         dialogService.Open<ViewObras>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
-    }
+    }                       
 
     private void OnObraChanged(object value)
     {
@@ -501,7 +498,7 @@
             {
                 model.Works = obraSeleccionada.Nombre;
                 model.City = obraSeleccionada.NombreCiudad;
-                model.SalesPerson = obraSeleccionada.NombreComercial;
+                model.SalesPerson = obraSeleccionada.NombreComercial; 
                 model.Email = obraSeleccionada.Correos;
 
                 model.CityId = obraSeleccionada.CiudadId ?? 0;
@@ -676,8 +673,7 @@
                         <button class="btn btn-success mr-3" @onclick="@(args => { ReSyncOrder(this.model); })" hidden="@(!this.reSync)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Re-Sincronizar</button>
                     }
 
-                    if (this.isOk)
-                    {
+                    if (this.isOk){
                         if (this.model.Ok)
                         {
                             <button class="btn btn-warning mr-3" @onclick="@(args => { SaveOrderOk(this.model); })" hidden="@(!this.isOk)">Desmarcar OK</button>
@@ -688,7 +684,7 @@
                         }
                     }
 
-
+                    
                     <button class="btn btn-info mr-3" @onclick="@(args => { CopyAndEdit(); })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Copiar y Editar</button>
                     <button class="btn btn-info mr-3" @onclick="@(args => { this.editFields = !this.editFields; })" hidden="@(this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Editar</button>
                     <button class="btn btn-primary" @onclick="@(args => { SaveOrder(); })" hidden="@(!this.editFields)" disabled="@this.model.Status.Equals(OrderStatus.Paused)">Guardar</button>
@@ -714,7 +710,7 @@
                                     <label for="orderId">No. Order<b class="text-danger">*</b></label>
                                     <RadzenTextBox Disabled="@(!this.editFields)" Name="orderId" @bind-Value="model.OrderNum" Placeholder="Ingrese el número de orden" class="form-control"></RadzenTextBox>
                                 </div>
-                            </div>
+                            </div>                            
                             <div class="form-row">
                                 <div class="form-group col-sm-3">
                                     <label for="identificationNum">NIT<b class="text-danger">*</b></label>
@@ -732,18 +728,18 @@
                                 </div>
                             </div>
                             <div class="form-row">
-                                <div class="form-group col-sm-11">
-                                    <label for="obra">Obra<b class="text-danger">*</b></label>
-                                    <RadzenDropDown TValue="long?"
-                                                    @bind-Value="model.ObraId"
-                                                    Data="@listaDeObras"
-                                                    Change="OnObraChanged"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    AllowFiltering="true"
-                                                    Placeholder="Seleccione una obra..."
-                                                    class="form-control"
-                                                    Disabled="@(!this.editFields)" />
+                            <div class="form-group col-sm-11">
+                                <label for="obra">Obra<b class="text-danger">*</b></label>
+                                <RadzenDropDown TValue="long?"
+                                                @bind-Value="model.ObraId"
+                                                Change="OnObraChanged"
+                                                Data="@listaDeObras"
+                                                TextProperty="Nombre"
+                                                ValueProperty="Id"                                                
+                                                AllowFiltering="true"
+                                                Placeholder="Seleccione una obra..."
+                                                class="form-control"
+                                                Disabled="@(!this.editFields)"/>                                
                                 </div>
                                 <div class="form-group col-sm-1">
                                     <label class="d-block">&nbsp;</label>
@@ -852,7 +848,7 @@
                     }
                     else
                     {
-                        <div class="col-sm-6">
+                        <div class="col-sm-6">                            
                             <div class="form-row">
                                 <div class="form-group col-sm-3">
                                     <label for="identificationNum">NIT<b class="text-danger">*</b></label>

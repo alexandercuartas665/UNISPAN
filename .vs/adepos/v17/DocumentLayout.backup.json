@@ -72,7 +72,7 @@
               "RelativeDocumentMoniker": "adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
               "ToolTip": "C:\\Desarrollo\\UNISPAN\\adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
               "RelativeToolTip": "adesoft.adepos.webview\\Pages\\Logistica\\EditOrder.razor",
-              "ViewState": "AgIAAEwAAAAAAAAAAAAWwFsAAACJAAAAAAAAAA==",
+              "ViewState": "AgIAAEwAAAAAAAAAAAAWwFQAAAAdAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-07-18T14:21:46.859Z",
               "EditorCaption": ""
@@ -100,7 +100,8 @@
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrder.cs",
               "ViewState": "AgIAABMAAAAAAAAAAAAswB8AAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-07T20:13:12.336Z"
+              "WhenOpened": "2025-07-07T20:13:12.336Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -112,7 +113,8 @@
               "RelativeToolTip": "adesoft.adepos.webview\\Data\\DTO\\PL\\DTOOrderNotification.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAqwAQAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-07T20:12:44.384Z"
+              "WhenOpened": "2025-07-07T20:12:44.384Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",

@@ -305,20 +305,7 @@
             }
             // Asignamos la acción determinada a nuestro modelo para que se guarde en la BD.
             model.LastEditAction = actionText;
-
-            if (model.ObraId.HasValue && model.ObraId > 0 && model.Email != originalEmailsFromObra)
-            {
-                var correosActualizados = await logisticsService.UpdateObraEmailsAsync(model.ObraId.Value, model.Email);
-                if (correosActualizados)
-                {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Info, Summary = "Info", Detail = "Los correos de la obra han sido actualizados.", Duration = 4000 });
-                }
-                else
-                {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Warning, Summary = "Aviso", Detail = "No se pudieron actualizar los correos de la obra.", Duration = 5000 });
-                }
-            }
-
+    
             if (model.ObraId.HasValue && model.ObraId > 0)
             {
                 var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == model.ObraId);

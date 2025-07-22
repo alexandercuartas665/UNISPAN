@@ -1000,7 +1000,19 @@
                         <label for="observations">Email</label>
                         <RadzenTextArea Disabled="true" Name="email" @bind-Value="model.Email" Placeholder="Seleccione una obra" class="form-control"></RadzenTextArea>
                     </div>    
-                    
+                    <br />
+                    <!-- checkbox -->
+                    <div class="form-group">
+                        <label><b>Motivo de la Edición:</b></label>
+                        <RadzenRadioButtonList @bind-Value="selectedAction" TValue="ManualEditAction" Disabled="@(!this.editFields)">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="Actualización (Peso, Vehículo, etc.)" Value="ManualEditAction.Actualizacion" />
+                                <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    </div>
+                    <!-- checkbox -->
+                    <br />
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"
                                      TValue="byte[]"
@@ -1020,19 +1032,7 @@
                                   Icon="upload"
                                   Disabled="@(model.AuxTest == null || model.AuxTest.Length == 0)"
                                   Click="@OnImportPdf" />
-                    <!-- SUBIR ARCHIVOS -->
-                    <br/>
-                    <!-- checkbox -->                    
-                        <div class="form-group">
-                            <label><b>Motivo de la Edición:</b></label>
-                        <RadzenRadioButtonList @bind-Value="selectedAction" TValue="ManualEditAction" Disabled="@(!this.editFields)">
-                                <Items>
-                                    <RadzenRadioButtonListItem Text="Actualización (Peso, Vehículo, etc.)" Value="ManualEditAction.Actualizacion" />
-                                    <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion" />
-                                </Items>
-                            </RadzenRadioButtonList>
-                        </div>
-                    <!-- checkbox -->
+                    <!-- SUBIR ARCHIVOS -->                    
                     <!-- TABLA ARCHIVOS CARGADOS -->
                     <div class="col-sm-12 p-0 mt-4">
                         <h5>Archivos Adjuntos</h5>

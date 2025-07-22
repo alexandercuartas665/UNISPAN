@@ -33,6 +33,7 @@
     public DTOOrder model;
     private ManualEditAction selectedAction = ManualEditAction.Actualizacion;
     private List<DTOObras> listaDeObras = new List<DTOObras>();
+    private string originalEmailsFromObra = string.Empty; // Almacena los correos originales de la obra seleccionada
     private List<DTOOrderPicture> pictures;
     public List<DTOLogisticMasterData> customers;
     public List<DTOLogisticMasterData> vendors;
@@ -305,6 +306,19 @@
             // Asignamos la acción determinada a nuestro modelo para que se guarde en la BD.
             model.LastEditAction = actionText;
 
+            if (model.ObraId.HasValue && model.ObraId > 0 && model.Email != originalEmailsFromObra)
+            {
+                var correosActualizados = await logisticsService.UpdateObraEmailsAsync(model.ObraId.Value, model.Email);
+                if (correosActualizados)
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Info, Summary = "Info", Detail = "Los correos de la obra han sido actualizados.", Duration = 4000 });
+                }
+                else
+                {
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Warning, Summary = "Aviso", Detail = "No se pudieron actualizar los correos de la obra.", Duration = 5000 });
+                }
+            }
+
             if (model.ObraId.HasValue && model.ObraId > 0)
             {
                 var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == model.ObraId);
@@ -494,11 +508,34 @@
         dialogService.Open<ViewObras>(null, new Dictionary<string, object>(), new DialogOptions() { ShowTitle = false, Width = "1224px", Height = "650px", Left = "calc(50% - 612px)", Top = "10px" });
     }
 
+    private async Task RefreshObraEmails()
+    {
+        if (model.ObraId.HasValue && model.ObraId > 0)
+        {
+            try
+            {
+                // Necesitaremos crear este nuevo método en el servicio
+                var obraActualizada = await logisticsService.GetObraById(model.ObraId.Value);
+                if (obraActualizada != null)
+                {
+                    model.Email = obraActualizada.Correos;
+                    StateHasChanged(); // Actualiza la UI
+                    ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Actualizado", Detail = "Correos de la obra refrescados.", Duration = 3000 });
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error", Detail = "No se pudo refrescar los correos.", Duration = 4000 });
+            }
+        }
+    }
+
     private void OnObraChanged(object value)
     {
         model.City = string.Empty;
         model.SalesPerson = string.Empty;
         model.Email = string.Empty;
+        originalEmailsFromObra = string.Empty;
 
         model.CityId = 0;
         model.SalesPersonId = 0;
@@ -513,9 +550,11 @@
                 model.City = obraSeleccionada.NombreCiudad;
                 model.SalesPerson = obraSeleccionada.NombreComercial;
                 model.Email = obraSeleccionada.Correos;
-
                 model.CityId = obraSeleccionada.CiudadId ?? 0;
                 model.SalesPersonId = obraSeleccionada.ComercialId ?? 0;
+
+                // Guardar el valor original para comparar después
+                originalEmailsFromObra = obraSeleccionada.Correos;
             }
         }
         else
@@ -996,10 +1035,20 @@
                         <label for="observations">Observaciones</label>
                         <RadzenTextArea Disabled="@(!this.editFields)" Name="observations" @bind-Value="model.Comment" Placeholder="Ingrese observaciones" class="form-control"></RadzenTextArea>
                     </div>
-                    <div class="form-group">
+                    <!--  <div class="form-group">
                         <label for="observations">Email</label>
-                        <RadzenTextArea Disabled="true" Name="email" @bind-Value="model.Email" Placeholder="Seleccione una obra" class="form-control"></RadzenTextArea>
-                    </div>    
+                        <RadzenTextArea Disabled="" Name="email" -Value="model.Email" Placeholder="Correos a notificar, puede añadir nuevos separados por ; (punto y coma)"></RadzenTextArea>
+                    </div>  -->
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <RadzenTextArea Name="email" @bind-Value="model.Email" Placeholder="Correos a notificar, puede añadir nuevos separados por ; (punto y coma)" class="form-control" Disabled="true"></RadzenTextArea>
+                        <RadzenButton Icon="refresh"
+                                      Click="RefreshObraEmails"
+                                      Disabled="@(model.ObraId == null || model.ObraId == 0)"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Title="Refrescar correos de la obra" />
+                    </div>
+
                     <br />
                     <!-- checkbox -->
                     <div class="form-group">

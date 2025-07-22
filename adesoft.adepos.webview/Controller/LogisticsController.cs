@@ -2564,6 +2564,21 @@ namespace adesoft.adepos.webview.Controller
             }
         }
 
+        [HttpGet("getObraById/{obraId}")]
+        public async Task<ActionResult<DTOObras>> GetObraById(long obraId)
+        {
+            var obra = await _dbcontext.Obras
+                .Where(o => o.Id == obraId)
+                .Select(o => new DTOObras { Id = o.Id, Correos = o.Correos }) // Solo trae los datos necesarios
+                .FirstOrDefaultAsync();
+
+            if (obra == null)
+            {
+                return NotFound();
+            }
+            return Ok(obra);
+        }
+
         [HttpGet("getAllObras")]
         public List<DTOObras> GetAllObras()
         {

@@ -161,6 +161,20 @@ namespace adesoft.adepos.webview.Data
             return await Task.FromResult(_logisticsController.GetAllObras());
         }
 
+        public async Task<bool> UpdateObraEmailsAsync(long obraId, string nuevosCorreos)
+        {
+            var obraData = new DTOObras { Id = obraId, Correos = nuevosCorreos };
+            var response = await _httpClient.PostAsJsonAsync("api/Logistics/updateObraEmails", obraData);
+
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<DTOObras> GetObraById(long obraId)
+        {
+            return await _httpClient.GetFromJsonAsync<DTOObras>($"api/Logistics/getObraById/{obraId}");
+        }
+
+
         public Task<bool> UploadAttachment(long orderId, OrderType orderType, string nombreArchivo, byte[] archivo)
         {
             var dto = new DTOOrderAttachment

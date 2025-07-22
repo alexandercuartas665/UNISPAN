@@ -170,6 +170,8 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         [NotMapped]
 
         public string NombreArchivo { get; set; }
+
+        public string LastEditAction { get; set; }
     }    
 
     public class DTOSharedOrder

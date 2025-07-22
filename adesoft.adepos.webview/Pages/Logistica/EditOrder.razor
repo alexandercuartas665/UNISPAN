@@ -29,7 +29,9 @@
     public long orderId { get; set; }
     [Parameter]
     public bool edit { get; set; }
+    public enum ManualEditAction { Actualizacion, Reprogramacion }
     public DTOOrder model;
+    private ManualEditAction selectedAction = ManualEditAction.Actualizacion;
     private List<DTOObras> listaDeObras = new List<DTOObras>();
     private List<DTOOrderPicture> pictures;
     public List<DTOLogisticMasterData> customers;
@@ -278,40 +280,38 @@
         this.model.Works = value.ToUpper();
     }
 
-    public async void SaveOrder()
+    public async Task SaveOrder()
     {
         try
         {
-
-            if (orderType == 1)
+            string actionText;
+            if (orderId == 0)
             {
-                if (string.IsNullOrEmpty(model.OrderNum) || string.IsNullOrEmpty(model.CustomerAccount) || !model.ObraId.HasValue || model.ObraId == 0)
-                {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Los campos marcados con (*) son obligatorios, incluyendo la selección de una Obra.", Duration = 4000 });
-                    return;
-                }
+                actionText = "PROGRAMACIÓN";
             }
             else
             {
-                if (!model.ObraId.HasValue || model.ObraId == 0)
+                switch (selectedAction)
                 {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El campo Obra es obligatorio.", Duration = 4000 });
-                    return;
+                    case ManualEditAction.Reprogramacion:
+                        actionText = "REPROGRAMACIÓN";
+                        break;
+                    case ManualEditAction.Actualizacion:
+                    default:
+                        actionText = "ACTUALIZACIÓN";
+                        break;
                 }
             }
-
+            // Asignamos la acción determinada a nuestro modelo para que se guarde en la BD.
+            model.LastEditAction = actionText;
 
             if (model.ObraId.HasValue && model.ObraId > 0)
             {
                 var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == model.ObraId);
-                if (obraSeleccionada != null)
-                {
-                    model.Works = obraSeleccionada.Nombre;
-                }
+                if (obraSeleccionada != null) { model.Works = obraSeleccionada.Nombre; }
                 else
                 {
-                    //Si por alguna razón la obra no está en la lista (no debería pasar), evitamos un guardado incorrecto.
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La obra seleccionada no es válida. Por favor, vuelva a seleccionarla.", Duration = 5000 });
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La obra seleccionada no es válida.", Duration = 5000 });
                     return;
                 }
             }
@@ -327,11 +327,21 @@
             }
 
             this.model = await logisticsService.CreateOrUpdateOrder(model);
+
+            ShowNotification(new NotificationMessage()
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Guardado",
+                Detail = $"Orden guardada correctamente como '{actionText}'.",
+                Duration = 4000
+            });
+
+            await Task.Delay(1000);
             navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
         }
         catch (Exception ex)
         {
-            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Ok", Detail = ex.Message, Duration = 5000 });
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "Error", Detail = ex.Message, Duration = 5000 });
         }
     }
 
@@ -859,8 +869,8 @@
                                     <RadzenTextBox Disabled="@(!this.editFields)" class="form-control" Name="identificationNum" @bind-Value="model.CustomerAccount" Placeholder="Ingrese el NIT"></RadzenTextBox>
                                 </div>
                                 <div class="form-group col-sm-8">
-                                    <label for="customerName">Nombre cliente<b class="text-danger">*</b></label>
-                                    <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" />
+                                    <label for="customerName">Nombre cliente<b class="text-danger">*</b></label> <!---se agrega change-->
+                                    <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="customerName" class="form-control" @bind-Value="model.CustomerAccount" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@customers" TextProperty="Description" ValueProperty="IdentificationNum" Change="OnClienteChange" />
                                 </div>
                                 <div class="form-group col-sm-1">
                                     <label class="d-block">&nbsp;</label>
@@ -874,15 +884,14 @@
                                     <label for="obra">Obra<b class="text-danger">*</b></label>
                                     <RadzenDropDown TValue="long?"
                                                     @bind-Value="model.ObraId"
-                                                    Change="OnObraChanged"
                                                     Data="@listaDeObras"
+                                                    Change="OnObraChanged"
                                                     TextProperty="Nombre"
                                                     ValueProperty="Id"
-                                                    AllowClear="true"
                                                     AllowFiltering="true"
                                                     Placeholder="Seleccione una obra..."
                                                     class="form-control"
-                                                    Disabled="@(!this.editFields || !listaDeObras.Any())" />
+                                                    Disabled="@(!this.editFields)" />
 
                                 </div>
                                 <div class="form-group col-sm-1">
@@ -990,7 +999,8 @@
                     <div class="form-group">
                         <label for="observations">Email</label>
                         <RadzenTextArea Disabled="true" Name="email" @bind-Value="model.Email" Placeholder="Seleccione una obra" class="form-control"></RadzenTextArea>
-                    </div>
+                    </div>    
+                    
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"
                                      TValue="byte[]"
@@ -1011,6 +1021,18 @@
                                   Disabled="@(model.AuxTest == null || model.AuxTest.Length == 0)"
                                   Click="@OnImportPdf" />
                     <!-- SUBIR ARCHIVOS -->
+                    <br/>
+                    <!-- checkbox -->                    
+                        <div class="form-group">
+                            <label><b>Motivo de la Edición:</b></label>
+                        <RadzenRadioButtonList @bind-Value="selectedAction" TValue="ManualEditAction" Disabled="@(!this.editFields)">
+                                <Items>
+                                    <RadzenRadioButtonListItem Text="Actualización (Peso, Vehículo, etc.)" Value="ManualEditAction.Actualizacion" />
+                                    <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion" />
+                                </Items>
+                            </RadzenRadioButtonList>
+                        </div>
+                    <!-- checkbox -->
                     <!-- TABLA ARCHIVOS CARGADOS -->
                     <div class="col-sm-12 p-0 mt-4">
                         <h5>Archivos Adjuntos</h5>

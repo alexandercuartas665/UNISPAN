@@ -32,6 +32,7 @@ namespace adesoft.adepos.webview.Data.Model.PL
         public string City { get; set; }
 
         public string ReponsableTrans { get; set; }
+        public string LastEditAction { get; set; }
 
         public DateTime DispatchDateTime { get; set; }
 

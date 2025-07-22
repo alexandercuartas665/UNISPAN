@@ -149,6 +149,7 @@ namespace adesoft.adepos.webview.Controller
                         VendorName = vendor?.Description,
                         Wight = order.Wight,
                         Works = order.Works,
+                        LastEditAction = order.LastEditAction,
                         ObraId = order.ObraId,
                         ModuleId = order.ModuleId,
                         Module = module?.Description,
@@ -1692,6 +1693,7 @@ namespace adesoft.adepos.webview.Controller
                     order.OrderNum = dtoOrder.OrderNum != null ? dtoOrder.OrderNum : "";
                     order.OPNum = dtoOrder.OPNum;
                     order.Works = dtoOrder.Works;
+                    order.LastEditAction = dtoOrder.LastEditAction;
                     order.SalesPersonId = dtoOrder.SalesPersonId;
                     order.ModuleId = dtoOrder.ModuleId;
                     order.CityId = dtoOrder.CityId;
@@ -1831,6 +1833,7 @@ namespace adesoft.adepos.webview.Controller
                     FVTransport = dtoOrder.FVTransport,
                     Period = dtoOrder.Period != null ? dtoOrder.Period.Value : DateTime.MinValue,
                     Email = dtoOrder.Email,
+                    LastEditAction = dtoOrder.LastEditAction,
                     Progress = 0,
                     Status = OrderStatus.None,
                     TransactionGenericId = dtoOrder.TransactionGenericId,
@@ -1875,7 +1878,7 @@ namespace adesoft.adepos.webview.Controller
                 }
 
                 _dbcontext.SaveChanges();
-                _dbcontext.DetachAll();
+                
 
                 dtoOrder.OrderId = order.Id;
             }

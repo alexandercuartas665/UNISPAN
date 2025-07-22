@@ -305,12 +305,24 @@
                     //Logica de Asunto
                     if (tipo_orden_correos == "Dispatch")
                     {
-                        bool esPrimeraNotificacion = ordersForThisType.Any(o => o.Version == 1);
-                        if (esPrimeraNotificacion) { mailMessage.Subject = $"PROGRAMACIÓN DESPACHO {string.Join(", ", ordersForThisType.Select(o => o.Works).Distinct())}"; }
-                        else { mailMessage.Subject = $"PROGRAMACIÓN ACTUALIZADA DESPACHO {ListaOrdenesDespachos}"; }
+                        //Si solo se notifica UNA orden, usamos el asunto especifico
+                        if (detailedOrders.Count == 1)
+                        {
+                            var order = detailedOrders.First();
+                            //Leemos la acción guardada en la BD, si por alguna razón está vacía, usamos "PROGRAMACIÓN" como respaldo
+                            string action = !string.IsNullOrEmpty(order.LastEditAction) ? order.LastEditAction : "PROGRAMACIÓN";
+                            mailMessage.Subject = $"{action} DESPACHO {order.Works}";
+                        }
+                        else // Si se notifican MÚLTIPLES órdenes, usamos un asunto genérico
+                        {
+                            mailMessage.Subject = $"NOTIFICACIÓN DE DESPACHOS: {string.Join(", ", detailedOrders.Select(o => o.Works).Distinct())}";
+                        }
                     }
-                    else if (tipo_orden_correos == "Return") { mailMessage.Subject = $"PROGRAMACIÓN DEVOLUCIÓN {string.Join(", ", ordersForThisType.Select(o => o.Works).Distinct())}"; }
-
+                    else if (tipo_orden_correos == "Return")
+                    {
+                        // La lógica para devoluciones se mantiene igual.
+                        mailMessage.Subject = $"PROGRAMACIÓN DEVOLUCIÓN {string.Join(", ", ordersForThisType.Select(o => o.Works).Distinct())}";
+                    }
                     
                     if (llevaDespachos > 0) { foreach (string archivo in archivosDespachos) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
                     if (llevaDevoluciones > 0) { foreach (string archivo in archivosDevoluciones) { mailMessage.Attachments.Add(new Attachment(archivo)); } }

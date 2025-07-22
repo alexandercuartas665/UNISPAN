@@ -29,7 +29,7 @@
     public long orderId { get; set; }
     [Parameter]
     public bool edit { get; set; }
-    public enum ManualEditAction { Actualizacion, Reprogramacion }
+    public enum ManualEditAction { Programacion, Actualizacion, Reprogramacion }
     public DTOOrder model;
     private ManualEditAction selectedAction = ManualEditAction.Actualizacion;
     private List<DTOObras> listaDeObras = new List<DTOObras>();
@@ -65,72 +65,87 @@
         StateHasChanged();
     }
 
-    public async Task loadOrder()
+   public async Task loadOrder()
+{
+    this.dialogService.OnClose += CloseNewCustomer;
+    this.pictures = new List<DTOOrderPicture>();
+    this.model = new DTOOrder();
+    this.model.OrderType = (OrderType)orderType;
+    await this.getSecurity();
+
+    dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+
+    try
     {
-        this.dialogService.OnClose += CloseNewCustomer;
-        this.pictures = new List<DTOOrderPicture>();
-        this.model = new DTOOrder();
-        this.model.OrderType = (OrderType)orderType;
-        await this.getSecurity();
+        this.customers = await logisticsService.GetCustomers();
+        this.vendors = await logisticsService.GetVendors();
+        this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+        this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
+        this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
+        this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+        this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
 
-        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
-
-        try
+        if (orderId != 0)
         {
-            this.customers = await logisticsService.GetCustomers();
-            this.vendors = await logisticsService.GetVendors();
-            this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
-            this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
-            this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
-            this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
-            this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+            this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
 
-            if (orderId != 0)
+            //Se establece el motivo de edición por defecto para una orden existente.
+            if (string.IsNullOrEmpty(model.LastEditAction))
             {
-                this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
-
-                //Si la orden tiene un cliente, cargamos sus obras DE INMEDIATO
-                if (!string.IsNullOrEmpty(this.model.CustomerAccount))
+                //Si nunca se ha guardado una acción, el defecto es Programación.
+                selectedAction = ManualEditAction.Programacion;
+            }
+            else
+            {
+                //Si ya existe una acción previa, el defecto es Actualización.
+                selectedAction = ManualEditAction.Actualizacion;
+            }
+            
+            //Si la orden tiene un cliente, cargamos sus obras DE INMEDIATO
+            if (!string.IsNullOrEmpty(this.model.CustomerAccount))
+            {
+                var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum.Trim().Equals(this.model.CustomerAccount.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (clienteSeleccionado != null)
                 {
-                    var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum.Trim().Equals(this.model.CustomerAccount.Trim(), StringComparison.OrdinalIgnoreCase));
-                    if (clienteSeleccionado != null)
-                    {
-                        listaDeObras = await CargarObrasDelCliente(clienteSeleccionado.Id);
-                        StateHasChanged(); // Forzar actualización de UI
+                    listaDeObras = await CargarObrasDelCliente(clienteSeleccionado.Id);
+                    StateHasChanged(); // Forzar actualización de UI
 
-                        if (model.ObraId.HasValue && !listaDeObras.Any(o => o.Id == model.ObraId))
-                        {
-                            // Resetear si no se encuentra
-                            model.ObraId = null;
-                        }
+                    if (model.ObraId.HasValue && !listaDeObras.Any(o => o.Id == model.ObraId))
+                    {
+                        // Resetear si no se encuentra
+                        model.ObraId = null;
                     }
                 }
+            }
 
-                this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
-                this.page += 1;
-                if ((OrderType)this.orderType == OrderType.Dispatch)
-                {
-                    this.time = this.model.DispatchDateTime;
-                }
-                else if ((OrderType)this.orderType == OrderType.Return)
-                {
-                    this.time = this.model.ReturnDateTime;
-                }
-                this.getOrders();
-                this.editFields = edit;
-                LoadAttachmentFiles();
-            }
-            else //Modo Creación
+            this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
+            this.page += 1;
+            if ((OrderType)this.orderType == OrderType.Dispatch)
             {
-                this.time = new DateTime();
-                this.editFields = true;
+                this.time = this.model.DispatchDateTime;
             }
+            else if ((OrderType)this.orderType == OrderType.Return)
+            {
+                this.time = this.model.ReturnDateTime;
+            }
+            this.getOrders();
+            this.editFields = edit;
+            LoadAttachmentFiles();
         }
-        finally
+        else //Modo Creación
         {
-            dialogService.Close();
+            // NUEVO: Se establece el motivo de edición por defecto para una orden nueva.
+            selectedAction = ManualEditAction.Programacion;
+            
+            this.time = new DateTime();
+            this.editFields = true;
         }
     }
+    finally
+    {
+        dialogService.Close();
+    }
+}
 
     async private Task loadPictures()
     {

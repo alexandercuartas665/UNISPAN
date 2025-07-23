@@ -92,18 +92,23 @@ namespace adesoft.adepos.webview.Data.Model
         public string DocumentExtern { get; set; }
 
         public string NameWork { get; set; }
-        /// <summary>
         /// turnos de despacho .. de orden de trabajo y otros
-        /// </summary>
         public long TurnId { get; set; }
 
         // 
-      
+        public long? ObraId { get; set; }
+
+        //
+        [ForeignKey("ObraId")]
+        public virtual Obras Obra { get; set; } // Asegúrate public long? ObraId { get; set; }
+
+        // --- PROPIEDAD DE NAVEGACIÓN (OPCIONAL PERO RECOMENDADO) ---
+        [ForeignKey("ObraId")]
+        //public virtual Obras Obra { get; set; } // Asegúrate que el tipo 'Obras' exista como entidad
 
 
-        /// <summary>
+
         /// Para uso de APIs
-        /// </summary>
         [NotMapped]
         public string SDateInit { get; set; }
 

@@ -1054,21 +1054,22 @@
                                       ButtonStyle="ButtonStyle.Secondary"
                                       Title="Refrescar correos de la obra" />
                     </div>
-
                     <br />
-                    <!-- checkbox -->
+                    <!-- RADIOBUTTON -->
+                    @if (orderType == 1){
                     <div class="form-group">
                         <label><b>Motivo de la Edición:</b></label>
                         <RadzenRadioButtonList @bind-Value="selectedAction" TValue="ManualEditAction" Disabled="@(!this.editFields)">
                             <Items>
                                 <RadzenRadioButtonListItem Text="Programación (Primera notificación)" Value="ManualEditAction.Programacion"></RadzenRadioButtonListItem>
                                 <RadzenRadioButtonListItem Text="Actualización (Peso, Vehículo, etc.)" Value="ManualEditAction.Actualizacion"></RadzenRadioButtonListItem>
-                                <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion"></RadzenRadioButtonListItem>                                                           
+                                <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion"></RadzenRadioButtonListItem>
                             </Items>
                         </RadzenRadioButtonList>
                     </div>
-                    <!-- checkbox -->
-                    <br />
+                    }
+                    <!-- RADIOBUTTON -->
+                    <br />                    
                     <!-- SUBIR ARCHIVOS -->
                     <RadzenFileInput Name="inputPdf"
                                      TValue="byte[]"

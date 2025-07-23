@@ -31,7 +31,7 @@
     public bool edit { get; set; }
     public enum ManualEditAction { Programacion, Actualizacion, Reprogramacion }
     public DTOOrder model;
-    private ManualEditAction selectedAction = ManualEditAction.Actualizacion;
+    private ManualEditAction selectedAction = ManualEditAction.Programacion;
     private List<DTOObras> listaDeObras = new List<DTOObras>();
     private string originalEmailsFromObra = string.Empty; // Almacena los correos originales de la obra seleccionada
     private List<DTOOrderPicture> pictures;
@@ -65,87 +65,81 @@
         StateHasChanged();
     }
 
-   public async Task loadOrder()
-{
-    this.dialogService.OnClose += CloseNewCustomer;
-    this.pictures = new List<DTOOrderPicture>();
-    this.model = new DTOOrder();
-    this.model.OrderType = (OrderType)orderType;
-    await this.getSecurity();
-
-    dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
-
-    try
+    public async Task loadOrder()
     {
-        this.customers = await logisticsService.GetCustomers();
-        this.vendors = await logisticsService.GetVendors();
-        this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
-        this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
-        this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
-        this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
-        this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
+        this.dialogService.OnClose += CloseNewCustomer;
+        this.pictures = new List<DTOOrderPicture>();
+        this.model = new DTOOrder();
+        this.model.OrderType = (OrderType)orderType;
+        await this.getSecurity();
 
-        if (orderId != 0)
+        dialogService.Open<DialogProgressBar>(null, new Dictionary<string, object>() { { "Tittle", "Procesando" } }, new DialogOptions() { ShowTitle = false, Width = "300px", Height = "20px", Left = "calc(50% - 150px)", Top = "calc(50% - 200px)" });
+
+        try
         {
-            this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
+            this.customers = await logisticsService.GetCustomers();
+            this.vendors = await logisticsService.GetVendors();
+            this.salesPersons = await logisticsService.GetLogisticMasterData("COMERCIAL");
+            this.modules = await logisticsService.GetLogisticMasterData("MODULADOR");
+            this.cities = await logisticsService.GetLogisticMasterData("CIUDAD");
+            this.transports = await logisticsService.GetLogisticMasterData("RESPONSABLE TRANSPORTE");
+            this.vehicleTypes = await logisticsService.GetLogisticMasterData("TIPO VEHICÚLO");
 
-            //Se establece el motivo de edición por defecto para una orden existente.
-            if (string.IsNullOrEmpty(model.LastEditAction))
+            if (orderId != 0) // Modo Edición: Carga una orden existente
             {
-                //Si nunca se ha guardado una acción, el defecto es Programación.
-                selectedAction = ManualEditAction.Programacion;
-            }
-            else
-            {
-                //Si ya existe una acción previa, el defecto es Actualización.
-                selectedAction = ManualEditAction.Actualizacion;
-            }
-            
-            //Si la orden tiene un cliente, cargamos sus obras DE INMEDIATO
-            if (!string.IsNullOrEmpty(this.model.CustomerAccount))
-            {
-                var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum.Trim().Equals(this.model.CustomerAccount.Trim(), StringComparison.OrdinalIgnoreCase));
-                if (clienteSeleccionado != null)
+                this.model = await logisticsService.GetOrder((OrderType)orderType, orderId);
+
+                // Lógica para establecer el motivo de edición por defecto
+                if (string.IsNullOrEmpty(model.LastEditAction))
                 {
-                    listaDeObras = await CargarObrasDelCliente(clienteSeleccionado.Id);
-                    StateHasChanged(); // Forzar actualización de UI
-
-                    if (model.ObraId.HasValue && !listaDeObras.Any(o => o.Id == model.ObraId))
+                    // Si nunca se ha notificado (primera vez), el defecto es "Programación".
+                    selectedAction = ManualEditAction.Programacion;
+                }
+                
+                // Si la orden tiene un cliente, cargamos sus obras
+                if (!string.IsNullOrEmpty(this.model.CustomerAccount))
+                {
+                    var clienteSeleccionado = this.customers.FirstOrDefault(c => c.IdentificationNum.Trim().Equals(this.model.CustomerAccount.Trim(), StringComparison.OrdinalIgnoreCase));
+                    if (clienteSeleccionado != null)
                     {
-                        // Resetear si no se encuentra
-                        model.ObraId = null;
+                        listaDeObras = await CargarObrasDelCliente(clienteSeleccionado.Id);
+                        StateHasChanged();
+
+                        if (model.ObraId.HasValue && !listaDeObras.Any(o => o.Id == model.ObraId))
+                        {
+                            model.ObraId = null;
+                        }
                     }
                 }
-            }
 
-            this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
-            this.page += 1;
-            if ((OrderType)this.orderType == OrderType.Dispatch)
-            {
-                this.time = this.model.DispatchDateTime;
+                this.pictures = await logisticsService.GetPictures((OrderType)orderType, orderId, page, 10);
+                this.page += 1;
+                if ((OrderType)this.orderType == OrderType.Dispatch)
+                {
+                    this.time = this.model.DispatchDateTime;
+                }
+                else if ((OrderType)this.orderType == OrderType.Return)
+                {
+                    this.time = this.model.ReturnDateTime;
+                }
+                this.getOrders();
+                this.editFields = edit;
+                LoadAttachmentFiles();
             }
-            else if ((OrderType)this.orderType == OrderType.Return)
+            else // Modo Creación: Prepara una orden nueva
             {
-                this.time = this.model.ReturnDateTime;
+                // Para una orden nueva, el motivo siempre es "Programación".
+                selectedAction = ManualEditAction.Programacion;
+
+                this.time = new DateTime();
+                this.editFields = true;
             }
-            this.getOrders();
-            this.editFields = edit;
-            LoadAttachmentFiles();
         }
-        else //Modo Creación
+        finally
         {
-            // NUEVO: Se establece el motivo de edición por defecto para una orden nueva.
-            selectedAction = ManualEditAction.Programacion;
-            
-            this.time = new DateTime();
-            this.editFields = true;
+            dialogService.Close();
         }
     }
-    finally
-    {
-        dialogService.Close();
-    }
-}
 
     async private Task loadPictures()
     {
@@ -301,37 +295,44 @@
         try
         {
             string actionText;
-            if (orderId == 0)
+
+            // Determina el texto de la acción basado en la selección del usuario.
+            // Esta lógica ahora cubre los tres casos posibles.
+            switch (selectedAction)
             {
-                actionText = "PROGRAMACIÓN";
+                case ManualEditAction.Programacion:
+                    actionText = "PROGRAMACIÓN";
+                    break;
+                case ManualEditAction.Reprogramacion:
+                    actionText = "REPROGRAMACIÓN";
+                    break;
+                case ManualEditAction.Actualizacion:
+                    actionText = "ACTUALIZACIÓN";
+                    break;
+                default: // Caso por defecto para mayor seguridad
+                    actionText = "PROGRAMACIÓN";
+                    break;
             }
-            else
-            {
-                switch (selectedAction)
-                {
-                    case ManualEditAction.Reprogramacion:
-                        actionText = "REPROGRAMACIÓN";
-                        break;
-                    case ManualEditAction.Actualizacion:
-                    default:
-                        actionText = "ACTUALIZACIÓN";
-                        break;
-                }
-            }
-            // Asignamos la acción determinada a nuestro modelo para que se guarde en la BD.
+
+            // Asigna la acción seleccionada al modelo para que se guarde en la base de datos.
             model.LastEditAction = actionText;
-    
+
+            // Validaciones del formulario
             if (model.ObraId.HasValue && model.ObraId > 0)
             {
                 var obraSeleccionada = listaDeObras.FirstOrDefault(o => o.Id == model.ObraId);
-                if (obraSeleccionada != null) { model.Works = obraSeleccionada.Nombre; }
+                if (obraSeleccionada != null)
+                {
+                    model.Works = obraSeleccionada.Nombre;
+                }
                 else
                 {
-                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La obra seleccionada no es válida.", Duration = 5000 });
+                    ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "La obra seleccionada no es válida. Por favor, vuelva a seleccionarla.", Duration = 5000 });
                     return;
                 }
             }
 
+            // Combina la fecha y la hora antes de guardar
             if ((OrderType)this.orderType == OrderType.Dispatch)
             {
                 if (this.model.DispatchDateTime != null)
@@ -342,8 +343,10 @@
                 this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
             }
 
+            // Llama al servicio para guardar la orden en la base de datos
             this.model = await logisticsService.CreateOrUpdateOrder(model);
 
+            // Notifica al usuario que la operación fue exitosa
             ShowNotification(new NotificationMessage()
             {
                 Severity = NotificationSeverity.Success,
@@ -352,6 +355,7 @@
                 Duration = 4000
             });
 
+            // Navega de vuelta a la vista de programación
             await Task.Delay(1000);
             navigationManager.NavigateTo(string.Format("ViewScheduleDispRet/{0}/{1}/{2}", strFromDate, strToDate, orderType));
         }
@@ -1057,8 +1061,9 @@
                         <label><b>Motivo de la Edición:</b></label>
                         <RadzenRadioButtonList @bind-Value="selectedAction" TValue="ManualEditAction" Disabled="@(!this.editFields)">
                             <Items>
-                                <RadzenRadioButtonListItem Text="Actualización (Peso, Vehículo, etc.)" Value="ManualEditAction.Actualizacion" />
-                                <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion" />
+                                <RadzenRadioButtonListItem Text="Programación (Primera notificación)" Value="ManualEditAction.Programacion"></RadzenRadioButtonListItem>
+                                <RadzenRadioButtonListItem Text="Actualización (Peso, Vehículo, etc.)" Value="ManualEditAction.Actualizacion"></RadzenRadioButtonListItem>
+                                <RadzenRadioButtonListItem Text="Reprogramación (Cambio de Fecha)" Value="ManualEditAction.Reprogramacion"></RadzenRadioButtonListItem>                                                           
                             </Items>
                         </RadzenRadioButtonList>
                     </div>

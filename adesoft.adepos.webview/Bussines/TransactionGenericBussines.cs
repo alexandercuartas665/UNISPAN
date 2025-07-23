@@ -77,6 +77,7 @@ namespace adesoft.adepos.webview.Bussines
                         newtrans.VehicleTypeId = transaction.VehicleTypeId;
                         newtrans.Wight = transaction.Wight;
                         newtrans.Scheduled = transaction.Scheduled;
+                        //agregr
 
                         decimal weight = 0;
 

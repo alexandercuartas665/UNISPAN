@@ -601,6 +601,7 @@ namespace adesoft.adepos.webview.Data
                                 Works = t.NameWork,
                                 DispatchDateTime = t.DateEnd,
                                 TransactionGenericId = t.TransactionGenericId,
+                                ObraId = t.ObraId,
                                 CreatedOn = DateTime.Now
                             };
 
@@ -1072,6 +1073,7 @@ namespace adesoft.adepos.webview.Data
                         order.ReponsableTransId = transactionGeneric.ReponsableTransId;
                         order.VehicleTypeId = transactionGeneric.VehicleTypeId;
                         order.Wight = transactionGeneric.Wight;
+                        order.ObraId = transactionGeneric.ObraId;
                         order.Status = OrderStatus.Draft;
                         order.ModifiedOn = DateTime.Now;
 
@@ -1099,6 +1101,7 @@ namespace adesoft.adepos.webview.Data
                             ReponsableTransId = transactionGeneric.ReponsableTransId,
                             VehicleTypeId = transactionGeneric.VehicleTypeId,
                             Wight = transactionGeneric.Wight,
+                            ObraId = transactionGeneric.ObraId,
                             CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now,
                             Version = version,

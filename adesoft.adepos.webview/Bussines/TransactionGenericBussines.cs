@@ -64,6 +64,7 @@ namespace adesoft.adepos.webview.Bussines
                         newtrans.ConsecutiveChar = transaction.ConsecutiveChar;
                         newtrans.NameWork = transaction.NameWork;
                         newtrans.Note = transaction.Note;
+                        newtrans.ObraId = transaction.ObraId;
                         newtrans.DateEnd = transaction.DateEnd;
                         newtrans.DatePayInit = trans.DateEnd;
                         newtrans.StateTransactionGenericId = 11;

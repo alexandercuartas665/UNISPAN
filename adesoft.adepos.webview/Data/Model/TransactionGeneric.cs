@@ -98,15 +98,8 @@ namespace adesoft.adepos.webview.Data.Model
         // 
         public long? ObraId { get; set; }
 
-        //
         [ForeignKey("ObraId")]
-        public virtual Obras Obra { get; set; } // Asegúrate public long? ObraId { get; set; }
-
-        // --- PROPIEDAD DE NAVEGACIÓN (OPCIONAL PERO RECOMENDADO) ---
-        [ForeignKey("ObraId")]
-        //public virtual Obras Obra { get; set; } // Asegúrate que el tipo 'Obras' exista como entidad
-
-
+        public virtual Obras Obra { get; set; }
 
         /// Para uso de APIs
         [NotMapped]

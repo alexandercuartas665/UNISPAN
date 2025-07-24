@@ -1886,60 +1886,54 @@ namespace adesoft.adepos.webview.Controller
             return dtoOrder;
         }
 
-
-        //Actualiza la fecha de la última notificación para las órdenes especificadas por sus IDs
-
-
-
-
-        public bool DeleteOrder(DTOOrder dtoOrder)
+        //
+        [HttpPost("deleteOrder")]
+        public bool DeleteOrder([FromBody] DTOOrder dtoOrder)
         {
-            var order = _dbcontext.Orders.Where(o => o.Id == dtoOrder.OrderId).FirstOrDefault();
-            if (!(order is null))
+            using (var transaction = _dbcontext.Database.BeginTransaction())
             {
-                if (!order.Status.Equals(OrderStatus.Draft))
+                try
+                {
+                    var order = _dbcontext.Orders.FirstOrDefault(o => o.Id == dtoOrder.OrderId && o.OrderType == dtoOrder.OrderType);
 
-
-                    using (var transaction = _dbcontext.Database.BeginTransaction())
+                    if (order == null)
                     {
-                        try
-                        {
-                            _dbcontext.Orders.Remove(order);
-
-                            var comments = _dbcontext.OrderComments.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
-                            _dbcontext.OrderComments.RemoveRange(comments);
-
-                            var pictures = _dbcontext.OrderPictures.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
-                            _dbcontext.OrderPictures.RemoveRange(pictures);
-
-                            var transactionGeneric = _dbcontext.TransactionGenerics
-                                .Where(o => o.TransactionGenericId.Equals(order.TransactionGenericId))
-                                .FirstOrDefault();
-
-                            if (!(transactionGeneric is null))
-                                _dbcontext.TransactionGenerics.Remove(transactionGeneric);
-
-                            var orderProducts = _dbcontext.OrderProducts
-                                .Where(op => op.OrderId.Equals(order.Id))
-                                .ToList();
-                            _dbcontext.OrderProducts.RemoveRange(orderProducts);
-
-                            _dbcontext.SaveChanges();
-                            _dbcontext.DetachAll();
-
-                            transaction.Commit();
-                        }
-                        catch (Exception)
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
+                        throw new Exception("La orden que intenta eliminar no fue encontrada.");
                     }
 
-                return true;
-            }
+                    if (order.Status != OrderStatus.Draft && order.Status != OrderStatus.None)
+                    {
+                        throw new Exception($"La orden no puede ser eliminada porque su estado es '{order.Status}'. Solo se pueden eliminar órdenes en estado Borrador o Ninguno.");
+                    }
 
-            return false;
+                    var comments = _dbcontext.OrderComments.Where(c => c.OrderId == dtoOrder.OrderId).ToList();
+                    _dbcontext.OrderComments.RemoveRange(comments);
+
+                    var pictures = _dbcontext.OrderPictures.Where(p => p.OrderId == dtoOrder.OrderId).ToList();
+                    _dbcontext.OrderPictures.RemoveRange(pictures);
+
+                    var orderProducts = _dbcontext.OrderProducts.Where(op => op.OrderId.Equals(order.Id)).ToList();
+                    _dbcontext.OrderProducts.RemoveRange(orderProducts);
+
+                    var transactionGeneric = _dbcontext.TransactionGenerics.FirstOrDefault(t => t.TransactionGenericId.Equals(order.TransactionGenericId));
+                    if (transactionGeneric != null)
+                    {
+                        _dbcontext.TransactionGenerics.Remove(transactionGeneric);
+                    }
+
+                    _dbcontext.Orders.Remove(order);
+
+                    _dbcontext.SaveChanges();
+                    transaction.Commit();
+
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw; 
+                }
+            }
         }
 
         public bool ReSyncOrder(DTOOrder dtoOrder)

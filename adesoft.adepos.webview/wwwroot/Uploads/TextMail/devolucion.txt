@@ -34,7 +34,7 @@
             <div style="direction: ltr;"><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operación, debido que, al cargarlo de esta forma, 
               las piezas se desplazan y se pierde la organización para poder descargar mediante montacarga.</div>
             </li><li style="font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); align-self: center;">
-            <div style="direction: ltr; text-align: center;"><img id="x_image_0" size="1181026" contenttype="image/png" style="max-width: 1867px;" data-outlook-trace="F:2|T:2" src="http://manager.unispan.com.co/Images/imagen_despachos.png"></div>
+            <div style="direction: ltr; text-align: center;"><img id="x_image_0" size="1181026" contenttype="image/png" style="max-width: 1867px;" data-outlook-trace="F:2|T:2" src="http://manager.unispan.com.co/Images/imagen_devoluciones.png"></div>
             </li><li style="font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;">
             <b>PROGRAMACIÓN DEVOLUCIONES</b>: Las devoluciones deben ser programadas con cinco (5) días hábiles de anticipación, se recibe equipo en bodega de lunes a viernes (No festivos).</li></ul>
             <div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">

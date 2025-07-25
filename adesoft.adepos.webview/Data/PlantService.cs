@@ -580,11 +580,12 @@ namespace adesoft.adepos.webview.Data
                 using (var dbContextTransaction = _dbcontext.Database.BeginTransaction())
                 {
                     var trans = _dbcontext.TransactionGenerics
+                        .AsNoTracking()
                         .Where(tg => tg.DateEnd.Date >= fromDate.Date && tg.DateEnd.Date <= toDate)
                         .ToList();
                     var newOrders = new List<Order>();
                     var updateOrders = new List<Order>();
-
+                   
                     foreach (var t in trans)
                     {
                         var order = _dbcontext.Orders
@@ -1058,6 +1059,7 @@ namespace adesoft.adepos.webview.Data
                 {
                     int version = 0;
                     var order = _dbcontext.Orders
+                            .AsNoTracking()
                             .Where(o => o.TransactionGenericId.Equals(transactionGeneric.TransactionGenericId)
                             && (o.Status.Equals(OrderStatus.None) || o.Status.Equals(OrderStatus.Paused)))
                             .FirstOrDefault();

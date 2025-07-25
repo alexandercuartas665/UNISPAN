@@ -227,116 +227,125 @@
         }
 
         var notifiedByUser = httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Sistema";
-
         IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
         string ruta_anexo_despachos = configuration.GetValue<string>("AdjuntoDespacho");
         string ruta_anexo_devoluciones = configuration.GetValue<string>("AdjuntoDevolucion");
 
-        //LÓGICA DE ADJUNTOS
-        string[] archivosDespachos = !string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos) ? Directory.GetFiles(ruta_anexo_despachos, "*.pdf") : Array.Empty<string>();
-        string[] archivosDevoluciones = !string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones) ? Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf") : Array.Empty<string>();
+        // --- CORRECCIÓN: Se mueven las listas fuera del bucle para acumular todos los datos ---
+        StringBuilder reportContentGlobal = new StringBuilder();
+        List<string> listaCorreosGlobal = new List<string>();
+        List<Tuple<string, string>> attachmentsGlobal = new List<Tuple<string, string>>();
+        List<DTOOrder> allDetailedOrders = new List<DTOOrder>();
 
-        var groupedByOrderType = selectedOrders.GroupBy(o => o.OrderType);
+        // Agrupa las órdenes por DispatchId para consolidar notificaciones de vehículos compartidos.
+        var groupedByDispatchId = selectedOrders.GroupBy(o => (o.DispatchId == 0 || o.DispatchId == o.OrderId) ? o.OrderId : o.DispatchId);
 
-        foreach (var typeGroup in groupedByOrderType)
+        // Bucle para CONSTRUIR el contenido del correo, no para enviarlo.
+        foreach (var dispatchGroup in groupedByDispatchId)
         {
-            var ordersForThisType = typeGroup.ToList();
-            var tipo_orden_correos = typeGroup.Key.ToString();
+            var ordersInGroup = dispatchGroup.ToList();
+            var orderTypeForGroup = ordersInGroup.First().OrderType;
 
-            StringBuilder reportContent = new StringBuilder();
-            List<string> listaTemporalDeCorreos = new List<string>();
-            List<Tuple<string, string>> attachmentFiles = new List<Tuple<string, string>>();
-            string ListaOrdenesDespachos = string.Join(", ", ordersForThisType.Select(o => o.OrderNum).Distinct());
-            int llevaDespachos = (typeGroup.Key == OrderType.Dispatch) ? ordersForThisType.Count : 0;
-            int llevaDevoluciones = (typeGroup.Key == OrderType.Return) ? ordersForThisType.Count : 0;
-
-            //variable ListaOrdenes
-            string ListaOrdenes = "";
-
-            var detailedOrders = new List<DTOOrder>();
+            var detailedOrdersInGroup = new List<DTOOrder>();
             await Task.Run(async () =>
             {
-                foreach (var summaryOrder in ordersForThisType)
+                foreach (var summaryOrder in ordersInGroup)
                 {
                     var detailedOrder = await logisticsService.GetOrder(summaryOrder.OrderType, summaryOrder.OrderId);
-                    if (detailedOrder != null) { detailedOrders.Add(detailedOrder); }
+                    if (detailedOrder != null) { detailedOrdersInGroup.Add(detailedOrder); }
                 }
             });
 
-            foreach (var order in detailedOrders)
-            {
-                if (order.OrderType == OrderType.Dispatch) { reportContent.AppendLine($"<br/>{GenerateOrderReportDESPACHO(order)}"); }
-                else if (order.OrderType == OrderType.Return) { reportContent.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); }
-             
-                ListaOrdenes += "," + order.OrderId;
+            if (!detailedOrdersInGroup.Any()) continue;
 
-                if (!string.IsNullOrWhiteSpace(order.Email)) { listaTemporalDeCorreos.AddRange(order.Email.Split(';')); }
+            allDetailedOrders.AddRange(detailedOrdersInGroup); // Acumula para el asunto del correo
+
+            // --- CORRECCIÓN: Se ACUMULA el contenido HTML de cada grupo ---
+            if (orderTypeForGroup == OrderType.Dispatch)
+            {
+                reportContentGlobal.AppendLine($"<br/>{GenerateGroupedOrderReportDESPACHO(detailedOrdersInGroup)}");
+            }
+            else
+            {
+                foreach (var order in detailedOrdersInGroup) { reportContentGlobal.AppendLine($"<br/>{GenerateOrderReportDEVOLUCION(order)}"); }
+            }
+
+            // Recopila y ACUMULA correos y adjuntos de todas las órdenes del grupo
+            foreach (var order in detailedOrdersInGroup)
+            {
+                if (!string.IsNullOrWhiteSpace(order.Email)) { listaCorreosGlobal.AddRange(order.Email.Split(';')); }
                 string correosEspeciales = ListaCorreosEspeciales(order);
-                if (!string.IsNullOrEmpty(correosEspeciales)) { listaTemporalDeCorreos.AddRange(correosEspeciales.Split(';', StringSplitOptions.RemoveEmptyEntries)); }
-                                
+                if (!string.IsNullOrEmpty(correosEspeciales)) { listaCorreosGlobal.AddRange(correosEspeciales.Split(';', StringSplitOptions.RemoveEmptyEntries)); }
+
                 var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", order.OrderId.ToString());
                 if (Directory.Exists(orderFolder))
                 {
                     foreach (var filePath in Directory.GetFiles(orderFolder))
                     {
-                        string fileNameReal = Path.GetFileName(filePath);
-                        string fileNameEspecial = order.OPNum + "_" + fileNameReal;
-                        attachmentFiles.Add(new Tuple<string, string>(filePath, fileNameEspecial));
+                        if (!attachmentsGlobal.Any(f => f.Item1 == filePath))
+                        {
+                            attachmentsGlobal.Add(new Tuple<string, string>(filePath, $"{order.OPNum}_{Path.GetFileName(filePath)}"));
+                        }
                     }
                 }
             }
+        }
 
-            var textocorreo = TextoParaCorreo(reportContent.ToString(), tipo_orden_correos, ListaOrdenesDespachos);
+        // --- CORRECCIÓN: Se construye y envía UN SOLO correo después de procesar todos los grupos ---
+        if (allDetailedOrders.Any())
+        {
+            string listaOrdenesDisplay = string.Join(", ", allDetailedOrders.Select(o => o.OrderNum).Distinct());
+            var textoCorreo = TextoParaCorreo(reportContentGlobal.ToString(), allDetailedOrders.First().OrderType.ToString(), listaOrdenesDisplay);
 
             try
             {
                 await Task.Run(async () =>
                 {
                     SmtpClient client = new SmtpClient("smtp.office365.com", 587) { UseDefaultCredentials = false, EnableSsl = true, Credentials = new NetworkCredential("formularios@unispan.com.co", "Sistemas2024*") };
-                    MailMessage mailMessage = new MailMessage { From = new MailAddress("formularios@unispan.com.co"), IsBodyHtml = true, BodyEncoding = Encoding.UTF8, Body = $" {textocorreo}  " };
+
+                    MailMessage mailMessage = new MailMessage { From = new MailAddress("formularios@unispan.com.co"), IsBodyHtml = true, BodyEncoding = Encoding.UTF8, Body = textoCorreo };
                     mailMessage.To.Add("sistemas@unispan.com.co");
 
-                    if (tipo_orden_correos == "Dispatch") { mailMessage.To.Add("info_despacho@unispan.com.co"); }
-                    else if (tipo_orden_correos == "Return") { mailMessage.To.Add("diroperaciones@unispan.com.co"); }
+                    var orderTypeForEmail = allDetailedOrders.First().OrderType;
+                    if (orderTypeForEmail == OrderType.Dispatch) { mailMessage.To.Add("info_despacho@unispan.com.co"); }
+                    else if (orderTypeForEmail == OrderType.Return) { mailMessage.To.Add("diroperaciones@unispan.com.co"); }
 
-                    var correosUnicosYValidos = listaTemporalDeCorreos.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Where(c => EsCorreoValido(c)).ToList();
+                    var correosUnicosYValidos = listaCorreosGlobal.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Where(c => EsCorreoValido(c)).ToList();
                     foreach (var correo in correosUnicosYValidos) { mailMessage.To.Add(correo); }
 
-                    //Logica de Asunto
-                    if (tipo_orden_correos == "Dispatch")
+                    // Lógica de Asunto para el correo único
+                    if (orderTypeForEmail == OrderType.Dispatch)
                     {
-                        //Si solo se notifica UNA orden, usamos el asunto especifico
-                        if (detailedOrders.Count == 1)
+                        if (allDetailedOrders.Count == 1)
                         {
-                            var order = detailedOrders.First();
-                            //Leemos la acción guardada en la BD, si por alguna razón está vacía, usamos "PROGRAMACIÓN" como respaldo
+                            var order = allDetailedOrders.First();
                             string action = !string.IsNullOrEmpty(order.LastEditAction) ? order.LastEditAction : "PROGRAMACIÓN";
                             mailMessage.Subject = $"{action} DESPACHO {order.Works}";
                         }
-                        else // Si se notifican MÚLTIPLES órdenes, usamos un asunto genérico
+                        else
                         {
-                            mailMessage.Subject = $"NOTIFICACIÓN DE DESPACHOS: {string.Join(", ", detailedOrders.Select(o => o.Works).Distinct())}";
+                            mailMessage.Subject = $"NOTIFICACIÓN DE DESPACHOS: {string.Join(", ", allDetailedOrders.Select(o => o.Works).Distinct())}";
                         }
                     }
-                    else if (tipo_orden_correos == "Return")
+                    else if (orderTypeForEmail == OrderType.Return)
                     {
-                        // La lógica para devoluciones se mantiene igual.
-                        mailMessage.Subject = $"PROGRAMACIÓN DEVOLUCIÓN {string.Join(", ", ordersForThisType.Select(o => o.Works).Distinct())}";
+                        mailMessage.Subject = $"PROGRAMACIÓN DEVOLUCIÓN {string.Join(", ", allDetailedOrders.Select(o => o.Works).Distinct())}";
                     }
-                    
-                    if (llevaDespachos > 0) { foreach (string archivo in archivosDespachos) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
-                    if (llevaDevoluciones > 0) { foreach (string archivo in archivosDevoluciones) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
 
-                    foreach (var item in attachmentFiles)
-                    {
-                        Attachment adjunto = new Attachment(item.Item1) { ContentDisposition = { FileName = item.Item2 } };
-                        mailMessage.Attachments.Add(adjunto);
-                    }
+                    // Adjuntos
+                    string[] archivosDespachos = !string.IsNullOrEmpty(ruta_anexo_despachos) && Directory.Exists(ruta_anexo_despachos) ? Directory.GetFiles(ruta_anexo_despachos, "*.pdf") : Array.Empty<string>();
+                    string[] archivosDevoluciones = !string.IsNullOrEmpty(ruta_anexo_devoluciones) && Directory.Exists(ruta_anexo_devoluciones) ? Directory.GetFiles(ruta_anexo_devoluciones, "*.pdf") : Array.Empty<string>();
+                    if (allDetailedOrders.Any(o => o.OrderType == OrderType.Dispatch)) { foreach (string archivo in archivosDespachos) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
+                    if (allDetailedOrders.Any(o => o.OrderType == OrderType.Return)) { foreach (string archivo in archivosDevoluciones) { mailMessage.Attachments.Add(new Attachment(archivo)); } }
+                    foreach (var item in attachmentsGlobal) { mailMessage.Attachments.Add(new Attachment(item.Item1) { ContentDisposition = { FileName = item.Item2 } }); }
+
                     client.Send(mailMessage);
-                    var notifiedOrderIds = ordersForThisType.Select(o => o.OrderId).ToList();
-                    var orderTypeForNotification = typeGroup.Key;
-                    bool logSuccess = await logisticsService.LogNotification(notifiedOrderIds, orderTypeForNotification, notifiedByUser);
+
+                    var notifiedOrderIds = selectedOrders.Select(o => o.OrderId).ToList();
+                    await logisticsService.LogNotification(notifiedOrderIds, orderTypeForEmail, notifiedByUser);
                 });
+
+                notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Éxito", Detail = $"Proceso de notificación iniciado.", Duration = 4000 });
             }
             catch (Exception ex)
             {
@@ -344,12 +353,9 @@
             }
         }
 
-        notificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Éxito", Detail = $"Proceso de notificación iniciado.", Duration = 4000 });
-
         foreach (var order in selectedOrders) { order.IsSelected = false; }
         StateHasChanged();
     }
-
 	#endregion
 	#region Validación de correo electrónico
     //metodo EsCorreoValido
@@ -494,6 +500,74 @@
         sb.AppendLine("</div>");
         return sb.ToString();
     }
+    // Genera el reporte consolidado de órdenes de despacho
+    public string GenerateGroupedOrderReportDESPACHO(List<DTOOrder> groupedOrders)
+    {
+        if (!groupedOrders.Any()) return "";
+
+        var firstOrder = groupedOrders.First(); // Para obtener la información compartida del vehículo
+        var sb = new StringBuilder();
+
+        // ESTILOS CSS
+        string tableStyle = "border-collapse: collapse; font-family: Arial, sans-serif; width: auto; white-space: nowrap;";
+        string headerStyle = "background-color: #002060; color: white; padding: 12px; text-align: left;";
+        string cellStyle = "padding: 12px; border: 1px solid #ddd; vertical-align: top;";
+
+        // TABLA
+        sb.AppendLine("<div style='overflow-x: auto;'>");
+        sb.AppendLine($"<table style='{tableStyle}'>");
+
+        // ENCABEZADOS - FILA 1
+        sb.Append("<tr>");
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", "CONTROL DE DESPACHOS", 9);
+        AddTableHeaderWithColspan(sb, headerStyle + "border: 1px solid white;", $"{firstOrder.DispatchDateTime.Value:dddd}".ToUpper() + "<br>" + $"{firstOrder.DispatchDateTime.Value:dd/MM/yyyy}", 3);
+        sb.AppendLine("</tr>");
+
+        // ENCABEZADOS - FILA 2
+        sb.AppendLine("<tr>");
+        AddTableHeader(sb, headerStyle, "OBRAS");
+        AddTableHeader(sb, headerStyle, "CLIENTE");
+        AddTableHeader(sb, headerStyle, "ORDEN DE DESPACHO");
+        AddTableHeader(sb, headerStyle, "#OP");
+        AddTableHeader(sb, headerStyle, "COMERCIAL");
+        AddTableHeader(sb, headerStyle, "MODULÓ");
+        AddTableHeader(sb, headerStyle, "CIUDAD");
+        AddTableHeader(sb, headerStyle, "TRANSPORTE A CARGO DE");
+        AddTableHeader(sb, headerStyle, "PESO TOTAL (Ton)");
+        AddTableHeader(sb, headerStyle, "HORA DE CARGUE");
+        AddTableHeader(sb, headerStyle, "VEHÍCULO");
+        AddTableHeader(sb, headerStyle, "OBSERVACIONES");
+        sb.AppendLine("</tr>");
+
+        // FILA DE DATOS (CONSOLIDADA)
+        sb.AppendLine("<tr>");
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => o.Works).Distinct()));
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => $"{o.CustomerName} ({o.CustomerAccount})").Distinct()));
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => o.OrderNum)));
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => o.OPNum).Where(op => !string.IsNullOrWhiteSpace(op)).Distinct()));
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => o.SalesPerson).Distinct()));
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => o.Module).Distinct()));
+        AddTableCell(sb, cellStyle, string.Join("<br/>", groupedOrders.Select(o => o.City).Distinct()));
+        AddTableCell(sb, cellStyle, firstOrder.ReponsableTrans);
+        AddTableCell(sb, cellStyle, groupedOrders.Sum(o => o.Wight).ToString("N2"));
+        AddTableCell(sb, cellStyle, firstOrder.DispatchDateTime.Value.ToString("HH:mm"));
+        AddTableCell(sb, cellStyle, $"{firstOrder.VehicleType}");
+
+        // Unir todas las observaciones únicas y no vacías
+        var textoObservacion = string.Join("<br/>", groupedOrders
+            .SelectMany(o => o.Comments)
+            .OrderByDescending(c => c.CreatedDatetTime)
+            .Select(c => c.Comment)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct());
+        AddTableCell(sb, cellStyle, textoObservacion);
+
+        sb.AppendLine("</tr>");
+        sb.AppendLine("</table>");
+        sb.AppendLine("</div>");
+        return sb.ToString();
+    }
+
     private void AddTableHeader(StringBuilder sb, string style, string header)
     {
         sb.AppendLine($"<th style='{style}'>{header}</th>");

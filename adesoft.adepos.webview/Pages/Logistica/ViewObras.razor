@@ -22,7 +22,8 @@
                 <div class="form-group col-md-6">
                     <label>Cliente<b class="text-danger">*</b></label>
                     <RadzenDropDown TValue="int" @bind-Value="model.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
-                                    AllowFiltering="true" Placeholder="Seleccione un cliente..." class="form-control" />
+                                    AllowFiltering="true" Placeholder="Seleccione un cliente ..." class="form-control" 
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                 </div>
                 <div class="form-group col-md-6">
                     <label>Nombre de la Obra<b class="text-danger">*</b></label>
@@ -34,12 +35,14 @@
                 <div class="form-group col-md-6">
                     <label>Ciudad</label>
                     <RadzenDropDown TValue="int?" @bind-Value="model.CiudadId" Data="@listaDeCiudades" TextProperty="Description" ValueProperty="Id"
-                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione una ciudad..." class="form-control" />
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione una ciudad..." class="form-control"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" />
                 </div>
                 <div class="form-group col-md-6">
                     <label>Comercial</label>
                     <RadzenDropDown TValue="int?" @bind-Value="model.ComercialId" Data="@listaDeComerciales" TextProperty="Description" ValueProperty="Id"
-                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control" />
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control" 
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                 </div>
             </div>
 

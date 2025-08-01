@@ -1022,17 +1022,7 @@
                                         <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="vehicleType" class="form-control" @bind-Value="model.VehicleTypeId" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@vehicleTypes" TextProperty="Description" ValueProperty="Id" Change="changeField" />
                                     }
                                 }
-                            </div>
-                            @{
-                                if (!this.model.DispatchParent)
-                                {
-                                    <div class="form-group ">
-                                        <label for="dispatchWith">Compartir vehiculo con dev</label>
-                                        <RadzenDropDown Disabled="@(!this.editFields)" AllowFiltering="true" Name="dispatchWith" class="form-control" @bind-Value="model.DispatchIdSelect" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@sharedOrders" TextProperty="OrderWorks" ValueProperty="OrderId" />
-
-                                    </div>
-                                }
-                            }
+                            </div>                           
                         </div>
                     }
                 }

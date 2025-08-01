@@ -291,7 +291,6 @@
             }
         }
 
-        // --- CORRECCIÓN: Se construye y envía UN SOLO correo después de procesar todos los grupos ---
         if (allDetailedOrders.Any())
         {
             string listaOrdenesDisplay = string.Join(", ", allDetailedOrders.Select(o => o.OrderNum).Distinct());
@@ -308,7 +307,7 @@
 
                     var orderTypeForEmail = allDetailedOrders.First().OrderType;
                     if (orderTypeForEmail == OrderType.Dispatch) { mailMessage.To.Add("info_despacho@unispan.com.co"); }
-                    else if (orderTypeForEmail == OrderType.Return) { mailMessage.To.Add("diroperaciones@unispan.com.co"); }
+                    else if (orderTypeForEmail == OrderType.Return) { mailMessage.To.Add("diroperaciones@unispan.com.co"); mailMessage.To.Add("info_devoluciones@unispan.com.co"); }
 
                     var correosUnicosYValidos = listaCorreosGlobal.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Where(c => EsCorreoValido(c)).ToList();
                     foreach (var correo in correosUnicosYValidos) { mailMessage.To.Add(correo); }
@@ -324,7 +323,7 @@
                         }
                         else
                         {
-                            mailMessage.Subject = $"NOTIFICACIÓN DE DESPACHOS: {string.Join(", ", allDetailedOrders.Select(o => o.Works).Distinct())}";
+                            mailMessage.Subject = $"PROGRAMACIÓN DE DESPACHOS: {string.Join(", ", allDetailedOrders.Select(o => o.Works).Distinct())}";
                         }
                     }
                     else if (orderTypeForEmail == OrderType.Return)
@@ -553,13 +552,14 @@
         AddTableCell(sb, cellStyle, firstOrder.DispatchDateTime.Value.ToString("HH:mm"));
         AddTableCell(sb, cellStyle, $"{firstOrder.VehicleType}");
 
-        // Unir todas las observaciones únicas y no vacías
-        var textoObservacion = string.Join("<br/>", groupedOrders
-            .SelectMany(o => o.Comments)
-            .OrderByDescending(c => c.CreatedDatetTime)
-            .Select(c => c.Comment)
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Distinct());
+
+        var ultimaObservacion = groupedOrders
+        .SelectMany(o => o.Comments) 
+        .OrderByDescending(c => c.CreatedDatetTime) 
+        .FirstOrDefault(); 
+
+        var textoObservacion = ultimaObservacion?.Comment ?? "";
+
         AddTableCell(sb, cellStyle, textoObservacion);
 
         sb.AppendLine("</tr>");

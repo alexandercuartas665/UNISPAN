@@ -323,7 +323,22 @@
                         }
                         else
                         {
-                            mailMessage.Subject = $"PROGRAMACIÓN DE DESPACHOS: {string.Join(", ", allDetailedOrders.Select(o => o.Works).Distinct())}";
+                            // 1. Establecemos un valor por defecto.
+                            string subjectAction = "PROGRAMACIÓN";
+
+                            // 2. Verificamos si alguna de las órdenes fue una actualización.
+                            if (allDetailedOrders.Any(o => o.LastEditAction == "ACTUALIZACIÓN"))
+                            {
+                                subjectAction = "ACTUALIZACIÓN";
+                            }
+                            // 3. (Opcional) Verificamos si alguna fue reprogramación (si no hubo actualización).
+                            else if (allDetailedOrders.Any(o => o.LastEditAction == "REPROGRAMACIÓN"))
+                            {
+                                subjectAction = "REPROGRAMACIÓN";
+                            }
+
+                            // 4. Construimos el asunto con la acción correcta.
+                            mailMessage.Subject = $"{subjectAction} DE DESPACHOS: {string.Join(", ", allDetailedOrders.Select(o => o.Works).Distinct())}";
                         }
                     }
                     else if (orderTypeForEmail == OrderType.Return)

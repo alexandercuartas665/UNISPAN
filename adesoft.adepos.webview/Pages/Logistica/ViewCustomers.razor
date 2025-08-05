@@ -1,5 +1,5 @@
 ﻿@page "/ViewCustomers"
-@using  Newtonsoft.Json
+@using Newtonsoft.Json
 @using adesoft.adepos.webview.Data
 @using adesoft.adepos.webview.Data.DTO
 @using adesoft.adepos.webview.Data.Model
@@ -10,93 +10,155 @@
 @inject IJSRuntime JSRuntime
 
 @code {
-    public DTOLogisticMasterData model { get; set; }
+    // Modelo para el formulario de CREACIÓN de un nuevo cliente
+    private DTOLogisticMasterData newCustomer;
+
+    // Modelo para el formulario de EDICIÓN, será nulo hasta que se seleccione un cliente
+    private DTOLogisticMasterData editCustomer;
+
+    // Lista de clientes para la grilla
     public List<DTOLogisticMasterData> customers;
 
     protected override async Task OnInitializedAsync()
     {
-        this.model = new DTOLogisticMasterData();
-        this.model.Type = "CLIENTE";
-        this.customers = await logisticsService.GetCustomers();
+        InitializeNewCustomer();
+        customers = await logisticsService.GetCustomers();
     }
 
-    async void ShowNotification(NotificationMessage message)
+    // Prepara el objeto para un nuevo cliente
+    private void InitializeNewCustomer()
     {
-        notificationService.Notify(message);
+        newCustomer = new DTOLogisticMasterData { Type = "CLIENTE" };
     }
 
-    async void AddCustomer()
+    //MÉTODOS PARA CREACIÓN
+    private async Task CreateCustomerAsync()
     {
-        if (model.IdentificationNum == "" || model.Description == "" )
+        if (string.IsNullOrWhiteSpace(newCustomer.IdentificationNum) || string.IsNullOrWhiteSpace(newCustomer.Description))
         {
-            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "Todos los campos son obligatorios.", Duration = 4000 });
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El NIT y el Nombre son obligatorios.", Duration = 4000 });
             return;
         }
 
-        this.model = await logisticsService.CreateOrUpdateCustomer(model);
+        await logisticsService.CreateOrUpdateCustomer(newCustomer);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Éxito", Detail = "Cliente creado correctamente.", Duration = 4000 });
 
-        this.OnNew();
-        this.customers = await logisticsService.GetCustomers();
+        InitializeNewCustomer(); // Limpia el formulario de creación
+        customers = await logisticsService.GetCustomers(); // Refresca la grilla
+        StateHasChanged();
     }
 
-    void EditCustomer(DTOLogisticMasterData customer)
+    //MÉTODOS PARA EDICIÓN
+    private void SelectCustomerToEdit(DTOLogisticMasterData customerToEdit)
     {
-        this.model = customer;
-    }  
-    
-    void OnNew()
+        // Clona el objeto para evitar que cambios accidentales en el formulario afecten la grilla antes de guardar
+        editCustomer = new DTOLogisticMasterData
+        {
+            Id = customerToEdit.Id,
+            IdentificationNum = customerToEdit.IdentificationNum,
+            Description = customerToEdit.Description,
+            Type = customerToEdit.Type
+        };
+    }
+
+    private async Task UpdateCustomerAsync()
     {
-        this.model = new DTOLogisticMasterData();
-        this.model.Type = "CLIENTE";
+        if (string.IsNullOrWhiteSpace(editCustomer.Description))
+        {
+            ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Error, Summary = "ERROR", Detail = "El Nombre es obligatorio.", Duration = 4000 });
+            return;
+        }
+
+        await logisticsService.CreateOrUpdateCustomer(editCustomer);
+        ShowNotification(new NotificationMessage() { Severity = NotificationSeverity.Success, Summary = "Éxito", Detail = "Cliente actualizado correctamente.", Duration = 4000 });
+
+        editCustomer = null; // Oculta el formulario de edición
+        customers = await logisticsService.GetCustomers(); // Refresca la grilla
+    }
+
+    private void CancelEdit()
+    {
+        editCustomer = null; // Simplemente oculta el formulario de edición
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
     }
 }
 
 <div class="card">
     <div class="card-header">
-        CLIENTES
+        GESTIÓN DE CLIENTES
         <div class="float-right">
-            <a href="javascript:void(0);" @onclick="@(args=> { dialogService.Close(); })">Cerrar</a>
+            <a href="javascript:void(0);" @onclick="@(args => dialogService.Close(true))">Cerrar</a>
         </div>
     </div>
     <div class="card-body">
-        <RadzenFieldset Text="Clientes">
+
+        <RadzenFieldset Text="Crear Nuevo Cliente">
             <div class="form-row">
-                <div class="form-group col-md-3">
-                    <label for="inputinit">Número de identificación</label>
-                    <RadzenTextBox Name="IdentificationNum" TValue="string" @bind-Value="model.IdentificationNum" class="form-control" ReadOnly="@(model.Id != 0)"/>
+                <div class="form-group col-md-4">
+                    <label for="newId">Número de identificación (NIT)</label>
+                    <RadzenTextBox Name="newId" @bind-Value="newCustomer.IdentificationNum" class="form-control" />
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="inputinit">Nombre</label>
-                    <RadzenTextBox Name="Name" TValue="string" @bind-Value="model.Description" class="form-control" />
+                <div class="form-group col-md-5">
+                    <label for="newName">Nombre del Cliente</label>
+                    <RadzenTextBox Name="newName" @bind-Value="newCustomer.Description" class="form-control" />
                 </div>
-                <div class="form-group col-md-3">
-                    <label class="d-block">&nbsp;</label>                    
-                    <input class="btn btn-success btn-sm" @onclick="AddCustomer" value="Guardar" type="button" />
-                    <input class="btn btn-primary btn-sm" @onclick="OnNew" value="Nuevo" type="button" />
+                <div class="form-group col-md-3" style="align-self: flex-end;">
+                    <button class="btn btn-success" @onclick="CreateCustomerAsync">
+                        <span class="oi oi-plus" aria-hidden="true"></span> Crear Cliente
+                    </button>
                 </div>
             </div>
-            <div class="form-row pt-3">
+        </RadzenFieldset>
 
-                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@customers" TItem="DTOLogisticMasterData" ColumnWidth="200px">
+        @if (editCustomer != null)
+        {
+            <RadzenFieldset Text="Editar Cliente" class="mt-4">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="editId">Número de identificación (NIT)</label>
+                        <RadzenTextBox Name="editId" @bind-Value="editCustomer.IdentificationNum" class="form-control" ReadOnly="true" />
+                    </div>
+                    <div class="form-group col-md-5">
+                        <label for="editName">Nombre del Cliente</label>
+                        <RadzenTextBox Name="editName" @bind-Value="editCustomer.Description" class="form-control" />
+                    </div>
+                    <div class="form-group col-md-3" style="align-self: flex-end;">
+                        <button class="btn btn-primary" @onclick="UpdateCustomerAsync">
+                            <span class="oi oi-check" aria-hidden="true"></span> Guardar Cambios
+                        </button>
+                        <button class="btn btn-secondary" @onclick="CancelEdit">
+                            <span class="oi oi-x" aria-hidden="true"></span> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </RadzenFieldset>
+        }
+
+        <div class="form-row pt-4">
+            <div class="col-md-12">
+                <h5>Clientes Existentes</h5>
+                <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@customers" TItem="DTOLogisticMasterData" ColumnWidth="200px" EmptyText="No hay clientes para mostrar.">
                     <Columns>
-                        <RadzenGridColumn TItem="DTOLogisticMasterData" Property="IdentificationNum" Title="Número de identificación">
+                        <RadzenGridColumn TItem="DTOLogisticMasterData" Property="IdentificationNum" Title="Número de identificación" Width="200px" />
+                        <RadzenGridColumn TItem="DTOLogisticMasterData" Property="Description" Title="Nombre" />
+                        <RadzenGridColumn TItem="DTOLogisticMasterData" Width="50px" TextAlign="TextAlign.Center">
+                            <HeaderTemplate>
+                                <div style="text-align:center; width:100%;">Editar</div>
+                            </HeaderTemplate>
                             <Template Context="data">
-                                @(data.IdentificationNum)
-                            </Template>
-                        </RadzenGridColumn>
-                        <RadzenGridColumn TItem="DTOLogisticMasterData" Property="Description" Title="Nombre">
-                            <Template Context="data">
-                                @(data.Description)
-                            </Template>
-                        </RadzenGridColumn>
-                        <RadzenGridColumn TItem="DTOLogisticMasterData" Title="">
-                            <Template Context="data">
-                                <NavLink href="javascript:void(0);" @onclick="@(args=> { EditCustomer(data); })">Editar</NavLink>
+                                <button class="btn btn-info btn-sm" @onclick="@(args => SelectCustomerToEdit(data))">
+                                    <span class="oi oi-pencil" aria-hidden="true"></span> Editar
+                                </button>
                             </Template>
                         </RadzenGridColumn>
                     </Columns>
                 </RadzenGrid>
             </div>
-        </RadzenFieldset>
+        </div>
+
     </div>
 </div>

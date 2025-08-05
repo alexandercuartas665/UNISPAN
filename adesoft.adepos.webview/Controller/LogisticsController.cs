@@ -1829,6 +1829,7 @@ namespace adesoft.adepos.webview.Controller
                     VendorAccount = dtoOrder.VendorAccount,
                     Wight = dtoOrder.Wight,
                     Works = dtoOrder.Works,
+                    ObraId = dtoOrder.ObraId,
                     DispatchId = dtoOrder.DispatchIdSelect != 0 ? dtoOrder.DispatchIdSelect : 0,
                     FVTransport = dtoOrder.FVTransport,
                     Period = dtoOrder.Period != null ? dtoOrder.Period.Value : DateTime.MinValue,

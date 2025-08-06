@@ -80,8 +80,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        //listroles = await roleAppService.selectAll(new RoleApp());
-        //zoneProducts = plantService.GetZoneProducts();
+        listroles = await roleAppService.selectAll(new RoleApp());
+       //zoneProducts = plantService.GetZoneProducts();
 
         if (long.Parse(UserAppId) != 0)
         {

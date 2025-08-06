@@ -99,6 +99,8 @@ namespace adesoft.adepos.webview.Data.DTO.PL
 
         public ICollection<DTOOrderComment> Comments { get; set; }
 
+        public string ImportObservation { get; set; }
+
         public int SalesPersonId { get; set; }        
 
         public string CustomerAccount { get; set; }

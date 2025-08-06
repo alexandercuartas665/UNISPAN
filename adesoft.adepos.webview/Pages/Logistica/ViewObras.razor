@@ -11,93 +11,140 @@
     <div class="card-header">
         <span>ADMINISTRACIÓN DE OBRAS</span>
         <div class="float-right">
-            <a href="javascript:void(0);" @onclick="@(args => dialogService.Close(false))">Cerrar</a>
+            <a href="javascript:void(0);" @onclick="@(args => dialogService.Close(true))">Cerrar</a>
         </div>
     </div>
     <div class="card-body">
-        <RadzenFieldset Text="Gestión de Obras">
 
-            <h5>Agregar o Editar Obra: </h5>
+        <RadzenFieldset Text="Crear Nueva Obra">
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label>Cliente<b class="text-danger">*</b></label>
-                    <RadzenDropDown TValue="int" @bind-Value="model.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
-                                    AllowFiltering="true" Placeholder="Seleccione un cliente ..." class="form-control" 
+                    <RadzenDropDown TValue="int" @bind-Value="newObra.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" Placeholder="Seleccione un cliente..." class="form-control"
                                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                 </div>
                 <div class="form-group col-md-6">
                     <label>Nombre de la Obra<b class="text-danger">*</b></label>
-                    <RadzenTextBox @bind-Value="model.Nombre" class="form-control" />
+                    <RadzenTextBox @bind-Value="newObra.Nombre" class="form-control" />
                 </div>
             </div>
-
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label>Ciudad</label>
-                    <RadzenDropDown TValue="int?" @bind-Value="model.CiudadId" Data="@listaDeCiudades" TextProperty="Description" ValueProperty="Id"
+                    <RadzenDropDown TValue="int?" @bind-Value="newObra.CiudadId" Data="@listaDeCiudades" TextProperty="Description" ValueProperty="Id"
                                     AllowFiltering="true" AllowClear="true" Placeholder="Seleccione una ciudad..." class="form-control"
                                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" />
                 </div>
                 <div class="form-group col-md-6">
                     <label>Comercial</label>
-                    <RadzenDropDown TValue="int?" @bind-Value="model.ComercialId" Data="@listaDeComerciales" TextProperty="Description" ValueProperty="Id"
-                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control" 
+                    <RadzenDropDown TValue="int?" @bind-Value="newObra.ComercialId" Data="@listaDeComerciales" TextProperty="Description" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control"
                                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group col-md-8">
-                    <label>Correos (separados por " ; ")</label>
-                    <RadzenTextArea @bind-Value="model.Correos" class="form-control" Rows="2" />
-                </div>
-                <div class="form-group col-md-4">
-                    <label>Estado</label>
-                    <RadzenDropDown TValue="bool" @bind-Value="model.Activo" Data="@(new[] { new { Text = "Activo", Value = true }, new { Text = "Inactivo", Value = false } })"
-                                    TextProperty="Text" ValueProperty="Value" class="form-control" />
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group col-md-12">
-                    <RadzenButton Icon="save" Style="background-color: #007bff; color: white;" Text="Guardar" Click="SaveObra" />
-                    <!--<RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Text="Nuevo" Class="ml-2" Click="OnNew" /> -->
+                    <label>Correos (separados por " ; ")</label>
+                    <RadzenTextArea @bind-Value="newObra.Correos" class="form-control" Rows="2" />
                 </div>
             </div>
-
-            <hr />
-
-            <h5>Listado de Obras: </h5>
-
-            <div class="form-row mb-3">
-                <div class="form-group col-md-6">
-                    <RadzenTextBox @oninput="@OnFiltroClienteChange" Placeholder="Filtrar por Nombre de Cliente: ..." class="form-control" />
-                </div>
-                <div class="form-group col-md-6">
-                    <RadzenTextBox @oninput="@OnFiltroObraChange" Placeholder="Filtrar por Nombre de Obra: ... " class="form-control" />
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <RadzenButton Icon="add" Style="background-color: #007bff; border-color: #007bff; color: white;" Text="Crear Obra" Click="CreateObraAsync" />
                 </div>
             </div>
-            <RadzenDataGrid @ref="gridObras" TItem="DTOObras" Data="@obrasFiltradas" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10" class="mt-3">
-                <Columns>
-                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="200px" />
-                    <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre Obra" Width="200px" />
-                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreCiudad" Title="Ciudad" Width="130px" />
-                    <RadzenDataGridColumn TItem="DTOObras" Property="NombreComercial" Title="Comercial" Width="130px" />
-                    <RadzenDataGridColumn TItem="DTOObras" Property="Correos" Title="Correos" />                  
-                    <RadzenDataGridColumn TItem="DTOObras" Title="Editar / Eliminar" Width="100px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
-                        <Template Context="data">
-                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => EditRow(data))" />
-                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="ml-1" Click="@(async () => await DeleteRow(data))" />
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-
         </RadzenFieldset>
+
+        @if (editObra != null)
+        {
+            <RadzenFieldset Text="Editar Obra" class="mt-4">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Cliente<b class="text-danger">*</b></label>
+                        <RadzenDropDown TValue="int" @bind-Value="editObra.ClienteId" Data="@listaDeClientes" TextProperty="Description" ValueProperty="Id"
+                                        AllowFiltering="true" Placeholder="Seleccione un cliente..." class="form-control"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Nombre de la Obra<b class="text-danger">*</b></label>
+                        <RadzenTextBox @bind-Value="editObra.Nombre" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Ciudad</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="editObra.CiudadId" Data="@listaDeCiudades" TextProperty="Description" ValueProperty="Id"
+                                        AllowFiltering="true" AllowClear="true" Placeholder="Seleccione una ciudad..." class="form-control"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Comercial</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="editObra.ComercialId" Data="@listaDeComerciales" TextProperty="Description" ValueProperty="Id"
+                                        AllowFiltering="true" AllowClear="true" Placeholder="Seleccione un comercial..." class="form-control"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-8">
+                        <label>Correos (separados por " ; ")</label>
+                        <RadzenTextArea @bind-Value="editObra.Correos" class="form-control" Rows="2" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Estado</label>
+                        <RadzenDropDown TValue="bool" @bind-Value="editObra.Activo" Data="@(new[] { new { Text = "Activo", Value = true }, new { Text = "Inactivo", Value = false } })"
+                                        TextProperty="Text" ValueProperty="Value" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <RadzenButton Icon="save" Style="background-color: #007bff; border-color: #007bff; color: white;" Text="Guardar Cambios" Click="UpdateObraAsync" />
+                        <RadzenButton Icon="cancel" Style="background-color: #dc3545; border-color: #dc3545; color: white;" Text="Cancelar" Class="ml-2" Click="CancelEdit" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+        }
+
+        <hr />
+
+        <h5>Listado de Obras</h5>
+        <div class="form-row mb-3">
+            <div class="form-group col-md-6">
+                <RadzenTextBox @oninput="OnFiltroClienteChange" Placeholder="Filtrar por Nombre de Cliente..." class="form-control" />
+            </div>
+            <div class="form-group col-md-6">
+                <RadzenTextBox @oninput="OnFiltroObraChange" Placeholder="Filtrar por Nombre de Obra..." class="form-control" />
+            </div>
+        </div>
+        <RadzenDataGrid @ref="gridObras" TItem="DTOObras" Data="@obrasFiltradas" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10" class="mt-3" EmptyText="No hay obras para mostrar.">
+            <Columns>
+                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCliente" Title="Cliente" Width="200px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="Nombre" Title="Nombre Obra" Width="200px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="NombreCiudad" Title="Ciudad" Width="130px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="NombreComercial" Title="Comercial" Width="130px" />
+                <RadzenDataGridColumn TItem="DTOObras" Property="Correos" Title="Correos" />
+                <RadzenDataGridColumn TItem="DTOObras" Title="Acciones" Width="120px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+                    <HeaderTemplate>
+                        <div style="text-align:center; width:100%;">Editar/Eliminar</div>
+                    </HeaderTemplate>
+                    <Template Context="data">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => SelectObraToEdit(data))" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="ml-1" Click="@(async () => await DeleteRow(data))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
     </div>
 </div>
 
 @code {
-    private DTOObras model;
+    // Modelo para el formulario de CREACIÓN
+    private DTOObras newObra;
+    // Modelo para el formulario de EDICIÓN
+    private DTOObras editObra;
+
+    // Listas de datos
     private List<DTOObras> listaDeObras;
     private List<DTOLogisticMasterData> listaDeClientes;
     private List<DTOLogisticMasterData> listaDeCiudades;
@@ -105,53 +152,29 @@
 
     private RadzenDataGrid<DTOObras> gridObras;
 
-    // Filtros para los nombres de Cliente y Obra
+    // Filtros para la grilla
     private string filtroNombreCliente = "";
     private string filtroNombreObra = "";
 
-    // Esta propiedad computada devuelve la lista original o una versión filtrada
-    private IEnumerable<DTOObras> obrasFiltradas
-    {
-        get
-        {
-            // Empezamos con la lista completa
-            var query = listaDeObras.AsEnumerable();
+    // Propiedad computada para filtrar la grilla en tiempo real
+    private IEnumerable<DTOObras> obrasFiltradas =>
+        listaDeObras?.Where(o =>
+            (string.IsNullOrWhiteSpace(filtroNombreCliente) || o.NombreCliente?.Contains(filtroNombreCliente, StringComparison.OrdinalIgnoreCase) == true) &&
+            (string.IsNullOrWhiteSpace(filtroNombreObra) || o.Nombre?.Contains(filtroNombreObra, StringComparison.OrdinalIgnoreCase) == true)
+        ) ?? Enumerable.Empty<DTOObras>();
 
-            // Aplicamos el filtro por Cliente si hay texto
-            if (!string.IsNullOrWhiteSpace(filtroNombreCliente))
-            {
-                query = query.Where(o => o.NombreCliente != null && o.NombreCliente.Contains(filtroNombreCliente, StringComparison.OrdinalIgnoreCase));
-            }
-
-            // Aplicamos el filtro por Obra si hay texto
-            if (!string.IsNullOrWhiteSpace(filtroNombreObra))
-            {
-                query = query.Where(o => o.Nombre != null && o.Nombre.Contains(filtroNombreObra, StringComparison.OrdinalIgnoreCase));
-            }
-
-            return query;
-        }
-    }
-
-    // Métodos que se ejecutan cada vez que el usuario escribe en las cajas de texto
-    private void OnFiltroClienteChange(ChangeEventArgs args)
-    {
-        filtroNombreCliente = args.Value.ToString();
-    }
-
-    private void OnFiltroObraChange(ChangeEventArgs args)
-    {
-        filtroNombreObra = args.Value.ToString();
-    }
+    private void OnFiltroClienteChange(ChangeEventArgs args) => filtroNombreCliente = args.Value.ToString();
+    private void OnFiltroObraChange(ChangeEventArgs args) => filtroNombreObra = args.Value.ToString();
 
     protected override async Task OnInitializedAsync()
     {
-        OnNew();
+        InitializeNewObra();
         await LoadInitialData();
     }
 
     private async Task LoadInitialData()
     {
+        // Carga todos los datos en paralelo para mayor eficiencia
         var obrasTask = logisticsService.GetAllObras();
         var clientesTask = logisticsService.GetCustomers();
         var ciudadesTask = logisticsService.GetLogisticMasterData("CIUDAD");
@@ -159,35 +182,40 @@
 
         await Task.WhenAll(obrasTask, clientesTask, ciudadesTask, comercialesTask);
 
-        listaDeObras = obrasTask.Result ?? new List<DTOObras>(); // Aseguramos que la lista no sea nula
+        listaDeObras = obrasTask.Result ?? new List<DTOObras>();
         listaDeClientes = clientesTask.Result;
         listaDeCiudades = ciudadesTask.Result;
         listaDeComerciales = comercialesTask.Result;
     }
 
-    private void OnNew()
+    // Prepara el objeto para una nueva obra
+    private void InitializeNewObra()
     {
-        this.model = new DTOObras { Activo = true };
+        newObra = new DTOObras { Activo = true };
     }
 
-    private async Task SaveObra()
+    // --- MÉTODOS PARA CREACIÓN ---
+    private async Task CreateObraAsync()
     {
-        if (model.ClienteId == 0 || string.IsNullOrWhiteSpace(model.Nombre))
+        if (newObra.ClienteId == 0 || string.IsNullOrWhiteSpace(newObra.Nombre))
         {
             notificationService.Notify(NotificationSeverity.Error, "Error", "Debe seleccionar un cliente y especificar un nombre para la obra.");
             return;
         }
 
-        await logisticsService.CreateOrUpdateObra(model);
-        notificationService.Notify(NotificationSeverity.Success, "Éxito", "Obra guardada correctamente.");
+        await logisticsService.CreateOrUpdateObra(newObra);
+        notificationService.Notify(NotificationSeverity.Success, "Éxito", "Obra creada correctamente.");
 
-        OnNew();
-        await LoadInitialData();
+        InitializeNewObra(); // Limpia el formulario
+        await LoadInitialData(); // Recarga la grilla
+        StateHasChanged();
     }
 
-    private void EditRow(DTOObras obra)
+    // --- MÉTODOS PARA EDICIÓN ---
+    private void SelectObraToEdit(DTOObras obra)
     {
-        this.model = new DTOObras
+        // Clona el objeto para la edición
+        editObra = new DTOObras
         {
             Id = obra.Id,
             Nombre = obra.Nombre,
@@ -199,6 +227,28 @@
         };
     }
 
+    private async Task UpdateObraAsync()
+    {
+        if (editObra.ClienteId == 0 || string.IsNullOrWhiteSpace(editObra.Nombre))
+        {
+            notificationService.Notify(NotificationSeverity.Error, "Error", "Debe seleccionar un cliente y especificar un nombre para la obra.");
+            return;
+        }
+
+        await logisticsService.CreateOrUpdateObra(editObra);
+        notificationService.Notify(NotificationSeverity.Success, "Éxito", "Obra actualizada correctamente.");
+
+        editObra = null; // Oculta el formulario de edición
+        await LoadInitialData(); // Recarga la grilla
+        StateHasChanged();
+    }
+
+    private void CancelEdit()
+    {
+        editObra = null; // Oculta el formulario de edición
+    }
+
+    // --- MÉTODO PARA ELIMINAR ---
     private async Task DeleteRow(DTOObras obra)
     {
         if (await JSRuntime.InvokeAsync<bool>("confirm", $"¿Está seguro? Esta acción desactivará la obra '{obra.Nombre}'."))
@@ -213,6 +263,7 @@
             {
                 notificationService.Notify(NotificationSeverity.Error, "Error", "No se pudo desactivar la obra.");
             }
+            StateHasChanged();
         }
     }
 }

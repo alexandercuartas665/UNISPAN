@@ -151,6 +151,7 @@ namespace adesoft.adepos.webview.Controller
                         Works = order.Works,
                         LastEditAction = order.LastEditAction,
                         ObraId = order.ObraId,
+                        ImportObservation = order.ImportObservation,
                         ModuleId = order.ModuleId,
                         Module = module?.Description,
                         CityId = order.CityId,

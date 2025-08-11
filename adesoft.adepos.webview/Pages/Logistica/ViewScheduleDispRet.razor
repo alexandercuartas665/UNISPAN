@@ -142,7 +142,7 @@
             this.banner = await parameterService.SelectByIdentify(this.scheduleDisRet.ModuleId == 1 ? "LogisticsBannerDispatchs" : "LogisticsBannerReturns");
             try
             {
-                this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, searchBy);
+                this.orders = await logisticsService.GetOrders((OrderType)scheduleDisRet.ModuleId, scheduleDisRet.FromDate, scheduleDisRet.ToDate, searchBy, true);
 
                 if (this.scheduleDisRet.ModuleId == 1)
                 {
@@ -1005,12 +1005,12 @@
                                             if (order.DispatchDateTime.Equals(DateTime.MinValue))
                                             {
                                                 <td>@order.Wight</td>
-                                                <td>@order.Comment</td>
+                                                <td>@order.ImportObservation</td>
                                             }
                                             else
                                             {
                                                 <td></td>
-                                                <td></td>
+                                                <td>@order.ImportObservation</td>
                                             }
                                         }
                                     </tr>

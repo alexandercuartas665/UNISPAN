@@ -31,7 +31,8 @@
             La siguiente información es importante que se tenga en cuenta para cumplir con de los requisitos y condiciones de alistamiento y envió del equipo:</div>
             <ul style="direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;">
             <li style="font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;">
-            <div style="direction: ltr;"><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los Paneles NO se apilen con la cara de contacto hacia arriba, esto representa un riesgo alto al personal involucrado en la operación, debido que, al cargarlo de esta forma, 
+            <div style="direction: ltr;"><b>APILAMIENTO DEL ENCOFRADO</b>: Es muy importante que los 
+              <span style="color: red; font-size: 13pt;"><b><i><u>Paneles se apilen con la Estructura hacia arriba</u></i></b></span>, esto representa un riesgo alto al personal involucrado en la operación, debido que, al cargarlo de esta forma, 
               las piezas se desplazan y se pierde la organización para poder descargar mediante montacarga.</div>
             </li><li style="font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); align-self: center;">
             <div style="direction: ltr; text-align: center;"><img id="x_image_0" size="1181026" contenttype="image/png" style="max-width: 1867px;" data-outlook-trace="F:2|T:2" src="http://manager.unispan.com.co/Images/imagen_devoluciones.png"></div>
@@ -41,7 +42,7 @@
             Si por algún motivo no puede cumplir con la cita programada, por favor comunicarse con el Asesor de Obra de Unispan con la mayor antelación posible para proceder a reprogramar y liberar el cupo en nuestra planta para otro cliente.</div>
             <div style="direction: ltr; text-align: justify; line-height: 1.284; margin: 0cm 0cm 0.0001pt 36pt; font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);">
             Si inicialmente ha solicitado programar un determinado vehículo, por ejemplo una Tractomula, y por alguna razón no consigue este vehículo y decide enviar el equipo en dos Dobletroques, por favor comuníquese previamente con el área de operaciones
-            <span style="color: rgb(5, 99, 193);"><u><a href="mailto:diroperaciones@unispan.com.co" id="OWAd49d3ee8-a475-a0d0-9627-f7183e77d513" class="x_OWAAutoLink" style="color: rgb(5, 99, 193);">diroperaciones@unispan.com.co</a></u></span>&nbsp;para que sea verificado si es posible aceptar esta modificación, 
+            <span style="color: rgb(5, 99, 193);"><u><a href="mailto:coordinadorplanta@unispan.com.co" id="OWAd49d3ee8-a475-a0d0-9627-f7183e77d513" class="x_OWAAutoLink" style="color: rgb(5, 99, 193);">coordinadorplanta@unispan.com.co</a></u></span>&nbsp;para que sea verificado si es posible aceptar esta modificación, 
             en caso de no hacerlo puede suceder que Unispan no tenga cupo para recibir un segundo vehículo, ya que para bajar cada carro se requiere espacio físico y una cuadrilla de personal.</div>
             <ul style="direction: ltr; text-align: justify; margin-top: 0cm; margin-right: 0cm; padding-left: 0px;">
             <li style="font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0); direction: ltr; line-height: 107%; margin: 0cm 0cm 0.0001pt 36pt;">
@@ -177,12 +178,12 @@
             <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;"><br>
             </span></p>
             <p style="text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
-            <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;">Julian Andrés Mora Ruiz.
-            </span><span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">Director de Operaciones&nbsp;</span></p>
+            <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; color: black;">Tomás Murillo.
+            </span><span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">Coordinador Planta&nbsp;</span></p>
             <p style="text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
-            <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">Tel.: (602) 6664040&nbsp; Ext.: 149 Cel.: 3216383756&nbsp;</span></p>
+            <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">Tel.: (602) 6664040&nbsp; Cel.: 3160250470&nbsp;</span></p>
             <p style="text-align: left; line-height: normal; margin: 0cm 0cm 0.0001pt; font-family: Calibri, sans-serif; font-size: 11pt;">
-            <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">diroperaciones@unispan.com.co<b>&nbsp;/
+            <span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: gray;">coordinadorplanta@unispan.com.co<b>&nbsp;/
             </b></span><span style="font-family: &quot;Khmer UI&quot;, sans-serif, serif, EmojiFont; font-size: 10pt; color: rgb(23, 15, 173);"><b><u><a href="https://unispan.com.co/" id="OWA5aef641b-f10f-d499-3a1c-7f91fa85647e" class="x_x_x_x_x_OWAAutoLink" title="https://unispan.com.co/" data-linkindex="9" data-auth="NotApplicable" style="margin: 0px;">www.unispan.com.co</a></u>&nbsp;</b></span></p>
             </td>
             </tr>

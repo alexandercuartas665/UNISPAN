@@ -294,10 +294,9 @@
     {
         try
         {
+            bool isNewOrder = model.OrderId == 0;
             string actionText;
 
-            // Determina el texto de la acción basado en la selección del usuario.
-            // Esta lógica ahora cubre los tres casos posibles.
             switch (selectedAction)
             {
                 case ManualEditAction.Programacion:
@@ -309,12 +308,11 @@
                 case ManualEditAction.Actualizacion:
                     actionText = "ACTUALIZACIÓN";
                     break;
-                default: // Caso por defecto para mayor seguridad
+                default:
                     actionText = "PROGRAMACIÓN";
                     break;
             }
 
-            // Asigna la acción seleccionada al modelo para que se guarde en la base de datos.
             model.LastEditAction = actionText;
 
             // Validaciones del formulario
@@ -332,7 +330,7 @@
                 }
             }
 
-            // Combina la fecha y la hora antes de guardar
+            //Combina la fecha y la hora antes de guardar
             if ((OrderType)this.orderType == OrderType.Dispatch)
             {
                 if (this.model.DispatchDateTime != null)
@@ -343,10 +341,30 @@
                 this.model.ReturnDateTime = this.model.ReturnDateTime.Value.Date + this.time.GetValueOrDefault().TimeOfDay;
             }
 
-            // Llama al servicio para guardar la orden en la base de datos
+            //Llama al servicio para guardar la orden en la base de datos
             this.model = await logisticsService.CreateOrUpdateOrder(model);
 
-            // Notifica al usuario que la operación fue exitosa
+            //Si era una orden nueva y se guardó, mover los archivos
+            if (isNewOrder && model.OrderId != 0)
+            {
+                var tempPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", "0");
+                var finalPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", model.OrderId.ToString());
+
+                if (Directory.Exists(tempPath) && Directory.GetFiles(tempPath).Any())
+                {
+                    if (!Directory.Exists(finalPath))
+                    {
+                        Directory.CreateDirectory(finalPath);
+                    }
+
+                    foreach (var file in Directory.GetFiles(tempPath))
+                    {
+                        var destFile = Path.Combine(finalPath, Path.GetFileName(file));
+                        File.Move(file, destFile);
+                    }
+                }
+            }
+
             ShowNotification(new NotificationMessage()
             {
                 Severity = NotificationSeverity.Success,
@@ -637,16 +655,17 @@
     #region Mostrar tabla con los archivos PDF
     private void LoadAttachmentFiles()
     {
+        attachmentFiles = new List<string>();
+        if (model.OrderId == 0)
+        {
+            return;
+        }
         var orderFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments", model.OrderId.ToString());
         if (Directory.Exists(orderFolder))
         {
             attachmentFiles = Directory.GetFiles(orderFolder)
-                                      .Select(Path.GetFileName)
-                                      .ToList();
-        }
-        else
-        {
-            attachmentFiles = new List<string>();
+                                          .Select(Path.GetFileName)
+                                          .ToList();
         }
     }
 
@@ -655,7 +674,8 @@
         if (!await JSRuntime.InvokeAsync<bool>("confirm", $"¿Está seguro de eliminar el archivo {fileName}?"))
             return;
         var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OrderAttachments");
-        string filePath = Path.Combine(basePath, orderId.ToString(), fileName);
+        string filePath = Path.Combine(basePath, model.OrderId.ToString(), fileName);
+
         try
         {
             if (File.Exists(filePath))
@@ -1027,20 +1047,18 @@
                     }
                 }
                 <div class="col-sm-6">
+                @if (orderType == 1)
+                {
+                    <div class="form-group">
+                        <label>Observaciones OD</label>
+                        <RadzenTextArea Value="@model.ImportObservation" class="form-control" ReadOnly="true" style="background-color: #f2f2f2;" />
+                    </div>
+                }
                     <div class="form-group">
                         <label for="observations">Observaciones</label>
                         <RadzenTextArea Disabled="@(!this.editFields)" Name="observations" @bind-Value="model.Comment" Placeholder="Ingrese observaciones" class="form-control"></RadzenTextArea>
-                    </div>
-                    @if (orderType == 1){
-                        <div class="form-group">
-                            <label>Observaciones de Importación</label>
-                            <RadzenTextArea Value="@model.ImportObservation" class="form-control" ReadOnly="true" style="background-color: #f2f2f2;" />
-                        </div>
-                    }
-                    <!--  <div class="form-group">
-                        <label for="observations">Email</label>
-                        <RadzenTextArea Disabled="" Name="email" -Value="model.Email" Placeholder="Correos a notificar, puede añadir nuevos separados por ; (punto y coma)"></RadzenTextArea>
-                    </div>  -->
+                    </div>                   
+                    
                     <div class="form-group">
                         <label for="email">Email</label>
                         <RadzenTextArea Name="email" @bind-Value="model.Email" Placeholder="Correos a notificar, puede añadir nuevos separados por ; (punto y coma)" class="form-control" Disabled="true"></RadzenTextArea>

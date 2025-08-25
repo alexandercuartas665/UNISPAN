@@ -174,6 +174,8 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         public string NombreArchivo { get; set; }
 
         public string LastEditAction { get; set; }
+
+        public string GroupColorStyle { get; set; }
     }    
 
     public class DTOSharedOrder

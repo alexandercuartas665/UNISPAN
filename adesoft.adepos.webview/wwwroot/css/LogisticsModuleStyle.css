@@ -137,7 +137,7 @@
     min-width: 50px;
     width: 50px;
     max-width: 50px;
-    left: 605px !important; /* Nuevo cálculo: 425 + 180 */
+    left: 605px !important; /* 425 + 180 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -147,7 +147,7 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 655px !important; /* Nuevo cálculo: 605 + 50 */
+    left: 655px !important; /* 605 + 50 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -157,7 +157,7 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 755px !important; /* Nuevo cálculo: 655 + 100 */
+    left: 755px !important; /* 655 + 100 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -167,7 +167,7 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 855px !important; /* Nuevo cálculo: 755 + 100 */
+    left: 855px !important; /*  755 + 100 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -177,7 +177,7 @@
     min-width: 120px;
     width: 120px;
     max-width: 120px;
-    left: 955px !important; /* Nuevo cálculo: 855 + 100 */
+    left: 955px !important; /* 855 + 100 */
     position: sticky !important;
     z-index: 150;
     background-color: white;

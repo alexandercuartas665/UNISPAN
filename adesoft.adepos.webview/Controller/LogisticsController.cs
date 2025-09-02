@@ -1074,17 +1074,19 @@ namespace adesoft.adepos.webview.Controller
                     }
                 }
 
-                if (showComments)
-                {
-                    var lastComment = _dbcontext.OrderComments
-                        .Where(c => c.OrderId == order.Id && c.OrderType == order.OrderType)
-                        .OrderByDescending(c => c.CreatedDatetTime)
-                        .FirstOrDefault();
+                var lastGeneralComment = _dbcontext.OrderComments
+                                        .Where(c => c.OrderId == order.Id)
+                                        .OrderByDescending(c => c.CreatedDatetTime)
+                                        .Select(c => c.Comment)
+                                        .FirstOrDefault();
 
-                    if (lastComment != null)
-                    {
-                        dtoOrder.Comment = lastComment.Comment;
-                    }
+                if (!string.IsNullOrWhiteSpace(lastGeneralComment))
+                {
+                    dtoOrder.DisplayObservation = lastGeneralComment;
+                }
+                else
+                {
+                    dtoOrder.DisplayObservation = order.ImportObservation;
                 }
 
                 dtoOrders.Add(dtoOrder);

@@ -176,6 +176,9 @@ namespace adesoft.adepos.webview.Data.DTO.PL
         public string LastEditAction { get; set; }
 
         public string GroupColorStyle { get; set; }
+
+        [NotMapped] 
+        public string DisplayObservation { get; set; }
     }    
 
     public class DTOSharedOrder

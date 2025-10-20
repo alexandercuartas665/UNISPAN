@@ -151,6 +151,7 @@ namespace adesoft.adepos.webview.Controller
                         Works = order.Works,
                         LastEditAction = order.LastEditAction,
                         ObraId = order.ObraId,
+                        ImportObservation = order.ImportObservation,
                         ModuleId = order.ModuleId,
                         Module = module?.Description,
                         CityId = order.CityId,
@@ -1018,7 +1019,8 @@ namespace adesoft.adepos.webview.Controller
                     TransactionGenericId = order.TransactionGenericId,
                     Status = order.Status,
                     Email = order.Email,
-                    Version = order.Version
+                    Version = order.Version,
+                    ImportObservation = order.ImportObservation
                 };
 
                 if (order.Id.Equals(order.DispatchId))
@@ -1026,13 +1028,14 @@ namespace adesoft.adepos.webview.Controller
                     var isOrderParent = _dbcontext.Orders.Where(o => (o.DispatchId == dtoOrder.OrderId) && (o.Id != dtoOrder.OrderId)).FirstOrDefault();
                     dtoOrder.DispatchParent = !(isOrderParent is null);
                 }
-                //AGREGA LAS ANOTACIONE
+
                 var textoNotification = string.Empty;
                 var cNotification = _dbcontext.OrderNotifications
-                .Where(c => c.OrderId == order.Id)
-                .OrderByDescending(c => c.NotificationDate)  // Ordena de más reciente a más antiguo
-                .Take(3)                                     // Selecciona los 3 primeros (los más recientes)
-                .ToList();
+                    .Where(c => c.OrderId == order.Id)
+                    .OrderByDescending(c => c.NotificationDate)
+                    .Take(3)
+                    .ToList();
+
                 foreach (var comment in cNotification)
                 {
                     if (textoNotification == string.Empty)
@@ -1071,41 +1074,23 @@ namespace adesoft.adepos.webview.Controller
                     }
                 }
 
-                if (showComments)
-                {
-                    var comments = _dbcontext.OrderComments
-                    .Where(c => c.OrderType == order.OrderType && c.OrderId == order.Id)
-                    .ToList();
+                var lastGeneralComment = _dbcontext.OrderComments
+                                        .Where(c => c.OrderId == order.Id)
+                                        .OrderByDescending(c => c.CreatedDatetTime)
+                                        .Select(c => c.Comment)
+                                        .FirstOrDefault();
 
-                    foreach (var comment in comments)
-                    {
-                        dtoOrder.Comments.Add(new DTOOrderComment()
-                        {
-                            OrderCommentId = comment.Id,
-                            OrderType = comment.OrderType,
-                            OrderId = comment.OrderId,
-                            Comment = comment.Comment,
-                            CreatedDatetTime = comment.CreatedDatetTime
-                        });
-                    }
+                if (!string.IsNullOrWhiteSpace(lastGeneralComment))
+                {
+                    dtoOrder.DisplayObservation = lastGeneralComment;
                 }
-
-                if (order.DispatchDateTime.Equals(DateTime.MinValue) && order.ReturnDateTime.Equals(DateTime.MinValue))
+                else
                 {
-                    var comment = _dbcontext.OrderComments
-                    .Where(c => c.OrderType == order.OrderType && c.OrderId == order.Id)
-                    .OrderByDescending(c => c.Id)
-                    .FirstOrDefault();
-
-                    if (comment != null)
-                    {
-                        dtoOrder.Comment = comment.Comment;
-                    }
+                    dtoOrder.DisplayObservation = order.ImportObservation;
                 }
 
                 dtoOrders.Add(dtoOrder);
             }
-
             return dtoOrders;
         }
 

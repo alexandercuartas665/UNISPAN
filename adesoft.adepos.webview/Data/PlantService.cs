@@ -1076,6 +1076,7 @@ namespace adesoft.adepos.webview.Data
                         order.VehicleTypeId = transactionGeneric.VehicleTypeId;
                         order.Wight = transactionGeneric.Wight;
                         order.ObraId = transactionGeneric.ObraId;
+                        order.ImportObservation = transactionGeneric.Note; // Mapea Note -> ImportObservation
                         order.Status = OrderStatus.Draft;
                         order.ModifiedOn = DateTime.Now;
 
@@ -1104,6 +1105,7 @@ namespace adesoft.adepos.webview.Data
                             VehicleTypeId = transactionGeneric.VehicleTypeId,
                             Wight = transactionGeneric.Wight,
                             ObraId = transactionGeneric.ObraId,
+                            ImportObservation = transactionGeneric.Note,
                             CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now,
                             Version = version,

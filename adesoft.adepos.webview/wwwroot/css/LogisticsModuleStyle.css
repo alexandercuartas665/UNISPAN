@@ -1,4 +1,4 @@
-﻿/* ========== [ESTILOS ORIGINALES] ========== */
+﻿/* ESTILOS ORIGINALES*/
 .thead-title-bold {
     background: #002060;
     color: white;
@@ -63,10 +63,10 @@
 }
 
 .col-totalTon {
-    min-width: 100px;
-    width: 100px;
-    max-width: 100px;
-    left: 880px;
+    min-width: 120px;
+    width: 120px;
+    max-width: 120px;
+    left: 955px !important;
     position: sticky;
     z-index: 50;
     background-color: #3B548C;
@@ -91,7 +91,7 @@
         height: 100%;
     }
 
-/* ========== [COLUMNAS FIJAS CORREGIDAS] ========== */
+/* COLUMNAS FIJAS CORREGIDAS */
 .col-checkbox {
     min-width: 30px !important;
     width: 30px !important;
@@ -104,9 +104,9 @@
 }
 
 .col-work {
-    min-width: 200px;
-    width: 200px;
-    max-width: 200px;
+    min-width: 215px; 
+    width: 215px; 
+    max-width: 215px;
     left: 30px !important; /* 30px (checkbox) */
     position: sticky !important;
     z-index: 150;
@@ -117,17 +117,17 @@
     min-width: 180px;
     width: 180px;
     max-width: 180px;
-    left: 230px !important; /* 30 + 200 */
+    left: 245px !important; /* 30 + 200 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
 }
 
 .col-orderId {
-    min-width: 120px;
-    width: 120px;
-    max-width: 120px;
-    left: 410px !important; /* 230 + 180 */
+    min-width: 180px;
+    width: 180px;
+    max-width: 180px;
+    left: 425px !important;
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -137,7 +137,7 @@
     min-width: 50px;
     width: 50px;
     max-width: 50px;
-    left: 530px !important; /* 410 + 120 */
+    left: 605px !important; /* 425 + 180 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -147,7 +147,7 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 580px !important; /* 530 + 50 */
+    left: 655px !important; /* 605 + 50 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -157,7 +157,7 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 680px !important; /* 580 + 100 */
+    left: 755px !important; /* 655 + 100 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
@@ -167,23 +167,23 @@
     min-width: 100px;
     width: 100px;
     max-width: 100px;
-    left: 780px !important; /* 680 + 100 */
+    left: 855px !important; /*  755 + 100 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
 }
 
 .col-transport {
-    min-width: 100px;
-    width: 100px;
-    max-width: 100px;
-    left: 880px !important; /* 780 + 100 */
+    min-width: 120px;
+    width: 120px;
+    max-width: 120px;
+    left: 955px !important; /* 855 + 100 */
     position: sticky !important;
     z-index: 150;
     background-color: white;
 }
 
-/* ========== [CABECERAS FIJAS] ========== */
+/* CABECERAS FIJAS */
 .row-fixed-1 {
     height: 28px;
     min-height: 28px;
@@ -214,7 +214,6 @@
     background-color: white;
 }
 
-/* ========== [ESTILOS RESTANTES (INALTERADOS)] ========== */
 .col-transportdev {
     min-width: 100px !important;
     width: 100px !important;
@@ -385,7 +384,7 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* ========== [AJUSTES FINALES] ========== */
+/* AJUSTES FINALES */
 .col-checkbox input[type="checkbox"] {
     margin: 0 auto;
     display: block;

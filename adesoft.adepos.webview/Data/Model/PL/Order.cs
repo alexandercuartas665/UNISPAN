@@ -88,6 +88,7 @@ namespace adesoft.adepos.webview.Data.Model.PL
         public OrderStatus Status { get; set; }
 
         public Decimal Progress { get; set; }
+        public string ImportObservation { get; set; }
 
         public long TransactionGenericId { get; set; }
 

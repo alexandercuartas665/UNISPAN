@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PagXml>
+
+  <CorXML>
+    <BASE>AZURE_xxx</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>bitcodedbserver.database.windows.net</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>adminsbitcode</USUARIO>
+    <PW>H030yVZ1SafCEo9$Usvv</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reportes.bitcode.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>
+
+
+  <CorXML>
+    <BASE>AZURE</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>sql.bitcode.com.co,1433</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>remoto</USUARIO>
+    <PW>H030yVZ1SafCEo9$Usvv</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://172.16.27.10:8383/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>
+
+
+  <CorXML>
+    <BASE>BITCODEV</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>fw.bitcode.com.co,47689</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>bitcodevs</USUARIO>
+    <PW>89J7QY8A0iDjlD6vJCUD^#Ndz411@m5IQ8%ncw5YmXSeY60646</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reportes.bitcode.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>
+
+  <CorXML>
+    <BASE>SOLDARCO</BASE>
+    <CATALOGO>M700_GEN</CATALOGO>
+    <SERVIDOR>192.168.0.8</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>Remoto</USUARIO>
+    <PW>Soldarco1</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://192.168.0.8/Reportserver</SREPORT>
+    <UREPORT>alexander.cuartas</UREPORT>
+    <CREPORT>Marco1122</CREPORT>
+    <DREPORT>SOLDARCO</DREPORT>
+  </CorXML>
+  
+	
+  <CorXML>
+    <BASE>SOLDARCO_DESARROLLO</BASE>
+    <CATALOGO>M700_GEN</CATALOGO>
+    <SERVIDOR>192.168.0.8\DESARROLLO,14444</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>Remoto</USUARIO>
+    <PW>Soldarco1</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reportes.andinaseguridad.com.co/Reportserver_andina</SREPORT>
+    <UREPORT>INFORMATICA</UREPORT>
+    <CREPORT>Demonio1976</CREPORT>
+    <DREPORT>ANDINASEG</DREPORT>
+  </CorXML>
+	
+
+  <CorXML>
+    <BASE>ATOS</BASE>
+    <CATALOGO>ATOS</CATALOGO>
+    <SERVIDOR>192.168.1.4\COMUNIVERSO</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>remoto</USUARIO>
+    <PW>Catalogo1</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://directa-pc:9090/ReportServer</SREPORT>
+    <UREPORT>Cuartasa</UREPORT>
+    <CREPORT>Alex0830*</CREPORT>
+    <DREPORT>CATALOGO</DREPORT>
+  </CorXML>
+
+  <CorXML>
+    <BASE>ATOS_DESARROLLO</BASE>
+    <CATALOGO>ATOS</CATALOGO>
+    <SERVIDOR>192.168.1.11\DESARROLLO, 2020</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>remoto</USUARIO>
+    <PW>Developer.1396</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://directa-pc:9090/ReportServer</SREPORT>
+    <UREPORT>Cuartasa</UREPORT>
+    <CREPORT>Alex0830*</CREPORT>
+    <DREPORT>CATALOGO</DREPORT>
+  </CorXML>
+
+  <CorXML>
+    <BASE>FABRICA</BASE>
+    <CATALOGO>M700_GEN</CATALOGO>
+    <SERVIDOR>192.168.1.6\FAB1ATOS</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>remoto</USUARIO>
+    <PW>Fabrica1</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://directa-pc:9090/ReportServer</SREPORT>
+    <UREPORT>Cuartasa</UREPORT>
+    <CREPORT>Alex0830*</CREPORT>
+    <DREPORT>CATALOGO</DREPORT>
+  </CorXML>
+
+  <CorXML>
+    <BASE>TRAVEL</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>192.168.14.20\SARA</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>remoto</USUARIO>
+    <PW>Travel1*</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://directa-pc:9090/ReportServer</SREPORT>
+    <UREPORT>Reportes</UREPORT>
+    <CREPORT>Travel1*</CREPORT>
+    <DREPORT>CATALOGO</DREPORT>
+  </CorXML>
+
+  <CorXML>
+    <BASE>SISMED</BASE>
+    <CATALOGO>sismed</CATALOGO>
+    <SERVIDOR>190.85.49.114</SERVIDOR>
+    <RUTADB>12750</RUTADB>
+    <USUARIO>dba_3dev</USUARIO>
+    <PW>Tr3sdev@2020*</PW>
+    <TIPO>POSTGRESQL</TIPO>
+    <SREPORT>http://directa-pc:9090/ReportServer</SREPORT>
+    <UREPORT>Reportes</UREPORT>
+    <CREPORT>Travel1*</CREPORT>
+    <DREPORT>CATALOGO</DREPORT>
+  </CorXML>
+  
+  <CorXML>
+    <BASE>QRS2</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>qrs2dbserver.database.windows.net</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>adm</USUARIO>
+    <PW>Radicador#2021</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reports.3dev.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>
+  
+  <CorXML>
+    <BASE>DOCUMENTA</BASE>
+    <CATALOGO>INNOVA</CATALOGO>
+    <SERVIDOR>SERVER1\INNOVA</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>sa</USUARIO>
+    <PW>Maravilla1</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reports.3dev.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>  
+  
+  <CorXML>
+    <BASE>ANDINA</BASE>
+    <CATALOGO>TURNOS</CATALOGO>
+    <SERVIDOR>192.169.10.186\andina</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>traslados</USUARIO>
+    <PW>TurnosAndina$2025</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reports.3dev.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>  
+  
+  
+  <CorXML>
+    <BASE>DINAMICA</BASE>
+    <CATALOGO>TURNOS</CATALOGO>
+    <SERVIDOR>192.169.10.186\dinamica</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>traslados</USUARIO>
+    <PW>TurnosDinamica$2025</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reports.3dev.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>  
+  
+  
+  <CorXML>
+    <BASE>UNISPAN</BASE>
+    <CATALOGO>dbBitcode</CATALOGO>
+    <SERVIDOR>172.16.110.9</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>desarrollo</USUARIO>
+    <PW>Unispan2025</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://reports.3dev.com.co:8080/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>3dev</DREPORT>
+  </CorXML>  
+  
+  
+  <CorXML>
+    <BASE>AZURE_VPS</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>10.0.1.4,44566</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>sa</USUARIO>
+    <PW>Bitcodesas2021*</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://10.0.1.4:8383/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>VM1</DREPORT>
+  </CorXML>  
+  
+  
+  <CorXML>
+    <BASE>AZURE_VPS_DEV</BASE>
+    <CATALOGO>db3dev</CATALOGO>
+    <SERVIDOR>10.0.1.4,44566</SERVIDOR>
+    <RUTADB></RUTADB>
+    <USUARIO>sa</USUARIO>
+    <PW>Bitcodesas2021*</PW>
+    <TIPO>SQL</TIPO>
+    <SREPORT>http://10.0.1.4:8383/ReportServer</SREPORT>
+    <UREPORT>reportes</UREPORT>
+    <CREPORT>Okpd5CQMVkaOy2rtuA8B</CREPORT>
+    <DREPORT>VM1</DREPORT>
+  </CorXML>   
+  
+</PagXml>
